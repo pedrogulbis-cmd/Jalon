@@ -3374,10 +3374,24 @@ function vueReglages(){
     '<div class="seg">' + [7,14,30].map(n => '<button class="' + (s.obsolete === n ? "on" : "") + '" data-act="obsolete" data-id="' + n + '">' + n + ' j</button>').join("") + '</div></div>' +
     '</div></div>';
   h += '<div class="bloc"><div class="bloc-h">Vous et vos mails</div><div class="bloc-b">' +
-    '<div class="champ" style="margin-top:0"><label for="set-moi">Vous êtes</label><select id="set-moi"><option value="">— choisir dans l\'équipe —</option>' +
-      optsPers().map(([id, l]) => '<option value="' + id + '"' + (s.moi === id ? " selected" : "") + '>' + esc(l) + '</option>').join("") + '</select>' +
-      '<div class="aide">' + (V(DB.personnes).length ? "Affiche « Mes actions » sur le tableau de bord, vous nomme chef des nouveaux projets et vous retire des destinataires." :
-        "Ajoutez-vous d'abord dans l'onglet Équipe.") + '</div></div>' +
+    '<div class="aide" style="margin:0 0 10px">Jalon doit savoir laquelle des personnes de l\'équipe est vous. Cela sert à : afficher <b>« Mes actions »</b> sur le tableau de bord (vos tâches, vos jalons, votre charge), ' +
+      'vous mettre <b>chef de projet par défaut</b> des nouveaux projets, vous <b>retirer des destinataires</b> de vos propres mails, et <b>signer</b> vos mails si vous n\'avez pas de signature.</div>' +
+    (s.moi && DB.personnes[s.moi] ?
+      '<div class="lig" style="border-top:0;padding-top:0"><span class="ava">' + esc(initiales(nomP(s.moi))) + '</span><div class="l">' + esc(nomP(s.moi)) +
+        '<div class="d">' + esc([DB.personnes[s.moi].role, DB.personnes[s.moi].service, DB.personnes[s.moi].email].filter(Boolean).join(" · ") || "fiche à compléter") + '</div></div>' +
+        '<button class="btn pt" data-act="modifier-personne" data-id="' + s.moi + '">Ma fiche</button><button class="btn pt" data-act="moi-changer">Changer</button></div>'
+    : (V(DB.personnes).length && !state.moiCreer ?
+      '<div class="champ" style="margin-top:0"><label for="set-moi">Vous êtes</label><select id="set-moi"><option value="">Choisir votre nom…</option>' +
+        optsPers().map(([id, l]) => '<option value="' + id + '">' + esc(l) + '</option>').join("") + '</select>' +
+        '<div class="aide">Vous n\'êtes pas dans la liste ? <button class="lien" style="color:var(--acc);text-decoration:underline" data-act="moi-creer-form">Créez votre fiche</button>.</div></div>'
+    : '<div class="inline-add" style="margin:0 0 12px;padding-top:10px"><div class="duo">' +
+        fChamp("Votre nom", '<input type="text" id="moi-nom" placeholder="Prénom Nom" autocomplete="off">', "", "moi-nom") +
+        fChamp("Votre fonction", '<input type="text" id="moi-role" value="Responsable informatique" autocomplete="off">', "", "moi-role") + '</div>' +
+        '<div class="duo">' + fChamp("Service", '<select id="moi-svc">' + optsServ("").map(([a,b]) => '<option value="' + esc(a) + '"' + (a === "DSI" ? " selected" : "") + '>' + esc(b) + '</option>').join("") + '</select>', "", "moi-svc") +
+        fChamp("E-mail", '<input type="email" id="moi-mail" placeholder="facultatif" autocomplete="off">', "", "moi-mail") + '</div>' +
+        '<div class="btns" style="margin:4px 0 0"><button class="btn pt pri" data-act="moi-creer">Créer ma fiche</button>' +
+        (V(DB.personnes).length ? '<button class="btn pt" data-act="moi-annuler">Annuler</button>' : "") + '</div>' +
+        '<div class="aide">Vous serez ajouté à l\'équipe comme les autres personnes : on pourra vous confier des tâches et suivre votre charge.</div></div>')) +
     '<div class="champ"><label for="set-sig">Signature des mails</label><textarea id="set-sig" rows="3" placeholder="Cordialement,&#10;Prénom Nom&#10;Responsable informatique">' + esc(s.signature) + '</textarea></div>' +
     '<div class="champ"><label for="set-dir">Destinataires de la synthèse direction</label><input type="text" id="set-dir" value="' + esc(s.mailDirection) + '" placeholder="dg@entreprise.fr, daf@entreprise.fr" autocomplete="off">' +
       '<div class="aide">Proposés d\'office dans le mail de synthèse du portefeuille.</div></div>' +
@@ -4106,6 +4120,17 @@ document.addEventListener("click", async ev => {
     if(p.raci[pe] === r) delete p.raci[pe]; else p.raci[pe] = r;
     sauver(); render(); return;
   }
+  if(act === "moi-creer-form"){ state.moiCreer = true; render(); const i = $("#moi-nom"); if(i) i.focus(); return; }
+  if(act === "moi-annuler"){ state.moiCreer = false; render(); return; }
+  if(act === "moi-changer"){ DB.settings.moi = ""; state.moiCreer = false; sauver(true); render(); return; }
+  if(act === "moi-creer"){
+    const nom = (($("#moi-nom") || {}).value || "").trim();
+    if(!nom){ toast("Indiquez votre nom"); return; }
+    const pe = { id:uid(), nom, service:(($("#moi-svc") || {}).value || ""), role:(($("#moi-role") || {}).value || "").trim(),
+      email:(($("#moi-mail") || {}).value || "").trim(), dispo:2, note:"", cree:Date.now() };
+    DB.personnes[pe.id] = pe; DB.settings.moi = pe.id; state.moiCreer = false;
+    sauver(); render(); toast("Bienvenue, " + prenom(nom) + " : votre fiche est créée"); return;
+  }
   if(act === "t-vue"){ DB.settings.tVue = id; sauver(true); render(); return; }
   if(act === "m-check-defaut"){ capturerModal(); state.modal.checklist = CHECK_DEFAUT.map(t => ({ t, ok:false })); majModal(); return; }
   if(act === "m-check"){ capturerModal(); const c = state.modal.checklist[Number(id)]; if(c) c.ok = !c.ok; majModal(); return; }
@@ -4346,6 +4371,7 @@ document.addEventListener("drop", ev => {
   toast(["« " + t.titre + " » : " + lib(STATUTS_T, st).toLowerCase()].concat(msgs).join(" · "));
 });
 document.addEventListener("keydown", ev => {
+  if(ev.key === "Enter" && /^moi-(nom|role|mail)$/.test(ev.target.id || "")){ ev.preventDefault(); const b = document.querySelector('[data-act="moi-creer"]'); if(b) b.click(); return; }
   if(ev.key === "Escape"){
     if(state.modal){ fermerModal(); ev.preventDefault(); }
     else if(state.sheet){ state.sheet = null; render(); ev.preventDefault(); }

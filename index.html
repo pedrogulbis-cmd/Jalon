@@ -270,6 +270,28 @@ button.tuile:active{background:var(--fond2)}
 .jour-h.dang{color:var(--dang)} .jour-h.acc{color:var(--acc)}
 .plus-r{width:100%;padding:11px 2px 4px;font-size:13px;color:var(--acc);text-align:center}
 .sheet.fixe,.mdl.fixe{animation:none}
+.liste-c{margin:4px 0 8px;padding-left:20px}
+.liste-c li{font-size:14px;margin:0 0 5px;line-height:1.45}
+.chk{display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px solid var(--trait2)}
+.chk-b{width:22px;height:22px;flex:0 0 22px;border-radius:6px;border:2px solid var(--gris2);display:grid;place-items:center;color:#fff}
+.chk.on .chk-b{background:var(--ok);border-color:var(--ok)}
+html[data-theme="sombre"] .chk.on .chk-b{color:#0d0d10}
+.chk-t{flex:1;min-width:0;font-size:14px}
+.chk.on .chk-t{color:var(--gris)}
+.chk-x{color:var(--gris2);display:grid;padding:4px}
+.obj-l{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--trait2);flex-wrap:wrap}
+.obj-t{flex:1;min-width:160px;font-size:13.5px}
+.kb{display:grid;grid-template-columns:repeat(4,minmax(230px,1fr));gap:10px;overflow-x:auto;padding:4px 0 8px;margin:8px 0 0;-webkit-overflow-scrolling:touch}
+.kb-col{background:var(--fond2);border:1px solid var(--trait2);border-radius:12px;padding:8px;min-height:140px}
+.kb-col.over{outline:2px dashed var(--acc);outline-offset:-2px}
+.kb-h{font-size:13px;font-weight:600;padding:2px 4px 8px;display:flex;align-items:center;gap:7px}
+.kb-h .cnt{margin-left:auto;font-weight:400;font-size:12px;color:var(--gris2);font-family:"IBM Plex Mono",monospace}
+.kb-card{background:var(--carte);border:1px solid var(--trait);border-radius:10px;padding:9px 10px;margin-bottom:7px;display:flex;gap:9px;align-items:flex-start;cursor:grab}
+.kb-card.retard{border-left:3px solid var(--dang)}
+.kb-card.drag{opacity:.4}
+.kb-x{flex:1;min-width:0;text-align:left}
+.kb-t{display:block;font-size:13.5px;line-height:1.35}
+.kb-m{display:block;font-size:11px;color:var(--gris2);margin-top:3px;font-family:"IBM Plex Mono",monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .inline-add{border:1px dashed var(--accB);background:var(--accF);border-radius:10px;padding:2px 12px 12px;margin:-4px 0 12px}
 /* météo du portefeuille */
 .mg{border-radius:14px;padding:14px 16px;margin:14px 0 4px;background:var(--fond2);border:1px solid var(--trait)}
@@ -542,9 +564,18 @@ input[type=range]{width:100%;accent-color:var(--acc)}
    Un seul fichier, aucune dépendance, stockage local (IndexedDB).
    Reprend l'ossature d'Ardoise : même encre, mêmes gestes.
    ============================================================ */
-const VERSION = "1.5.0";
+const VERSION = "1.6.0";
 const SCHEMA  = 1;
 const JOURNAL = [
+  { v:"1.6.0", d:"2026-09-30", t:"Outils de méthode", l:[
+    "Note de cadrage : objectifs, périmètre, hors périmètre, livrables, critères de succès, contraintes, rentabilité. Elle s'envoie par mail et, à la clôture, chaque objectif est déclaré atteint, partiel ou non atteint.",
+    "Rôles (RACI) : qui réalise, décide, est consulté ou informé, projet par projet. Les « informés » passent en copie des mails.",
+    "Comptes rendus de réunion : les décisions entrent au journal, les actions deviennent des tâches en une ligne chacune, et le compte rendu part par mail aux participants.",
+    "Checklist Go / No-Go sur les jalons de mise en production, posée d'office par les modèles. Un Go / No-Go incomplet à sept jours de l'échéance est signalé ; un NO-GO met le projet en rouge.",
+    "Tâches en tableau Kanban, par glisser-déposer, à côté de la vue en liste.",
+    "Dépendances entre projets : un projet est signalé quand celui dont il dépend dérape.",
+    "Chaque outil se désactive dans Réglages → Modules."
+  ]},
   { v:"1.5.0", d:"2026-09-30", t:"Catalogue de modèles élargi", l:[
     "Nouvelle catégorie Documentation et gouvernance : PRA / PCA, procédures d'exploitation, modes opératoires, cartographie du SI, charte informatique, PSSI, documentation d'application, schéma directeur, budget annuel, revue des licences, inventaire, processus de support.",
     "Industrie et métiers : MES et sa montée de version, WMS, PLM / CAO, gestion des temps et badgeuses, notes de frais, e-learning, signature électronique, traçabilité, assistant IA, petite application interne.",
@@ -774,7 +805,7 @@ const DEFAULTS = {
     theme:"clair", accent:ACCENTS[0][0], masque:false,
     organisation:"",
     services:["Direction","DSI","Finance","RH","Production","Commercial","Logistique"],
-    modules:{ budget:true, charge:true, risques:true, valeur:true },
+    modules:{ budget:true, charge:true, risques:true, valeur:true, cadrage:true, raci:true, reunions:true, gonogo:true, kanban:true, dependances:true },
     f:{ service:"", chef:"", prio:"", statut:"actifs", meteo:"" },
     tri:"meteo", gZoom:"6m", obsolete:14,
     moi:"", signature:"", mailDirection:"", respServices:{}
@@ -875,8 +906,10 @@ const touche = pid => { const p = DB.projets[pid]; if(p) p.maj = Date.now(); };
 /* L'analyse d'un projet : tout ce qu'on en déduit sans rien demander de plus.
    Mémorisée le temps d'un rendu, puisque chaque vue la consulte plusieurs fois. */
 let _an = new Map();
+const _pile = new Set();
 function an(p){
   if(_an.has(p.id)) return _an.get(p.id);
+  _pile.add(p.id);
   const auj = todayISO(), mo = M();
   const T = tachesDe(p.id), J = jalonsDe(p.id), R = risquesDe(p.id);
   const chargeT = T.reduce((s,t) => s + num(t.charge), 0);
@@ -939,6 +972,18 @@ function an(p){
       const ra = rOuv.filter(r => r.echeance && r.echeance < auj).length;
       if(ra) rs.push({ n:"orange", t:ra + " action" + pl(ra) + " de risque en retard" });
     }
+    if(mo.gonogo) J.forEach(j => {
+      const n = (j.checklist || []).length;
+      if(!j.fait && n && j.go !== "go" && diffJ(auj, j.date) <= 7 && checkOk(j) < n)
+        rs.push({ n:"orange", t:"Go / No-Go « " + j.titre + " » : " + checkOk(j) + "/" + n + " points validés" });
+      if(!j.fait && j.go === "nogo") rs.push({ n:"rouge", t:"Décision NO-GO pour « " + j.titre + " »" });
+    });
+    if(mo.dependances) (p.depend || []).forEach(id => {
+      const d = DB.projets[id];
+      if(!d || estArchive(d) || _pile.has(d.id)) return;
+      const ad = an(d);
+      if(ad.joursRetard || ad.glissement > 0 || ad.meteo === "rouge") rs.push({ n:"orange", t:"Dépend de « " + d.nom + " », qui dérape" });
+    });
     if(tRetard.length) rs.push({ n:"orange", t:tRetard.length + " tâche" + pl(tRetard.length) + " en retard" });
     if(ecart != null && p.statut === "encours" && !joursRetard){
       if(ecart < -25) rs.push({ n:"rouge", t:"Avancement " + (-ecart) + " pts sous le temps écoulé" });
@@ -958,6 +1003,7 @@ function an(p){
     budget, conso, budgetPct, eac, eacPct, chargePrev, chargeConso, chargePct, chargeEac,
     rOuv, rMax, raisons:rs, meteoAuto, meteo, manuel, obsolete, joursSansPoint,
     enRetard: act && (joursRetard > 0 || jRetard.length > 0 || tRetard.length > 0) };
+  _pile.delete(p.id);
   _an.set(p.id, r);
   return r;
 }
@@ -1760,11 +1806,11 @@ function vuePersonne(pe){
 /* ============================================================
    FICHE PROJET
    ============================================================ */
-const PTABS = [["synthese","Synthèse"],["taches","Tâches"],["planning","Planning"],["risques","Risques"],["journal","Journal"]];
+const PTABS = [["synthese","Synthèse"],["cadrage","Cadrage"],["taches","Tâches"],["planning","Planning"],["risques","Risques"],["journal","Journal"]];
 function vueFiche(p){
   const a = an(p), mo = M();
   const J = journalDe(p.id);
-  const onglets = PTABS.filter(([k]) => k !== "risques" || mo.risques);
+  const onglets = PTABS.filter(([k]) => (k !== "risques" || mo.risques) && (k !== "cadrage" || mo.cadrage));
   if(!onglets.some(([k]) => k === state.ptab)) state.ptab = "synthese";
   const nb = { taches:a.T.length, risques:a.rOuv.length, journal:J.length };
   let h = '<div class="sheet"><div class="sheet-top"><button class="iconbtn" data-act="fermer-sheet" aria-label="Retour">' + svg("fleche",18) + '</button>' +
@@ -1786,6 +1832,7 @@ function vueFiche(p){
     (nb[k] ? '<span class="n">' + nb[k] + '</span>' : "") + '</button>').join("") + '</div></div>';
 
   if(state.ptab === "synthese") h += ficheSynthese(p, a, J);
+  else if(state.ptab === "cadrage") h += ficheCadrage(p);
   else if(state.ptab === "taches") h += ficheTaches(p, a);
   else if(state.ptab === "planning") h += fichePlanning(p, a);
   else if(state.ptab === "risques") h += ficheRisques(p, a);
@@ -1821,6 +1868,9 @@ function ficheSyntheseSuite(p, a, J){
     '<div><small>Fin initiale</small><span>' + esc(frDate(p.finBase || p.fin, true)) + '</span></div>' +
     '<div style="grid-column:1/-1"><small>Équipe</small><span>' + (eq.length ? esc(eq.join(", ")) : "—") + '</span></div>' +
     '</div>' + (p.description ? '<div class="desc" style="border-top:1px solid var(--trait2);padding-top:10px">' + esc(p.description) + '</div>' : "") + '</div>';
+  if(mo.dependances && ((p.depend || []).length || V(DB.projets).some(x => (x.depend || []).includes(p.id) && !estArchive(x))))
+    h += '<div class="pan">' + blocDependances(p) + '</div>';
+  if(mo.raci) h += panneauRaci(p);
 
   const aTraiter = a.T.filter(t => t.statut === "bloque" || (t.statut !== "fait" && t.fin && t.fin < auj));
   const bientot = a.T.filter(t => t.statut !== "fait" && t.statut !== "bloque" && t.fin && t.fin >= auj && diffJ(auj, t.fin) <= 14);
@@ -1839,6 +1889,7 @@ function ficheSyntheseSuite(p, a, J){
   h += '</div></div>';
   h += '<div class="btns" style="margin-top:22px"><button class="btn" data-act="mail-projet" data-id="' + p.id + '">' + svg("mail",15) + 'Mail d\'avancement</button>' +
     '<button class="btn" data-act="mail-projet" data-id="' + p.id + '" data-m="odj">' + svg("cal",15) + 'Ordre du jour</button>' +
+    (mo.reunions ? '<button class="btn" data-act="nouveau-cr" data-id="' + p.id + '">' + svg("equipe",15) + 'Compte rendu</button>' : "") +
     (actif(p) || p.statut === "idee" ? '<button class="btn" data-act="cloturer-projet" data-id="' + p.id + '">' + svg("check",15) + 'Clôturer le projet</button>' : "") +
     '<span style="flex:1"></span><button class="btn" data-act="dupliquer-projet" data-id="' + p.id + '">Dupliquer</button>' +
     '<button class="btn" data-act="modele-depuis" data-id="' + p.id + '">En faire un modèle</button>' +
@@ -1852,7 +1903,10 @@ function ficheTaches(p, a){
   let h = '<div class="btns"><button class="btn pri" data-act="nouvelle-tache" data-id="' + p.id + '">' + svg("plus",16,2) + 'Tâche</button>' +
     '<button class="btn" data-act="nouveau-jalon" data-id="' + p.id + '">' + svg("diamant",15) + 'Jalon</button>' +
     '<button class="btn" data-act="ajout-rapide" data-id="' + p.id + '">' + svg("texte",15) + 'Ajout rapide</button><span style="flex:1"></span>' +
-    '<button class="btn pt" data-act="masquer-faits">' + (masquerFaits ? "Afficher les faites" : "Masquer les faites") + '</button></div>';
+    (M().kanban ? '<div class="seg"><button class="' + (DB.settings.tVue !== "kanban" ? "on" : "") + '" data-act="t-vue" data-id="liste">Liste</button>' +
+      '<button class="' + (DB.settings.tVue === "kanban" ? "on" : "") + '" data-act="t-vue" data-id="kanban">Tableau</button></div>' : "") +
+    (DB.settings.tVue === "kanban" && M().kanban ? "" : '<button class="btn pt" data-act="masquer-faits">' + (masquerFaits ? "Afficher les faites" : "Masquer les faites") + '</button>') + '</div>';
+  if(M().kanban && DB.settings.tVue === "kanban" && a.T.length) return h + ficheKanban(p, a);
   if(!a.T.length && !a.J.length) return h + vide("Ni tâche ni jalon", "Pas obligatoire : sans tâche, l'avancement se saisit directement sur le projet. Avec des tâches, il se calcule tout seul, pondéré par leur charge.");
   const faits = a.T.filter(t => t.statut === "fait").length;
   h += '<div class="aide">Touchez le rond d\'une tâche pour la faire avancer : à faire → en cours → fait. ' + faits + '/' + a.T.length + ' faites.</div>';
@@ -1863,7 +1917,7 @@ function ficheTaches(p, a){
     const retard = !j.fait && j.date < auj;
     h += '<button class="jl" data-act="modifier-jalon" data-id="' + j.id + '">' +
       '<span class="dia ' + (j.fait ? "fait" : retard ? "retard" : "") + (j.cle ? " cle" : "") + '" style="color:' + (retard ? "var(--dang)" : "var(--acc)") + '"></span>' +
-      '<span class="ln-mid">' + esc(j.titre) + (j.cle ? '<span class="badge acc">clé</span>' : "") +
+      '<span class="ln-mid">' + esc(j.titre) + (j.cle ? '<span class="badge acc">clé</span>' : "") + badgeGo(j) +
       '<span class="ln-m" style="font-weight:400">' + esc(frDate(j.date, true)) + (j.fait ? " · atteint" : retard ? " · en retard de " + diffJ(j.date, auj) + " j" : " · " + relJ(j.date)) + '</span></span>' +
       '<span class="ln-r ' + (retard ? "c-dang" : "") + '">' + (tot.length ? ok + '/' + tot.length : "") + '</span></button>';
     h += tj.map(t => ligneTache(t)).join("");
@@ -1898,17 +1952,18 @@ function ficheRisques(p, a){
       : vide("Aucun risque identifié", "Un risque, c'est ce qui pourrait arriver et faire dérailler le projet : fournisseur en retard, ressource indisponible, dépendance à un autre chantier…"));
 }
 function ligneJournal(e){
-  const ic = e.type === "decision" ? ["ok","check"] : e.type === "probleme" ? ["dang","alerte"] : e.type === "auto" ? ["","horloge"] : ["acc","texte"];
+  const ic = e.type === "decision" ? ["ok","check"] : e.type === "probleme" ? ["dang","alerte"] : e.type === "auto" ? ["","horloge"] : e.type === "reunion" ? ["acc","equipe"] : ["acc","texte"];
   return '<button class="ln" data-act="modifier-point" data-id="' + e.id + '">' +
     '<span class="ln-ic ' + ic[0] + '">' + svg(ic[1], 15, 2) + '</span>' +
     '<span class="ln-mid"><span class="ln-t" style="white-space:pre-wrap' + (e.type === "auto" ? ';font-size:13px;color:var(--gris)' : "") + '">' + esc(e.texte) + '</span>' +
-    '<span class="ln-m">' + esc(frDate(e.date, true) + " · " + (e.type === "auto" ? "automatique" : lib(TYPES_J, e.type))) +
+    '<span class="ln-m">' + esc(frDate(e.date, true) + " · " + (e.type === "auto" ? "automatique" : e.type === "reunion" ? "compte rendu" + ((e.participants || []).length ? " · " + e.participants.length + " participants" : "") : lib(TYPES_J, e.type))) +
       (e.meteo && e.meteo !== "gris" ? ' · <span class="dot ' + e.meteo + '" style="width:7px;height:7px"></span> ' + esc(METEOS[e.meteo].toLowerCase()) : "") + '</span></span></button>';
 }
 function ficheJournal(p, J){
   const f = state.jFiltre || "tout";
   const L = J.filter(e => f === "tout" || (f === "notes" ? e.type !== "auto" : e.type === "auto"));
-  return '<div class="btns"><button class="btn pri" data-act="nouveau-point" data-id="' + p.id + '">' + svg("plus",16,2) + 'Point, décision, problème</button></div>' +
+  return '<div class="btns"><button class="btn pri" data-act="nouveau-point" data-id="' + p.id + '">' + svg("plus",16,2) + 'Point, décision, problème</button>' +
+    (M().reunions ? '<button class="btn" data-act="nouveau-cr" data-id="' + p.id + '">' + svg("equipe",15) + 'Compte rendu de réunion</button>' : "") + '</div>' +
     '<div class="chips" style="margin-bottom:4px">' + [["tout","Tout"],["notes","Mes notes"],["auto","Événements"]].map(([k,l]) =>
       '<button class="chip ' + (f === k ? "on" : "") + '" data-act="j-filtre" data-id="' + k + '">' + l + '</button>').join("") + '</div>' +
     '<div class="aide" style="margin-bottom:6px">Les événements (tâches terminées, jalons, météo, dates) s\'inscrivent automatiquement.</div>' +
@@ -2507,7 +2562,7 @@ MODELES_PROJET.push(
   { id:"m-schema", cat:"Documentation et gouvernance", nom:"Schéma directeur du SI (plan à 3 ans)",
     jalons:[["Diagnostic partagé",30,1],["Feuille de route validée par la direction",80,1],["Présentation au comité de direction",95,1]],
     taches:[["Entretiens avec chaque direction",0,25,0],["État des lieux applications, infrastructure, organisation",10,30,0],
-      ["Attentes métier et stratégie de l'entreprise",20,35,1],["Scénarios et projets candidats",35,55,1],["Chiffrage et priorisation",50,70,1],
+      ["Attentes métier et stratégie de l'entreprise",20,35,1],["Analyse forces, faiblesses, opportunités, menaces (SWOT) du SI",28,38,1],["Scénarios et projets candidats",35,55,1],["Chiffrage et priorisation",50,70,1],
       ["Feuille de route et budget pluriannuel",65,80,1],["Présentation et arbitrages",80,95,2]] },
   { id:"m-budget", cat:"Documentation et gouvernance", nom:"Budget informatique annuel",
     jalons:[["Recensement terminé",40,0],["Budget présenté",80,1],["Budget validé",100,1]],
@@ -2570,7 +2625,8 @@ function appliquerModele(p, mid){
   const dur = Math.max(1, diffJ(p.debut, p.fin)), at = pct => addJ(p.debut, Math.round(dur * pct / 100)), now = Date.now();
   const ids = mo.jalons.map(([titre, pct, cle]) => {
     const id = uid(), d = at(pct);
-    DB.jalons[id] = { id, projet:p.id, titre, date:d, dateBase:d, cle:!!cle, fait:false, note:"", cree:now };
+    DB.jalons[id] = { id, projet:p.id, titre, date:d, dateBase:d, cle:!!cle, fait:false, note:"", cree:now,
+      checklist:M().gonogo && estMEP(titre) ? CHECK_DEFAUT.map(t => ({ t, ok:false })) : [] };
     return id;
   });
   mo.taches.forEach(([titre, a, b, ji, charge]) => {
@@ -2635,6 +2691,11 @@ function vueCloture(m){
     '<div class="duo">' + fChamp("Date de fin réelle", fTxt("date", m.date, "", "date"), "", "m-date") +
       (M().budget ? fChamp("Coût final (€)", fTxt("conso", m.conso, "0", "number"), "", "m-conso") : "") + '</div>' +
     '<div class="aide" style="margin:-4px 0 8px">' + esc(texteStats(st) || "Pas encore d'indicateur.") + '</div>' +
+    (M().cadrage && (cadrageDe(p).objectifs || []).length ? '<div class="champ"><span class="lab">Objectifs du cadrage</span>' +
+      cadrageDe(p).objectifs.map((o, i) => { const r = (m.objRes || [])[i] || o.res || "";
+        return '<div class="obj-l"><span class="obj-t">' + esc(o.t) + '</span><div class="seg">' + RES_OBJ.map(([k, l]) =>
+          '<button type="button" class="' + (r === k ? "on" : "") + '" style="padding:5px 8px;font-size:12px" data-act="m-obj" data-id="' + i + '" data-r="' + k + '">' + l + '</button>').join("") + '</div></div>'; }).join("") +
+      '</div>' : "") +
     (ouvertes && !p.cloture ? '<div class="rappel" style="margin:0 0 8px"><span>' + svg("alerte",16) + '</span><span>' + ouvertes + ' tâche' + pl(ouvertes) + ' non terminée' + pl(ouvertes) + ' : elles resteront telles quelles dans l\'historique.</span></div>' : "") +
     fChamp("Ce qui a été livré", fArea("bilan", m.bilan, "Périmètre livré, bénéfices constatés, ce qui reste hors périmètre…", 3), "", "m-bilan") +
     fChamp("Retour d'expérience", fArea("lecons", m.lecons, "Ce qu'on referait, ce qu'on ne referait pas — utile au prochain projet du même type", 3), "", "m-lecons") +
@@ -2649,7 +2710,8 @@ function enregistrerCloture(){
       ecartJ:p.cloture.stats.finBase ? diffJ(p.cloture.stats.finBase, m.date) : null,
       ecartBudgetPct:p.cloture.stats.budget ? Math.round(conso / p.cloture.stats.budget * 100) - 100 : null }
     : statsCloture(p, m.date, conso);
-  p.cloture = { date:m.date, resultat:m.resultat, bilan:(m.bilan||"").trim(), lecons:(m.lecons||"").trim(), stats };
+  if(p.cadrage && (p.cadrage.objectifs || []).length) p.cadrage.objectifs.forEach((o, i) => { const r = (m.objRes || [])[i]; if(r) o.res = r; });
+  p.cloture = { objectifs:p.cadrage ? copie(p.cadrage.objectifs || []) : [], date:m.date, resultat:m.resultat, bilan:(m.bilan||"").trim(), lecons:(m.lecons||"").trim(), stats };
   p.conso = conso;
   const avant = p.statut;
   p.statut = m.resultat === "abandon" ? "annule" : "termine";
@@ -2674,6 +2736,8 @@ function panneauBilan(p){
         (st.budget ? ' <small style="display:inline">(' + (masque() ? "••" : (st.ecartBudgetPct > 0 ? "+" : "") + st.ecartBudgetPct) + ' %)</small>' : "") + '</span></div>' : "") +
       '<div><small>Réalisé</small><span>' + (st.taches ? st.tachesFaites + "/" + st.taches + " tâches" : "—") + (st.jalons ? " · " + st.jalonsAtteints + "/" + st.jalons + " jalons" : "") + '</span></div>' +
     '</div>' +
+    ((c.objectifs || []).length ? '<ul class="liste-c">' + c.objectifs.map(o => '<li>' + esc(o.t) + (o.res ? ' <span class="badge ' +
+      (o.res === "oui" ? "ok" : o.res === "partiel" ? "att" : "dang") + '">' + esc(lib(RES_OBJ, o.res)) + '</span>' : "") + '</li>').join("") + '</ul>' : "") +
     (c.bilan ? '<div class="desc" style="border-top:1px solid var(--trait2);padding-top:10px"><b style="color:var(--texte);font-weight:600">Livré.</b> ' + esc(c.bilan) + '</div>' : "") +
     (c.lecons ? '<div class="desc"><b style="color:var(--texte);font-weight:600">Retour d\'expérience.</b> ' + esc(c.lecons) + '</div>' : "") +
     '<div class="btns"><button class="btn pt" data-act="rouvrir-projet" data-id="' + p.id + '">Rouvrir le projet</button>' +
@@ -2767,6 +2831,218 @@ function enregistrerRapide(){
 }
 
 /* ============================================================
+   CADRAGE, RÔLES, RÉUNIONS, GO / NO-GO, KANBAN, DÉPENDANCES
+   Six outils de méthode, chacun désactivable dans les réglages, tous
+   branchés sur ce qui existe déjà : rien ne se saisit deux fois.
+   ============================================================ */
+const lignesDe = s => String(s || "").split(/\n/).map(x => x.replace(/^[\s\-•*]+/, "").trim()).filter(Boolean);
+
+/* ---------- note de cadrage ---------- */
+const RUBRIQUES = [
+  ["objectifs", "Objectifs", "Un objectif par ligne, mesurable si possible : « Réduire de moitié les ressaisies de commandes »"],
+  ["perimetre", "Périmètre", "Ce qui est inclus : services, sites, processus, applications"],
+  ["exclu", "Hors périmètre", "Ce qu'on ne fera pas. C'est la rubrique qui évite le plus de malentendus."],
+  ["livrables", "Livrables", "Ce qui sera remis concrètement"],
+  ["criteres", "Critères de succès", "Comment saura-t-on que c'est réussi ?"],
+  ["contraintes", "Contraintes et hypothèses", "Dates imposées, budget plafond, disponibilités, prérequis"]
+];
+const RES_OBJ = [["oui","Atteint"],["partiel","Partiel"],["non","Non atteint"]];
+const cadrageDe = p => p.cadrage || {};
+const rempliR = (c, k) => k === "objectifs" ? (c.objectifs || []).length > 0 : !!String(c[k] || "").trim();
+const completude = p => RUBRIQUES.filter(([k]) => rempliR(cadrageDe(p), k)).length;
+function rentabilite(p){
+  const c = cadrageDe(p), gain = num(c.gain), cout = num(c.cout) || num(p.budget);
+  return gain > 0 && cout > 0 ? { gain, cout, mois:Math.round(cout / gain * 12) } : null;
+}
+function ficheCadrage(p){
+  const c = cadrageDe(p), n = completude(p), mo = M();
+  let h = '<div class="btns"><button class="btn pri" data-act="modifier-cadrage" data-id="' + p.id + '">' + svg("crayon",15) + (n ? "Modifier le cadrage" : "Rédiger le cadrage") + '</button>' +
+    '<button class="btn" data-act="mail-projet" data-id="' + p.id + '" data-m="cadrage">' + svg("mail",15) + 'Envoyer</button></div>' +
+    '<div class="aide">' + n + ' rubrique' + pl(n) + ' sur ' + RUBRIQUES.length + ' renseignée' + pl(n) + '. Dix minutes au lancement ; à la clôture, le bilan reprend les objectifs un par un.</div>';
+  RUBRIQUES.forEach(([k, l]) => {
+    h += '<div class="sect"><h2>' + l + '</h2></div>';
+    if(!rempliR(c, k)){ h += '<div class="desc" style="color:var(--gris2)">À compléter</div>'; return; }
+    if(k === "objectifs") h += '<ul class="liste-c">' + c.objectifs.map(o => '<li>' + esc(o.t) +
+      (o.res ? ' <span class="badge ' + (o.res === "oui" ? "ok" : o.res === "partiel" ? "att" : "dang") + '">' + esc(lib(RES_OBJ, o.res)) + '</span>' : "") + '</li>').join("") + '</ul>';
+    else h += '<div class="desc" style="color:var(--texte)">' + esc(c[k]) + '</div>';
+  });
+  if(mo.budget){
+    const r = rentabilite(p);
+    h += '<div class="sect"><h2>Rentabilité</h2></div>' + (r ? '<div class="infos"><div><small>Gain annuel estimé</small><span>' + eur(r.gain) + '</span></div>' +
+      '<div><small>Coût du projet</small><span>' + eur(r.cout) + '</span></div><div><small>Remboursé en</small><span>' +
+      (masque() ? "••" : r.mois < 24 ? r.mois + " mois" : (Math.round(r.mois / 12 * 10) / 10).toLocaleString("fr-FR") + " ans") + '</span></div></div>'
+      : '<div class="desc" style="color:var(--gris2)">Facultatif : indiquez un gain annuel estimé pour calculer en combien de temps le projet est remboursé.</div>');
+  }
+  if(mo.dependances) h += blocDependances(p);
+  return h;
+}
+function vueCadrage(m){
+  const mo = M(), autres = V(DB.projets).filter(x => x.id !== m.id && !estArchive(x)).sort((a,b) => cmp(norm(a.nom), norm(b.nom)));
+  return '<h3>Note de cadrage</h3><div class="sous">' + esc(nomProjet(m.id)) + '</div>' +
+    RUBRIQUES.map(([k, l, ph]) => fChamp(l, fArea(k, m[k], ph, k === "objectifs" || k === "perimetre" ? 3 : 2), "", "m-" + k)).join("") +
+    (mo.budget ? '<div class="duo">' + fChamp("Gain annuel estimé (€)", fTxt("gain", m.gain, "0", "number"), "Économies, temps gagné valorisé, chiffre d'affaires.", "m-gain") +
+      fChamp("Coût total (€)", fTxt("cout", m.cout, "budget du projet", "number"), "Laisser vide pour reprendre le budget.", "m-cout") + '</div>' : "") +
+    (mo.dependances && autres.length ? fChamp("Dépend de", '<div class="chipsw">' + autres.map(x =>
+      '<button type="button" class="chip ' + ((m.depend || []).includes(x.id) ? "on" : "") + '" data-act="m-toggle" data-k="depend" data-id="' + x.id + '">' + esc(x.nom) + '</button>').join("") + '</div>',
+      "Les projets qui doivent avancer avant celui-ci. S'ils dérapent, ce projet est signalé.") : "") +
+    piedModal("Enregistrer", "enregistrer-cadrage");
+}
+function mCadrage(p){
+  const c = cadrageDe(p), m = { type:"cadrage", id:p.id, depend:(p.depend || []).slice(), gain:c.gain ? String(c.gain) : "", cout:c.cout ? String(c.cout) : "", focus:"m-objectifs" };
+  RUBRIQUES.forEach(([k]) => { m[k] = k === "objectifs" ? (c.objectifs || []).map(o => o.t).join("\n") : (c[k] || ""); });
+  return m;
+}
+function enregistrerCadrage(){
+  capturerModal();
+  const m = state.modal, p = DB.projets[m.id]; if(!p) return fermerModal();
+  const anc = cadrageDe(p), avant = (anc.objectifs || []);
+  const c = { gain:num(m.gain), cout:num(m.cout) };
+  RUBRIQUES.forEach(([k]) => {
+    if(k === "objectifs") c.objectifs = lignesDe(m.objectifs).map(t => ({ t, res:(avant.find(o => o.t === t) || {}).res || "" }));
+    else c[k] = String(m[k] || "").trim();
+  });
+  const neuf = !completude(p);
+  p.cadrage = c; p.depend = (m.depend || []).filter(id => DB.projets[id]); touche(p.id);
+  if(neuf) evenement(p.id, "Note de cadrage rédigée");
+  state.modal = null; sauver(); render(); toast("Cadrage enregistré");
+}
+function blocDependances(p){
+  const dep = (p.depend || []).map(id => DB.projets[id]).filter(Boolean);
+  const inv = V(DB.projets).filter(x => (x.depend || []).includes(p.id) && !estArchive(x));
+  if(!dep.length && !inv.length) return "";
+  const ligne = (x, sens) => { const a = an(x);
+    return '<button class="ln" data-act="ouvrir-projet" data-id="' + x.id + '"><span class="dot ' + a.meteo + '" style="margin-top:6px"></span>' +
+      '<span class="ln-mid"><span class="ln-t">' + esc(x.nom) + '</span><span class="ln-m">' + sens + ' · fin ' + esc(frDate(x.fin, true)) +
+      (a.joursRetard ? " · dépassée de " + a.joursRetard + " j" : a.glissement > 0 ? " · décalée de " + a.glissement + " j" : "") + '</span></span>' +
+      '<span class="ln-r">' + a.avance + ' %</span></button>'; };
+  return '<div class="sect"><h2>Dépendances</h2></div>' + dep.map(x => ligne(x, "doit avancer avant")).join("") + inv.map(x => ligne(x, "attend ce projet")).join("");
+}
+
+/* ---------- rôles (RACI) ---------- */
+const ROLES = [["R","Réalise"],["A","Décide"],["C","Consulté"],["I","Informé"]];
+function panneauRaci(p){
+  const ids = gensDuProjet(p);
+  if(!ids.length) return "";
+  const r = p.raci || {};
+  return '<div class="pan"><div class="sect"><h2>Qui fait quoi</h2><span class="cnt">RACI</span></div>' +
+    ids.map(id => '<div class="ln" style="align-items:center;padding:8px 2px"><span class="ln-mid"><span class="ln-t">' + esc(nomP(id)) + '</span>' +
+      '<span class="ln-m">' + esc((DB.personnes[id] || {}).service || "") + (id === p.chef ? " · chef de projet" : "") + '</span></span>' +
+      '<div class="seg">' + ROLES.map(([k, l]) => '<button class="' + (r[id] === k ? "on" : "") + '" style="padding:5px 8px;font-size:12px" data-act="raci-set" data-id="' + p.id + '" data-p="' + id + '" title="' + l + '">' + k + '</button>').join("") + '</div></div>').join("") +
+    '<div class="aide">R réalise · A décide et valide · C est consulté · I est informé. Dans les mails, les personnes « I » passent en copie.</div></div>';
+}
+
+/* ---------- comptes rendus de réunion ---------- */
+const TYPES_R = [["copil","COPIL"],["point","Point projet"],["atelier","Atelier"],["lancement","Lancement"]];
+function mReunion(pid, e){
+  if(e) return { type:"cr", id:e.id, projet:e.projet, genre:e.genre || "point", date:e.date, participants:(e.participants || []).slice(), points:e.points || "", fige:true };
+  const p = DB.projets[pid];
+  return { type:"cr", projet:pid, genre:"point", date:todayISO(), participants:p ? gensDuProjet(p) : [], points:"", decisions:"", actions:"", focus:"m-points" };
+}
+function vueCR(m){
+  const p = DB.projets[m.projet], e = m.id ? DB.journal[m.id] : null;
+  const gens = p ? gensDuProjet(p) : [];
+  (m.participants || []).forEach(id => { if(!gens.includes(id) && DB.personnes[id]) gens.push(id); });
+  const actions = e ? (e.actions || []).map(id => DB.taches[id]).filter(Boolean) : [];
+  return '<h3>Compte rendu de réunion</h3><div class="sous">' + esc(p ? p.nom : "") + '</div>' +
+    fChamp("Réunion", fSeg("genre", m.genre, TYPES_R)) +
+    fChamp("Date", fTxt("date", m.date, "", "date"), "", "m-date") +
+    (gens.length ? fChamp("Participants", '<div class="chipsw">' + gens.map(id => '<button type="button" class="chip ' + ((m.participants || []).includes(id) ? "on" : "") +
+      '" data-act="m-toggle" data-k="participants" data-id="' + id + '">' + esc(nomP(id)) + '</button>').join("") + '</div>') : "") +
+    fChamp("Points abordés", fArea("points", m.points, "Ce qui s'est dit, en quelques lignes", 4), "", "m-points") +
+    (!m.fige ?
+      fChamp("Décisions", fArea("decisions", m.decisions, "Une décision par ligne", 3), "Chacune rejoint le journal du projet comme décision.", "m-decisions") +
+      fChamp("Actions", fArea("actions", m.actions, "Relancer le fournisseur @karim 15/10\nValider les maquettes @julie", 3),
+        "Une action par ligne, avec <b>@nom</b> et <b>date</b> comme dans l'ajout rapide. Chacune devient une tâche du projet (échéance à 14 jours par défaut).", "m-actions") +
+      '<div id="apercu-cr">' + apercuActionsCR(m) + '</div>'
+      : (e && (e.decisions || []).length ? '<div class="sect"><h2>Décisions</h2></div><ul class="liste-c">' + e.decisions.map(d => '<li>' + esc(d) + '</li>').join("") + '</ul>' : "") +
+        (actions.length ? '<div class="sect"><h2>Actions</h2></div>' + actions.map(t => ligneTache(t)).join("") : "")) +
+    (m.fige ?
+      '<div class="btns" style="margin:18px 0 0"><button class="btn dang" data-act="supprimer-point" data-id="' + m.id + '">Supprimer le compte rendu</button></div>' +
+      '<div class="btns grow" style="margin:14px 0 0"><button class="btn" data-act="enregistrer-cr">Enregistrer</button><button class="btn pri" data-act="enregistrer-cr" data-id="mail">' + svg("mail",15) + 'Envoyer par mail</button></div>'
+      : '<div class="btns grow" style="margin:18px 0 0"><button class="btn" data-act="fermer-modal">Annuler</button><button class="btn" data-act="enregistrer-cr">Enregistrer</button>' +
+        '<button class="btn pri" data-act="enregistrer-cr" data-id="mail">' + svg("mail",15) + 'Enregistrer et envoyer</button></div>');
+}
+function apercuActionsCR(m){
+  const L = String(m.actions || "").split(/\n/).map(lireLigneRapide).filter(x => x.titre);
+  if(!L.length) return "";
+  const def = addJ(m.date || todayISO(), 14);
+  return '<div class="aide" style="margin-top:-4px">' + L.length + ' tâche' + pl(L.length) + ' à créer : ' +
+    esc(L.map(x => x.titre + " (" + (nomP(x.resp) || "non attribuée") + ", " + frDate(x.fin || def) + ")").join(" ; ")) + '</div>';
+}
+function enregistrerCR(envoyer){
+  capturerModal();
+  const m = state.modal, p = DB.projets[m.projet]; if(!p) return fermerModal();
+  const date = m.date || todayISO(), gl = lib(TYPES_R, m.genre);
+  let e = m.id ? DB.journal[m.id] : null;
+  if(!e){
+    const decs = lignesDe(m.decisions);
+    const acts = String(m.actions || "").split(/\n/).map(lireLigneRapide).filter(x => x.titre);
+    const ids = acts.map(x => {
+      const id = uid(), fin = x.fin || addJ(date, 14);
+      DB.taches[id] = { id, projet:p.id, titre:x.titre, resp:x.resp, jalon:"", debut:date < fin ? date : fin, fin, statut:"afaire", avance:0,
+        charge:x.charge, conso:0, motif:"", note:gl + " du " + frDate(date, true), cree:Date.now(), faitLe:"" };
+      return id;
+    });
+    decs.forEach(d => { const id = uid(); DB.journal[id] = { id, projet:p.id, type:"decision", date, texte:d, meteo:an(p).meteo, cree:Date.now() }; });
+    e = { id:uid(), projet:p.id, type:"reunion", cree:Date.now(), decisions:decs, actions:ids, meteo:an(p).meteo };
+    DB.journal[e.id] = e;
+  }
+  Object.assign(e, { genre:m.genre, date, participants:(m.participants || []).filter(id => DB.personnes[id]), points:String(m.points || "").trim() });
+  e.texte = gl + " du " + frDate(date, true) + " : " + (e.decisions || []).length + " décision" + pl((e.decisions || []).length) + ", " +
+    (e.actions || []).length + " action" + pl((e.actions || []).length);
+  touche(p.id); sauver();
+  if(envoyer){ state.modal = mMail("cr", { projet:p.id, reunion:e.id }); render(); return; }
+  state.modal = null; render(); toast("Compte rendu enregistré");
+}
+
+/* ---------- checklist Go / No-Go ---------- */
+const CHECK_DEFAUT = ["Recette signée par les utilisateurs clés", "Sauvegarde complète faite et restauration testée", "Plan de retour arrière prêt",
+  "Utilisateurs et services prévenus (date, durée de coupure)", "Support renforcé organisé (qui, quand)", "Éditeur ou prestataire disponible le jour J",
+  "Accès, licences et droits vérifiés", "Modes opératoires et documentation à jour"];
+const estMEP = t => /production|bascule|démarrage|mise en service|go.?live|déploiement terminé|généralisation|mise en ligne/i.test(t || "");
+const checkOk = j => (j.checklist || []).filter(c => c.ok).length;
+function badgeGo(j){
+  if(!M().gonogo) return "";
+  if(j.go === "go") return '<span class="badge ok">GO</span>';
+  if(j.go === "nogo") return '<span class="badge dang">NO-GO</span>';
+  const n = (j.checklist || []).length; if(!n) return "";
+  return '<span class="badge ' + (checkOk(j) === n ? "ok" : "att") + '">Go / No-Go ' + checkOk(j) + '/' + n + '</span>';
+}
+function blocChecklist(m){
+  const L = m.checklist || [];
+  if(!L.length) return '<div class="champ"><button type="button" class="btn pt" data-act="m-check-defaut">' + svg("check",14,2) + 'Ajouter la checklist Go / No-Go</button>' +
+    '<div class="aide">Huit points à vérifier avant une mise en production ou une bascule. Chaque point reste modifiable.</div></div>';
+  const ok = L.filter(c => c.ok).length;
+  return '<div class="champ"><span class="lab">Checklist Go / No-Go · ' + ok + '/' + L.length + '</span>' +
+    L.map((c, i) => '<div class="chk' + (c.ok ? " on" : "") + '"><button type="button" class="chk-b" data-act="m-check" data-id="' + i + '" aria-label="Cocher">' + (c.ok ? svg("check",13,3) : "") + '</button>' +
+      '<span class="chk-t">' + esc(c.t) + '</span><button type="button" class="chk-x" data-act="m-check-del" data-id="' + i + '" aria-label="Retirer">' + svg("croix",13,2) + '</button></div>').join("") +
+    '<div style="display:flex;gap:8px;margin-top:8px"><input type="text" id="m-newcheck" placeholder="Autre point à vérifier" autocomplete="off"><button type="button" class="btn pt" data-act="m-check-add">Ajouter</button></div></div>' +
+    fChamp("Décision", fSeg("go", m.go || "", [["","En attente"],["go","Go"],["nogo","No-Go"]], k => k === "go" ? "m-vert" : k === "nogo" ? "m-rouge" : ""),
+      ok < L.length && m.go === "go" ? '<span class="c-att">Attention : ' + (L.length - ok) + ' point' + pl(L.length - ok) + ' non validé' + pl(L.length - ok) + '.</span>' : "");
+}
+
+/* ---------- tableau Kanban ---------- */
+function ficheKanban(p, a){
+  const auj = todayISO();
+  const cols = STATUTS_T.map(([k, l]) => {
+    let T = a.T.filter(t => t.statut === k).sort((x,y) => cmp(x.fin || "9999", y.fin || "9999"));
+    const tot = T.length;
+    if(k === "fait") T = T.sort((x,y) => cmp(y.faitLe || "", x.faitLe || "")).slice(0, 12);
+    return '<div class="kb-col" data-col="' + k + '"><div class="kb-h"><span class="st ' + k + '" style="width:16px;height:16px;flex-basis:16px;border-width:2px"></span>' + l + '<span class="cnt">' + tot + '</span></div>' +
+      T.map(t => {
+        const retard = t.statut !== "fait" && t.fin && t.fin < auj, j = DB.jalons[t.jalon];
+        return '<div class="kb-card' + (retard ? " retard" : "") + '" draggable="true" data-tache="' + t.id + '">' +
+          '<button class="st ' + t.statut + '" data-act="cycle-tache" data-id="' + t.id + '" aria-label="Avancer">' + (t.statut === "fait" ? svg("check", 12, 3) : t.statut === "bloque" ? '<b style="font-size:12px">!</b>' : "") + '</button>' +
+          '<button class="kb-x" data-act="modifier-tache" data-id="' + t.id + '"><span class="kb-t">' + esc(t.titre) + '</span>' +
+          '<span class="kb-m">' + esc([nomP(t.resp) || "non attribuée", t.fin ? relJ(t.fin) : ""].filter(Boolean).join(" · ")) + '</span>' +
+          (j ? '<span class="kb-m">◆ ' + esc(j.titre) + '</span>' : "") +
+          (t.statut === "bloque" && t.motif ? '<span class="kb-m c-dang">' + esc(t.motif) + '</span>' : "") + '</button></div>';
+      }).join("") + (k === "fait" && tot > 12 ? '<div class="aide">… et ' + (tot - 12) + ' autres</div>' : "") + '</div>';
+  }).join("");
+  return '<div class="kb">' + cols + '</div><div class="aide">Faites glisser une carte d\'une colonne à l\'autre, ou touchez son rond pour la faire avancer.</div>';
+}
+
+/* ============================================================
    MAILS
    Le contenu part avec sa mise en forme (HTML dans le presse-papiers) : on
    le colle dans Outlook ou Gmail et les titres, les listes et les pastilles
@@ -2776,7 +3052,7 @@ function enregistrerRapide(){
 /* Dans ce qui part vers l'extérieur (mails, rapport, CSV), le tiret long
    devient un tiret simple : plus sobre, plus proche d'un mail écrit à la main. */
 const tiret = x => String(x == null ? "" : x).replace(/—/g, "-");
-const MODELES = { point:"Point d'avancement", odj:"Ordre du jour", relance:"Relance", synthese:"Synthèse direction" };
+const MODELES = { point:"Point d'avancement", odj:"Ordre du jour", cadrage:"Cadrage", cr:"Compte rendu", relance:"Relance", synthese:"Synthèse direction" };
 const COUL = { vert:"#0B6B45", orange:"#B3701E", rouge:"#B32424", gris:"#888888", info:"#888888" };
 const EMOJI = { vert:"🟢", orange:"🟠", rouge:"🔴", gris:"⚪", info:"⚪" };
 const prenom = n => String(n || "").trim().split(/\s+/)[0] || "";
@@ -2794,7 +3070,7 @@ function candidatsMail(m){
   return V(DB.personnes).filter(pe => pe.email).sort((a,b) => cmp(norm(a.nom), norm(b.nom))).map(pe => pe.id);
 }
 function mMail(modele, ctx){
-  const m = { type:"mail", projet:ctx.projet || "", personne:ctx.personne || "", periode:"14", risques:M().risques };
+  const m = { type:"mail", projet:ctx.projet || "", personne:ctx.personne || "", reunion:ctx.reunion || "", periode:"14", risques:M().risques };
   changerModele(m, modele);
   return m;
 }
@@ -2803,17 +3079,29 @@ function changerModele(m, modele){
   const moi = DB.settings.moi;
   m.dest = {};
   if(modele === "relance"){ if(m.personne) m.dest[m.personne] = "to"; }
-  else if(m.projet && DB.projets[m.projet]) gensDuProjet(DB.projets[m.projet]).forEach(id => { if(id !== moi && emailDe(id)) m.dest[id] = "to"; });
+  else if(m.projet && DB.projets[m.projet]){
+    const pp = DB.projets[m.projet], raci = M().raci ? (pp.raci || {}) : {}, e = DB.journal[m.reunion];
+    const presents = modele === "cr" && e ? new Set(e.participants || []) : null;
+    gensDuProjet(pp).forEach(id => {
+      if(id === moi || !emailDe(id)) return;
+      m.dest[id] = presents ? (presents.has(id) ? "to" : "cc") : raci[id] === "I" ? "cc" : "to";
+    });
+  }
   m.autres = modele === "synthese" ? (DB.settings.mailDirection || "") : "";
   m.budget = modele === "synthese" && M().budget;
   const p = DB.projets[m.projet], pe = DB.personnes[m.personne], auj = frDate(todayISO(), true);
   const ref = p ? (p.code ? "[" + p.code + "] " : "") + p.nom : "";
-  m.objet = modele === "point" ? ref + " — point d'avancement du " + auj :
+  const eR = DB.journal[m.reunion];
+  m.objet = modele === "cadrage" ? ref + " — note de cadrage" :
+    modele === "cr" ? ref + " — compte rendu " + (eR ? lib(TYPES_R, eR.genre).replace("Point projet", "du point projet").replace(/^(COPIL|Atelier|Lancement)$/, "$1") + " du " + frDate(eR.date, true) : "de réunion") :
+    modele === "point" ? ref + " — point d'avancement du " + auj :
     modele === "odj" ? ref + " — ordre du jour du point projet" :
     modele === "relance" ? "Vos actions projets — point du " + auj :
     "Point portefeuille projets" + (DB.settings.organisation ? " " + DB.settings.organisation : "") + " — " + auj;
   m.objet = tiret(m.objet);
-  m.intro = modele === "point" ? "Bonjour à tous,\n\nVoici le point d'avancement du projet « " + (p ? p.nom : "") + " »." :
+  m.intro = modele === "cadrage" ? "Bonjour à tous,\n\nVoici la note de cadrage du projet « " + (p ? p.nom : "") + " ». Merci de me faire part de vos remarques." :
+    modele === "cr" ? "Bonjour à tous,\n\nVoici le compte rendu de notre réunion" + (eR ? " du " + frDate(eR.date, true) : "") + " sur le projet « " + (p ? p.nom : "") + " »." :
+    modele === "point" ? "Bonjour à tous,\n\nVoici le point d'avancement du projet « " + (p ? p.nom : "") + " »." :
     modele === "odj" ? "Bonjour à tous,\n\nVoici l'ordre du jour de notre prochain point sur le projet « " + (p ? p.nom : "") + " ». N'hésitez pas à me faire part des sujets à ajouter." :
     modele === "relance" ? "Bonjour " + prenom(pe && pe.nom) + ",\n\nVoici les actions projets qui vous sont confiées et qui arrivent à échéance. Pouvez-vous me faire un retour sur leur avancement et me signaler tout blocage ?" :
     "Bonjour,\n\nVoici la synthèse du portefeuille de projets au " + auj + ".";
@@ -2847,7 +3135,40 @@ function blocSynthese(p, a, m){
 function contenuMail(m){
   const n = [], auj = todayISO(), p = DB.projets[m.projet];
   const H = t => n.push({ k:"h", t }), LI = (t, c, sub) => n.push({ k:"li", t, c, sub });
-  if((m.modele === "point" || m.modele === "odj") && p){
+  if(m.modele === "cadrage" && p){
+    const c = cadrageDe(p);
+    RUBRIQUES.forEach(([k, l]) => {
+      if(!rempliR(c, k)) return;
+      H(l);
+      if(k === "objectifs") c.objectifs.forEach(o => LI(o.t)); else lignesDe(c[k]).forEach(x => LI(x));
+    });
+    n.push({ k:"kv", l:"Début", v:frDate(p.debut, true) }); n.push({ k:"kv", l:"Fin prévue", v:frDate(p.fin, true) });
+    if(nomP(p.chef)) n.push({ k:"kv", l:"Chef de projet", v:nomP(p.chef) });
+    if(p.sponsor) n.push({ k:"kv", l:"Sponsor", v:p.sponsor });
+    const rb = rentabilite(p);
+    if(m.budget && rb){ n.push({ k:"kv", l:"Budget", v:eur(rb.cout) }); n.push({ k:"kv", l:"Gain annuel estimé", v:eur(rb.gain) }); n.push({ k:"kv", l:"Remboursé en", v:rb.mois + " mois" }); }
+    if(M().raci && p.raci && Object.keys(p.raci).length){
+      H("Rôles");
+      ROLES.forEach(([k, l]) => { const qui = Object.keys(p.raci).filter(id => p.raci[id] === k && DB.personnes[id]).map(nomP); if(qui.length) LI(l + " : " + qui.join(", ")); });
+    }
+  }
+  else if(m.modele === "cr" && p){
+    const e = DB.journal[m.reunion];
+    if(e){
+      if((e.participants || []).length) n.push({ k:"kv", l:"Participants", v:e.participants.filter(id => DB.personnes[id]).map(nomP).join(", ") });
+      n.push({ k:"kv", l:"Date", v:frDate(e.date, true) });
+      if(e.points){ H("Points abordés"); n.push({ k:"p", t:e.points }); }
+      if((e.decisions || []).length){ H("Décisions"); e.decisions.forEach(d => LI(d, "vert")); }
+      const acts = (e.actions || []).map(id => DB.taches[id]).filter(Boolean);
+      if(acts.length){ H("Actions"); acts.forEach(t => LI(t.titre + " : " + (nomP(t.resp) || "non attribuée") + ", pour le " + frDate(t.fin, true) + (t.statut === "fait" ? " (fait)" : ""), t.statut === "fait" ? "vert" : "")); }
+      const a = an(p);
+      H("Où en est le projet");
+      n.push({ k:"kv", l:"Météo", v:METEOS[a.meteo], c:a.meteo }); n.push({ k:"kv", l:"Avancement", v:a.avance + " %" });
+      const jal = a.J.filter(j => !j.fait).slice(0, 2);
+      if(jal.length) n.push({ k:"kv", l:"Prochain" + (jal.length > 1 ? "s" : "") + " jalon" + (jal.length > 1 ? "s" : ""), v:jal.map(j => j.titre + " (" + frDate(j.date) + ")").join(", ") });
+    }
+  }
+  else if((m.modele === "point" || m.modele === "odj") && p){
     const a = an(p), per = num(m.periode) || 14, dep = addJ(auj, -per);
     const bloq = a.T.filter(t => t.statut === "bloque");
     const retard = a.T.filter(t => t.statut !== "fait" && t.statut !== "bloque" && t.fin && t.fin < auj);
@@ -2942,7 +3263,7 @@ function rendreMail(m){
   const tx = [];
   if(intro) tx.push(intro, "");
   n.forEach((x, i) => {
-    if(x.k === "h"){ if(i) tx.push(""); tx.push(x.t.toUpperCase()); }
+    if(x.k === "h"){ if(i && tx[tx.length - 1] !== "") tx.push(""); tx.push(x.t.toUpperCase()); }
     else if(x.k === "p") tx.push(x.t, "");
     else if(x.k === "kv") tx.push((x.c && EMOJI[x.c] ? EMOJI[x.c] + " " : "") + x.l + " : " + x.v);
     else tx.push((x.c && EMOJI[x.c] ? EMOJI[x.c] + " " : "• ") + x.t + (x.sub ? "\n   " + x.sub : ""));
@@ -3001,7 +3322,7 @@ async function envoyerMail(act){
 function vueMail(m){
   const r = rendreMail(m), cands = candidatsMail(m), mo = M();
   const p = DB.projets[m.projet], pe = DB.personnes[m.personne];
-  const modeles = p ? ["point", "odj"] : [m.modele];
+  const modeles = p ? ["point", "odj"].concat(mo.cadrage ? ["cadrage"] : [], m.reunion ? ["cr"] : []) : [m.modele];
   const sansMail = cands.filter(id => !emailDe(id));
   const { to, cc } = adressesMail(m);
   return '<h3>Préparer un mail</h3><div class="sous">' + esc(p ? p.nom : pe ? pe.nom : "Portefeuille · " + resumeFiltres()) + '</div>' +
@@ -3077,6 +3398,12 @@ function vueReglages(){
     mod("budget", "Budget", "Budget prévu, consommé, projection à terminaison, masquage des montants.") +
     mod("charge", "Charge en jours-homme", "Charge prévue et consommée par tâche, charge des personnes sur 4 semaines.") +
     mod("risques", "Matrice des risques", "Registre probabilité × impact, plans d'action, onglet Risques.") +
+    mod("cadrage", "Note de cadrage", "Objectifs, périmètre, hors périmètre, livrables, critères de succès, rentabilité. Repris à la clôture.") +
+    mod("raci", "Rôles (RACI)", "Qui réalise, décide, est consulté ou informé. Les « informés » passent en copie des mails.") +
+    mod("reunions", "Comptes rendus de réunion", "Décisions au journal, actions transformées en tâches, compte rendu prêt à envoyer.") +
+    mod("gonogo", "Checklist Go / No-Go", "Points à vérifier avant chaque mise en production, et décision tracée.") +
+    mod("kanban", "Tableau Kanban des tâches", "Colonnes à faire, en cours, bloqué, fait, par glisser-déposer.") +
+    mod("dependances", "Dépendances entre projets", "Signale un projet quand celui dont il dépend dérape.") +
     mod("valeur", "Matrice valeur / effort", "Classe les projets en gains rapides, projets majeurs, opportunités, à questionner.") +
     '</div></div>';
   h += '<div class="bloc"><div class="bloc-h">Apparence</div><div class="bloc-b">' +
@@ -3229,6 +3556,7 @@ function vueModal(m){
         (m.id ? fChamp("Date initiale", fTxt("dateBase", m.dateBase, "", "date"), "", "m-dateBase") : "") + '</div>' +
       fBool("cle", m.cle, "Jalon clé / bloquant", "Son retard met le projet en rouge et il ressort dans le rapport direction.") +
       fBool("fait", m.fait, "Atteint", "") +
+      (M().gonogo && (estMEP(m.titre) || (m.checklist || []).length || m.cle) ? blocChecklist(m) : "") +
       fChamp("Note", fArea("note", m.note, "Facultatif", 2), "", "m-note") +
       piedModal(m.id ? "Enregistrer" : "Ajouter", "enregistrer-jalon",
         m.id ? '<button class="btn dang wide" data-act="supprimer-jalon" data-id="' + m.id + '">Supprimer le jalon</button>' : "");
@@ -3275,6 +3603,8 @@ function vueModal(m){
   else if(m.type === "mail") c = vueMail(m);
   else if(m.type === "cloture") c = vueCloture(m);
   else if(m.type === "rapide") c = vueRapide(m);
+  else if(m.type === "cadrage") c = vueCadrage(m);
+  else if(m.type === "cr") c = vueCR(m);
   else if(m.type === "services"){
     const S = DB.settings.services;
     c = '<h3>Services</h3><div class="sous">Les services avec qui vous travaillez, et leur responsable : il devient automatiquement le sponsor des projets que le service demande.</div>' +
@@ -3345,7 +3675,7 @@ function mTache(t, pid){
     fin:p && p.fin && p.fin < addJ(auj, 14) ? p.fin : addJ(auj, 14), statut:"afaire", avance:"0", charge:"", conso:"", motif:"", note:"", focus:"m-titre" };
 }
 function mJalon(j, pid){
-  if(j) return { type:"jalon", ...copie(j), fixe:false };
+  if(j) return { type:"jalon", ...copie(j), checklist:copie(j.checklist || []), go:j.go || "", fixe:false };
   return { type:"jalon", projet:pid || "", fixe:!!pid, titre:"", date:addJ(todayISO(), 30), cle:false, fait:false, note:"", focus:"m-titre" };
 }
 function mRisque(r, pid){
@@ -3447,11 +3777,13 @@ function enregistrerJalon(){
   const neuf = !m.id;
   const j = neuf ? { id:uid(), cree:Date.now() } : DB.jalons[m.id];
   if(!j) return fermerModal();
-  const avFait = !!j.fait, avDate = j.date;
+  const avFait = !!j.fait, avDate = j.date, avGo = j.go || "";
   Object.assign(j, { titre, projet:m.projet, date:m.date, cle:!!m.cle, fait:!!m.fait, note:(m.note||"").trim() });
   j.dateBase = neuf ? m.date : (m.dateBase || m.date);
   j.atteintLe = j.fait ? (j.atteintLe || todayISO()) : "";
   DB.jalons[j.id] = j; touche(j.projet);
+  j.checklist = (m.checklist || []).filter(c => c.t); j.go = m.go || "";
+  if(j.go !== avGo && j.go) evenement(j.projet, (j.go === "go" ? "Décision GO" : "Décision NO-GO") + " pour « " + j.titre + " » (" + checkOk(j) + "/" + j.checklist.length + " points validés)");
   if(j.fait && !avFait) evenement(j.projet, "Jalon atteint : " + j.titre);
   if(!neuf && avDate && avDate !== j.date) evenement(j.projet, "Jalon « " + j.titre + " » déplacé du " + frDate(avDate) + " au " + frDate(j.date) +
     " (" + (diffJ(avDate, j.date) > 0 ? "+" : "") + diffJ(avDate, j.date) + " j)");
@@ -3686,6 +4018,29 @@ function exemple(){
     stats:{ finBase:J(-45), finPrevue:J(-30), finReelle:J(-30), ecartJ:15, budget:30000, conso:28500, ecartBudgetPct:-5, chargePrev:40, chargeConso:44, avance:100,
       taches:8, tachesFaites:8, jalons:3, jalonsAtteints:3, jalonsATemps:2, risques:2 } };
   pt(erp, J(-30), "auto", "Projet clôturé — objectifs atteints", "");
+  // Outils de méthode, pour que chaque module ait de quoi se montrer.
+  DB.projets[sirh].cadrage = {
+    objectifs:[{ t:"Supprimer les ressaisies entre les temps et la paie", res:"" }, { t:"Donner aux managers l'accès aux absences de leur équipe", res:"" },
+      { t:"Produire la DSN sans retraitement manuel", res:"" }],
+    perimetre:"Paie, gestion des temps et absences, portail salarié, pour les 250 salariés des deux sites.",
+    exclu:"Recrutement et entretiens annuels : ils feront l'objet d'une seconde phase.",
+    livrables:"Logiciel paramétré, données reprises sur 3 ans, salariés et managers formés, procédures de paie.",
+    criteres:"Deux paies à blanc sans écart, bascule en janvier, 90 % des demandes d'absence faites en ligne au bout de trois mois.",
+    contraintes:"Démarrage impératif au 1er janvier. Équipe RH peu disponible en période d'entretiens annuels.",
+    gain:45000, cout:0 };
+  DB.projets[m365].raci = { [pers.julie]:"A", [pers.karim]:"R", [pers.sophie]:"R" };
+  const bascule = V(DB.jalons).find(j => j.projet === m365 && j.titre === "Bascule complète");
+  if(bascule) bascule.checklist = CHECK_DEFAUT.map((t, i) => ({ t, ok:i < 3 }));
+  const livr = V(DB.jalons).find(j => j.projet === pc && j.titre === "Livraison du matériel");
+  const cr = uid();
+  const act = uid();
+  DB.taches[act] = { id:act, projet:pc, titre:"Obtenir une date ferme de livraison du lot 2", resp:pers.julie, jalon:livr ? livr.id : "", debut:J(-3), fin:J(2),
+    statut:"encours", avance:30, charge:0.5, conso:0, motif:"", note:"COPIL du " + frDate(J(-3), true), cree:now, faitLe:"" };
+  DB.journal[cr] = { id:cr, projet:pc, type:"reunion", genre:"copil", date:J(-3), participants:[pers.julie, pers.sophie, pers.lucas],
+    points:"Lot 2 toujours pas livré. Site A presque terminé. Le budget dérape à cause des frais de stockage.",
+    decisions:["Relancer le fournisseur par écrit, avec copie au directeur industriel"], actions:[act], meteo:"rouge", cree:now,
+    texte:"COPIL du " + frDate(J(-3), true) + " : 1 décision, 1 action" };
+  pt(pc, J(-3), "decision", "Relancer le fournisseur par écrit, avec copie au directeur industriel", "rouge");
   if(!DB.settings.organisation) DB.settings.organisation = "DSI";
   DB.settings.respServices = { "Direction":"Direction générale", "DSI":"Responsable informatique", "Finance":"DAF", "RH":"DRH",
     "Production":"Directeur industriel", "Commercial":"Directeur commercial", "Logistique":"Responsable logistique", ...(DB.settings.respServices || {}) };
@@ -3740,7 +4095,26 @@ document.addEventListener("click", async ev => {
   if(act === "modifier-jalon" && DB.jalons[id]) return ouvrirModal(mJalon(DB.jalons[id]));
   if(act === "modifier-risque" && DB.risques[id]) return ouvrirModal(mRisque(DB.risques[id]));
   if(act === "modifier-personne" && DB.personnes[id]) return ouvrirModal(mPersonne(DB.personnes[id]));
-  if(act === "modifier-point" && DB.journal[id]) return ouvrirModal(mPoint(DB.journal[id]));
+  if(act === "modifier-point" && DB.journal[id]) return ouvrirModal(DB.journal[id].type === "reunion" ? mReunion(null, DB.journal[id]) : mPoint(DB.journal[id]));
+  if(act === "modifier-cadrage" && DB.projets[id]) return ouvrirModal(mCadrage(DB.projets[id]));
+  if(act === "enregistrer-cadrage") return enregistrerCadrage();
+  if(act === "nouveau-cr") return ouvrirModal(mReunion(id));
+  if(act === "enregistrer-cr") return enregistrerCR(id === "mail");
+  if(act === "raci-set"){
+    const p = DB.projets[id]; if(!p) return;
+    p.raci = p.raci || {}; const pe = el.dataset.p, r = el.dataset.r || el.textContent.trim();
+    if(p.raci[pe] === r) delete p.raci[pe]; else p.raci[pe] = r;
+    sauver(); render(); return;
+  }
+  if(act === "t-vue"){ DB.settings.tVue = id; sauver(true); render(); return; }
+  if(act === "m-check-defaut"){ capturerModal(); state.modal.checklist = CHECK_DEFAUT.map(t => ({ t, ok:false })); majModal(); return; }
+  if(act === "m-check"){ capturerModal(); const c = state.modal.checklist[Number(id)]; if(c) c.ok = !c.ok; majModal(); return; }
+  if(act === "m-check-del"){ capturerModal(); state.modal.checklist.splice(Number(id), 1); majModal(); return; }
+  if(act === "m-check-add"){
+    capturerModal(); const i = $("#m-newcheck"), v = (i && i.value || "").trim(); if(!v) return;
+    state.modal.checklist = (state.modal.checklist || []).concat([{ t:v, ok:false }]); state.modal.focus = "m-newcheck"; majModal(); return;
+  }
+  if(act === "m-obj"){ capturerModal(); state.modal.objRes = state.modal.objRes || []; state.modal.objRes[Number(id)] = el.dataset.r; majModal(); return; }
 
   /* ---- champs des fenêtres ---- */
   if(act === "m-set"){ capturerModal(); state.modal[el.dataset.k] = id; majModal(); return; }
@@ -3923,6 +4297,7 @@ document.addEventListener("input", ev => {
   if(el.id === "set-sig"){ DB.settings.signature = el.value; sauver(); return; }
   if(el.id === "set-dir"){ DB.settings.mailDirection = el.value; sauver(); return; }
   if(state.modal && state.modal.type === "mail" && el.closest && el.closest("#modal")){ capturerModal(); majApercuMail(); return; }
+  if(state.modal && state.modal.type === "cr" && el.id === "m-actions"){ capturerModal(); const a = document.getElementById("apercu-cr"); if(a) a.innerHTML = apercuActionsCR(state.modal); return; }
   if(state.modal && state.modal.type === "rapide" && el.id === "m-texte"){ capturerModal(); const a = document.getElementById("apercu-rapide"); if(a) a.innerHTML = apercuRapide(state.modal); return; }
   if(el.dataset && el.dataset.out){ const o = document.getElementById(el.dataset.out); if(o) o.textContent = el.value + " %"; }
 });
@@ -3944,6 +4319,32 @@ document.addEventListener("change", ev => {
     if(m) majModal(); else render();
   }
 });
+/* Kanban : glisser une carte dans une autre colonne change le statut. */
+let _glisse = null;
+document.addEventListener("dragstart", ev => {
+  const c = ev.target.closest && ev.target.closest(".kb-card"); if(!c) return;
+  _glisse = c.dataset.tache; c.classList.add("drag");
+  try{ ev.dataTransfer.setData("text/plain", _glisse); ev.dataTransfer.effectAllowed = "move"; }catch(e){}
+});
+document.addEventListener("dragend", () => { _glisse = null; document.querySelectorAll(".kb-col.over,.kb-card.drag").forEach(x => x.classList.remove("over", "drag")); });
+document.addEventListener("dragover", ev => {
+  const col = ev.target.closest && ev.target.closest(".kb-col"); if(!col || !_glisse) return;
+  ev.preventDefault();
+  document.querySelectorAll(".kb-col.over").forEach(x => { if(x !== col) x.classList.remove("over"); });
+  col.classList.add("over");
+});
+document.addEventListener("drop", ev => {
+  const col = ev.target.closest && ev.target.closest(".kb-col"); if(!col || !_glisse) return;
+  ev.preventDefault();
+  const t = DB.taches[_glisse], st = col.dataset.col; _glisse = null;
+  if(!t || t.statut === st) return render();
+  const avant = t.statut; t.statut = st;
+  if(st === "afaire") t.avance = 0; else if(st === "encours" && !num(t.avance)) t.avance = 10;
+  if(st !== "bloque") t.motif = "";
+  const msgs = apresStatutTache(t, avant);
+  touche(t.projet); sauver(); render();
+  toast(["« " + t.titre + " » : " + lib(STATUTS_T, st).toLowerCase()].concat(msgs).join(" · "));
+});
 document.addEventListener("keydown", ev => {
   if(ev.key === "Escape"){
     if(state.modal){ fermerModal(); ev.preventDefault(); }
@@ -3952,7 +4353,7 @@ document.addEventListener("keydown", ev => {
   }
   if(ev.key === "Enter" && state.modal && ev.target.tagName === "INPUT"){
     ev.preventDefault();
-    const cible = { "m-svc":"svc-ajout", "m-svcresp":"svc-ajout", "m-nsvc":"m-svc-ok", "m-nresp":"m-svc-ok", "m-ncnom":"m-chef-ok", "m-ncmail":"m-chef-ok" }[ev.target.id];
+    const cible = { "m-svc":"svc-ajout", "m-svcresp":"svc-ajout", "m-nsvc":"m-svc-ok", "m-nresp":"m-svc-ok", "m-ncnom":"m-chef-ok", "m-ncmail":"m-chef-ok", "m-newcheck":"m-check-add" }[ev.target.id];
     if(cible){ const b = document.querySelector('[data-act="' + cible + '"]'); if(b) b.click(); return; }
     const b = document.querySelector(".mdl .btn.pri"); if(b) b.click();
   }

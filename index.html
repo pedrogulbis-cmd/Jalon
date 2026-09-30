@@ -265,6 +265,11 @@ button.tuile:active{background:var(--fond2)}
   max-height:320px;overflow:auto;font-size:13px}
 .apercu-mail .obj{font-weight:600;border-bottom:1px solid #e5e5e5;padding-bottom:8px;margin-bottom:8px}
 .tend{font-size:12px;font-weight:500;white-space:nowrap}
+.jour-h{font-size:11px;color:var(--gris2);font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.05em;
+  padding:12px 2px 4px;border-bottom:1px solid var(--trait2)}
+.jour-h.dang{color:var(--dang)} .jour-h.acc{color:var(--acc)}
+.plus-r{width:100%;padding:11px 2px 4px;font-size:13px;color:var(--acc);text-align:center}
+.inline-add{border:1px dashed var(--accB);background:var(--accF);border-radius:10px;padding:2px 12px 12px;margin:-4px 0 12px}
 /* météo du portefeuille */
 .mg{border-radius:14px;padding:14px 16px;margin:14px 0 4px;background:var(--fond2);border:1px solid var(--trait)}
 .mg.vert{background:var(--okF);border-color:transparent} .mg.orange{background:var(--attF);border-color:transparent}
@@ -536,9 +541,27 @@ input[type=range]{width:100%;accent-color:var(--acc)}
    Un seul fichier, aucune dépendance, stockage local (IndexedDB).
    Reprend l'ossature d'Ardoise : même encre, mêmes gestes.
    ============================================================ */
-const VERSION = "1.2.0";
+const VERSION = "1.5.0";
 const SCHEMA  = 1;
 const JOURNAL = [
+  { v:"1.5.0", d:"2026-09-30", t:"Catalogue de modèles élargi", l:[
+    "Nouvelle catégorie Documentation et gouvernance : PRA / PCA, procédures d'exploitation, modes opératoires, cartographie du SI, charte informatique, PSSI, documentation d'application, schéma directeur, budget annuel, revue des licences, inventaire, processus de support.",
+    "Industrie et métiers : MES et sa montée de version, WMS, PLM / CAO, gestion des temps et badgeuses, notes de frais, e-learning, signature électronique, traçabilité, assistant IA, petite application interne.",
+    "Infrastructure et sécurité : serveurs et virtualisation, stockage, Windows 11, impression, flotte mobile, supervision, salle serveur, liens inter-sites, visio, vidéoprotection, EDR, réseau industriel, mises à jour de sécurité, sensibilisation, revue des droits.",
+    "Organisation : infogérance, réversibilité, arrivées et départs, intégration d'une nouvelle entité, contrats télécoms."
+  ]},
+  { v:"1.4.0", d:"2026-09-30", t:"35 modèles de projet", l:[
+    "Applications métier : ERP, SIRH, GMAO, CRM, GED, qualité, planification, facture électronique, BI, ticketing, site web, interfaces, reprise de données, outil SaaS simple.",
+    "Montées de version : ERP, SIRH / paie, GMAO, CRM, logiciel métier — avec recette de non-régression, bascule et support renforcé.",
+    "Infrastructure, sécurité et organisation : matériel, messagerie, réseau, téléphonie, cloud, PRA, RGPD, cybersécurité, MFA, appel d'offres, ouverture de site, processus, conduite du changement.",
+    "Dans la fiche d'un nouveau projet, les modèles sont rangés par catégorie et l'aperçu annonce les jalons qu'ils posent."
+  ]},
+  { v:"1.3.0", d:"2026-09-30", t:"Création de projet plus rapide", l:[
+    "Le code projet se génère seul : abrégé du service, année, numéro d'ordre (DSI-26-03). Il suit le service choisi tant qu'on ne l'a pas modifié.",
+    "Chaque service a désormais un responsable (Réglages → Services). Il devient automatiquement le sponsor des projets que le service demande, modifiable au cas par cas.",
+    "Un service absent de la liste s'ajoute sans quitter la fiche, avec son responsable. De même pour un chef de projet absent de l'équipe.",
+    "Un projet dupliqué reçoit un nouveau code."
+  ]},
   { v:"1.2.0", d:"2026-09-30", t:"Clôture, archives et saisie allégée", l:[
     "Clôturer un projet fige son bilan : résultat, date de fin réelle, coût final, écart de délai et de budget, tâches et jalons réalisés, ce qui a été livré, retour d'expérience. Il rejoint alors les archives.",
     "Onglet Projets → Archives : les projets clôturés par année, recherchables jusque dans leurs bilans, avec les taux de projets livrés dans les délais, dans le budget et aux objectifs atteints. Un projet se rouvre d'un geste.",
@@ -753,7 +776,7 @@ const DEFAULTS = {
     modules:{ budget:true, charge:true, risques:true, valeur:true },
     f:{ service:"", chef:"", prio:"", statut:"actifs", meteo:"" },
     tri:"meteo", gZoom:"6m", obsolete:14,
-    moi:"", signature:"", mailDirection:""
+    moi:"", signature:"", mailDirection:"", respServices:{}
   },
   meta:{ cree:Date.now(), modifie:0, exporte:0, vue:null }
 };
@@ -1406,7 +1429,10 @@ function mesActions(pid){
     (t.statut === "bloque" || !t.fin || t.fin <= lim)).sort((a,b) => cmp(a.fin || "9999", b.fin || "9999"));
   const R = M().risques ? V(DB.risques).filter(r => r.resp === pid && r.statut !== "clos" && ok(r) && r.echeance && r.echeance <= lim)
     .sort((a,b) => cmp(a.echeance, b.echeance)) : [];
-  return { T, R };
+  // Les jalons des projets que je pilote : ce sont aussi mes échéances.
+  const J = V(DB.jalons).filter(j => !j.fait && j.date && j.date <= lim && DB.projets[j.projet] && actif(DB.projets[j.projet]) &&
+    DB.projets[j.projet].chef === pid).sort((a,b) => cmp(a.date, b.date));
+  return { T, R, J };
 }
 function panneauMesActions(){
   const moi = DB.settings.moi;
@@ -2049,7 +2075,7 @@ function vueRapport(){
       '<span class="ln-m">' + esc(frDate(p.cloture.date, true) + (texteStats(p.cloture.stats || {}) ? " · " + texteStats(p.cloture.stats) : "")) + '</span></span></div>').join("");
   if(mo.valeur && d.ve.length) h += '<div class="pan" style="break-inside:avoid"><div class="sect"><h2>Arbitrage valeur / effort</h2><span class="cnt">' + d.ve.length + '</span></div>' + matriceVE(d.ve, false) + '</div>';
   h += '<div class="aide" style="margin-top:22px">Météo : vert = sous contrôle, orange = à surveiller, rouge = en difficulté. Calculée à partir des retards, du budget projeté, des risques et des blocages, ajustable par le chef de projet. Projection budget = consommé ÷ avancement.</div>';
-  return h + '</div></div>';
+  return tiret(h + '</div></div>');
 }
 /* ============================================================
    MÉTÉO SUIVIE DANS LE TEMPS
@@ -2103,27 +2129,53 @@ function carteMesActions(){
   const moi = DB.settings.moi;
   if(!moi || !DB.personnes[moi])
     return V(DB.personnes).length ? '<div class="aide noprint" style="margin:10px 0 0">Indiquez qui vous êtes dans les <button class="lien" style="color:var(--acc);text-decoration:underline" data-act="tab" data-id="reglages">réglages</button> pour voir vos actions ici.</div>' : "";
-  const { T, R } = mesActions(moi), auj = todayISO(), sem = addJ(auj, 7);
-  const retard = T.filter(t => t.statut !== "bloque" && t.fin && t.fin < auj).length + R.filter(r => r.echeance < auj).length;
-  const semaine = T.filter(t => t.statut !== "bloque" && t.fin && t.fin >= auj && t.fin <= sem).length + R.filter(r => r.echeance >= auj && r.echeance <= sem).length;
+  const { T, R, J } = mesActions(moi), auj = todayISO(), sem = addJ(auj, 7), dem = addJ(auj, 1);
+  const retard = T.filter(t => t.statut !== "bloque" && t.fin && t.fin < auj).length + R.filter(r => r.echeance < auj).length + J.filter(j => j.date < auj).length;
+  const semaine = T.filter(t => t.statut !== "bloque" && t.fin && t.fin >= auj && t.fin <= sem).length +
+    R.filter(r => r.echeance >= auj && r.echeance <= sem).length + J.filter(j => j.date >= auj && j.date <= sem).length;
   const bloq = T.filter(t => t.statut === "bloque").length;
   const c = M().charge ? chargePersonne(moi) : null;
-  const items = T.map(t => ({ k:t.statut === "bloque" ? 1 : t.fin && t.fin < auj ? 0 : 2, d:t.fin || "9999", h:ligneTache(t, true) }))
+  const items = T.map(t => ({ k:t.statut === "bloque" ? 1 : t.fin && t.fin < auj ? 0 : 2, d:t.fin || "", h:ligneTache(t, true) }))
     .concat(R.map(r => ({ k:r.echeance < auj ? 0 : 2, d:r.echeance,
       h:'<button class="ln" data-act="modifier-risque" data-id="' + r.id + '"><span class="ln-ic ' + (r.echeance < auj ? "dang" : "att") + '">' + svg("bouclier", 15, 2) + '</span>' +
         '<span class="ln-mid"><span class="ln-t">' + esc(r.action || r.titre) + '</span><span class="ln-m">' + esc(nomProjet(r.projet) + " · risque « " + r.titre + " »") + '</span></span>' +
         '<span class="ln-r ' + (r.echeance < auj ? "c-dang" : "") + '">' + esc(relJ(r.echeance)) + '</span></button>' })))
-    .sort((a,b) => a.k - b.k || cmp(a.d, b.d));
-  const vis = state.mesTout ? items : items.slice(0, 4);
+    .concat(J.map(j => ({ k:j.date < auj ? 0 : 2, d:j.date, h:ligneJalon(j, true) })));
+  const parJour = DB.settings.mesVue === "jour";
+  let corps = "";
+  if(!parJour){
+    // Vue « urgence » : retards, puis blocages, puis le reste par échéance.
+    items.sort((a,b) => a.k - b.k || cmp(a.d || "9999", b.d || "9999"));
+    corps = (state.mesTout ? items : items.slice(0, 4)).map(x => x.h).join("");
+  } else {
+    // Vue « par jour » : les mêmes éléments rangés sous l'intitulé de leur jour.
+    const JRS = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+    const cle = d => !d ? "9" : d < auj ? "0" : d;
+    const lib2 = k => k === "0" ? ["En retard", "dang"] : k === "9" ? ["Sans échéance", ""] : k === auj ? ["Aujourd'hui", "acc"] :
+      k === dem ? ["Demain", ""] : [JRS[dateDe(k).getDay()] + " " + frDate(k), ""];
+    items.sort((a,b) => cmp(cle(a.d), cle(b.d)) || a.k - b.k);
+    let n = 0, cour = null;
+    for(const x of items){
+      if(!state.mesTout && n >= 6) break;
+      const k = cle(x.d);
+      if(k !== cour){ const [l, cl] = lib2(k); corps += '<div class="jour-h ' + cl + '">' + esc(l) + '</div>'; cour = k; }
+      corps += x.h; n++;
+    }
+  }
+  const lim = parJour ? 6 : 4;
   return '<div class="pan moi"><div class="sect"><h2>Mes actions</h2><span class="sp"></span>' +
-    (items.length > 4 ? '<button class="lien" data-act="mes-tout">' + (state.mesTout ? "Réduire" : "Tout voir (" + items.length + ")") + '</button>' : "") + '</div>' +
+    '<div class="seg"><button class="' + (!parJour ? "on" : "") + '" style="padding:5px 9px;font-size:12px" data-act="mes-vue" data-id="urgence">Urgence</button>' +
+    '<button class="' + (parJour ? "on" : "") + '" style="padding:5px 9px;font-size:12px" data-act="mes-vue" data-id="jour">Par jour</button></div></div>' +
     '<div class="kchips">' +
       '<span class="kchip' + (retard ? " dang" : "") + '"><b>' + retard + '</b> en retard</span>' +
       '<span class="kchip' + (semaine ? " att" : "") + '"><b>' + semaine + '</b> cette semaine</span>' +
       '<span class="kchip' + (bloq ? " dang" : "") + '"><b>' + bloq + '</b> bloquée' + pl(bloq) + '</span>' +
       (c && c.pct != null ? '<span class="kchip' + (c.pct > 100 ? " dang" : c.pct > 80 ? " att" : " ok") + '">charge <b>' + c.pct + ' %</b> sur 4 sem.</span>' : "") +
     '</div>' +
-    (items.length ? vis.map(x => x.h).join("") : '<div class="vide petit">Rien d\'urgent pour vous dans les 14 jours.</div>') + '</div>';
+    (items.length ? corps : '<div class="vide petit">Rien d\'urgent pour vous dans les 14 jours.</div>') +
+    (items.length > lim ? '<button class="plus-r" data-act="mes-tout">' + (state.mesTout ? "Réduire" : "Tout voir (" + items.length + ")") + '</button>' : "") +
+    '</div>';
+
 }
 
 /* ============================================================
@@ -2131,26 +2183,355 @@ function carteMesActions(){
    Un modèle pose d'un coup les jalons et tâches types, calés en proportion
    de la durée du projet. On peut aussi faire d'un projet réussi un modèle.
    ============================================================ */
+/* Chaque modèle : des jalons [intitulé, position en % de la durée, clé ?]
+   et des tâches [intitulé, début %, fin %, n° du jalon auquel elles
+   mènent (-1 : aucun)]. Les positions s'adaptent à la durée du projet. */
+const CATS_MODELES = ["Applications métier", "Montées de version", "Infrastructure et poste de travail", "Sécurité et conformité", "Documentation et gouvernance", "Organisation et achats"];
+const MONTEE = (nom, id, extra) => ({ id, cat:"Montées de version", nom,
+  jalons:[["Lancement validé avec l'éditeur",10,0],["Environnement de recette prêt",30,0],["Recette validée",70,1],["Mise en production",85,1],["Fin du support renforcé",100,0]],
+  taches:[["Analyse des nouveautés, prérequis et impacts",0,10,0],["Planification avec l'éditeur ou l'intégrateur",5,12,0],
+    ["Vérification des prérequis techniques (serveurs, bases, postes)",10,25,1],["Installation de la nouvelle version en recette",20,30,1],
+    ["Adaptation des spécifiques, états et interfaces",28,50,2]].concat(extra || [], [
+    ["Tests de non-régression par les utilisateurs clés",45,68,2],["Formation aux nouveautés",60,80,3],
+    ["Communication aux utilisateurs et planning de coupure",70,82,3],["Sauvegarde et bascule en production",82,85,3],
+    ["Support renforcé après mise en production",85,100,4],["Bilan et mise à jour de la documentation",95,100,-1]]) });
+const IMPLEM = (nom, id, cat, specifiques, jalonsExtra) => ({ id, cat, nom,
+  jalons:[["Cadrage validé",10,1],["Solution choisie",25,1],["Paramétrage terminé",55,0],["Recette validée",75,1],["Mise en production",88,1],["Fin du support renforcé",100,0]].concat(jalonsExtra || []),
+  taches:[["Recueil du besoin avec le service",0,8,0],["Note de cadrage : objectifs, périmètre, budget",5,10,0],
+    ["Consultation des éditeurs et démonstrations",10,20,1],["Choix de la solution et contractualisation",18,25,1],
+    ["Atelier de conception et paramétrage cible",25,40,2]].concat(specifiques, [
+    ["Recette avec les utilisateurs clés",58,75,3],["Formation des utilisateurs",70,86,4],
+    ["Démarrage en production",86,88,4],["Support renforcé et ajustements",88,100,5],["Bilan de projet",96,100,-1]]) });
+
 const MODELES_PROJET = [
-  { id:"m-logiciel", nom:"Choix et mise en place d'un logiciel",
+  /* ---------- applications métier ---------- */
+  { id:"m-logiciel", cat:"Applications métier", nom:"Mise en place d'un logiciel standard (générique)",
     jalons:[["Cahier des charges validé",20,1],["Solution choisie",40,1],["Recette validée",80,0],["Mise en production",95,1]],
     taches:[["Expression du besoin avec le métier",0,15,0],["Rédaction du cahier des charges",10,20,0],["Consultation et démonstrations",20,35,1],
       ["Analyse des offres et choix",32,40,1],["Paramétrage de la solution",40,65,2],["Reprise des données",50,70,2],["Recette avec les utilisateurs",65,80,2],
       ["Formation des utilisateurs",75,92,3],["Bascule en production",90,95,3],["Bilan et clôture",95,100,-1]] },
-  { id:"m-materiel", nom:"Déploiement ou renouvellement de matériel",
+  { id:"m-saas", cat:"Applications métier", nom:"Outil SaaS simple pour un service (léger)",
+    jalons:[["Outil choisi",25,1],["Outil configuré",60,0],["Service opérationnel",90,1]],
+    taches:[["Besoin exprimé par le service",0,10,0],["Comparatif de 2 ou 3 solutions",8,20,0],["Validation sécurité, RGPD et contrat",18,25,0],
+      ["Création des comptes et configuration",25,50,1],["Import des données existantes",40,60,1],["Prise en main avec le référent du service",55,75,2],
+      ["Formation de l'équipe",70,88,2],["Bilan après un mois d'usage",90,100,-1]] },
+  IMPLEM("Implémentation d'un ERP", "m-erp", "Applications métier", [
+    ["Paramétrage finance et comptabilité",30,52,2],["Paramétrage achats, ventes et stocks",30,55,2],["Reprise des données (tiers, articles, soldes)",40,62,3],
+    ["Interfaces avec les outils existants",40,60,3],["Tests de bout en bout des processus",55,72,3]]),
+  IMPLEM("Implémentation d'un SIRH (paie, temps, talents)", "m-sirh", "Applications métier", [
+    ["Paramétrage paie et conventions collectives",28,52,2],["Paramétrage gestion des temps et absences",30,52,2],["Reprise des salariés et historiques",40,60,3],
+    ["Paies à blanc en parallèle (2 mois)",58,78,3],["Interface comptable et DSN",45,65,3]]),
+  IMPLEM("Implémentation d'une GMAO", "m-gmao", "Applications métier", [
+    ["Inventaire et arborescence des équipements",25,45,2],["Plans de maintenance préventive",35,55,2],["Paramétrage stock de pièces détachées",40,55,2],
+    ["Équipement des techniciens (tablettes, mobile)",50,70,3],["Reprise de l'historique d'interventions",45,62,3]]),
+  IMPLEM("Implémentation d'un CRM", "m-crm", "Applications métier", [
+    ["Paramétrage du cycle de vente et des opportunités",28,50,2],["Reprise des clients, contacts et historique",40,60,3],
+    ["Connexion messagerie et agenda",45,58,3],["Tableaux de bord commerciaux",50,65,3]]),
+  IMPLEM("Gestion documentaire (GED)", "m-ged", "Applications métier", [
+    ["Plan de classement et droits d'accès",25,42,2],["Circuits de validation",35,52,2],["Reprise des documents existants",45,65,3],["Numérisation des archives papier",50,75,3]]),
+  IMPLEM("Logiciel de gestion de la qualité / HSE", "m-qualite", "Applications métier", [
+    ["Paramétrage des processus, audits et non-conformités",28,50,2],["Reprise des procédures documentaires",40,60,3],["Indicateurs et tableaux de bord",48,62,3]]),
+  IMPLEM("Logiciel de planification / ordonnancement", "m-planif", "Applications métier", [
+    ["Modélisation des ressources et gammes",25,48,2],["Interface avec l'ERP",35,58,3],["Tests sur un atelier pilote",55,72,3]]),
+  { id:"m-demat", cat:"Applications métier", nom:"Dématérialisation des factures / facture électronique",
+    jalons:[["Plateforme choisie",20,1],["Circuits de validation paramétrés",50,0],["Premiers fournisseurs en ligne",70,0],["Généralisation",95,1]],
+    taches:[["Cartographie des flux de factures",0,12,0],["Choix de la plateforme agréée",10,20,0],["Paramétrage des circuits de validation",20,50,1],
+      ["Interface avec l'ERP comptable",25,55,1],["Tests avec 10 fournisseurs",50,70,2],["Communication aux fournisseurs",55,80,3],
+      ["Formation des valideurs",60,80,3],["Bascule de tous les flux",80,95,3],["Bilan",95,100,-1]] },
+  { id:"m-bi", cat:"Applications métier", nom:"Outil de reporting / BI",
+    jalons:[["Indicateurs définis",20,1],["Entrepôt de données alimenté",50,0],["Premiers tableaux de bord",70,1],["Déploiement aux utilisateurs",95,0]],
+    taches:[["Ateliers de définition des indicateurs",0,20,0],["Inventaire des sources de données",10,25,1],["Connexions et flux de données",25,50,1],
+      ["Qualité et fiabilisation des données",35,55,1],["Conception des tableaux de bord",50,70,2],["Validation avec la direction",65,75,2],
+      ["Droits d'accès et diffusion",75,85,3],["Formation des utilisateurs",80,95,3]] },
+  { id:"m-ticketing", cat:"Applications métier", nom:"Outil de ticketing / helpdesk",
+    jalons:[["Outil choisi",20,1],["Catalogue de services défini",45,0],["Mise en service",80,1],["Bilan des premiers mois",100,0]],
+    taches:[["Recensement des demandes actuelles",0,12,0],["Choix de l'outil",10,20,0],["Catalogue de services et catégories",20,45,1],
+      ["Niveaux de service (délais, priorités)",30,45,1],["Paramétrage, notifications et formulaires",40,65,2],["Inventaire du parc et intégration",45,70,2],
+      ["Formation de l'équipe support",65,78,2],["Communication aux utilisateurs",70,80,2],["Suivi des indicateurs",80,100,3]] },
+  { id:"m-web", cat:"Applications métier", nom:"Site web ou intranet (refonte)",
+    jalons:[["Arborescence et maquettes validées",30,1],["Contenus prêts",65,0],["Mise en ligne",90,1]],
+    taches:[["Recueil des besoins et cibles",0,10,0],["Choix du prestataire",8,20,0],["Arborescence",18,26,0],["Maquettes graphiques",22,30,0],
+      ["Développement et intégration",30,65,1],["Rédaction et migration des contenus",40,65,1],["Recette et accessibilité",65,82,2],
+      ["Référencement et redirections",75,88,2],["Mise en ligne et communication",88,92,2],["Formation des contributeurs",85,100,-1]] },
+  { id:"m-interface", cat:"Applications métier", nom:"Interface entre deux applications (API, EDI)",
+    jalons:[["Spécifications validées",25,1],["Interface développée",60,0],["Interface en production",90,1]],
+    taches:[["Recueil des flux à échanger",0,12,0],["Spécifications fonctionnelles et techniques",10,25,0],["Développement ou paramétrage",25,60,1],
+      ["Gestion des erreurs et supervision",45,60,1],["Tests d'intégration",60,80,2],["Mise en production",85,90,2],["Documentation d'exploitation",88,100,-1]] },
+  { id:"m-reprise", cat:"Applications métier", nom:"Reprise ou migration de données",
+    jalons:[["Règles de reprise validées",25,1],["Reprise à blanc validée",65,1],["Reprise définitive",90,1]],
+    taches:[["Inventaire des données sources",0,12,0],["Nettoyage et dédoublonnage",10,35,0],["Correspondances et règles de transformation",15,25,0],
+      ["Outil ou scripts de reprise",25,45,1],["Première reprise à blanc",45,55,1],["Contrôles par les métiers",55,65,1],["Seconde reprise à blanc",65,75,2],
+      ["Reprise définitive et contrôle",85,90,2],["Archivage de l'ancien système",90,100,-1]] },
+
+  /* ---------- montées de version ---------- */
+  MONTEE("Montée de version ERP", "m-mv-erp", [["Tests des clôtures comptables et éditions légales",40,62,2]]),
+  MONTEE("Montée de version SIRH / paie", "m-mv-sirh", [["Paie en parallèle ancienne / nouvelle version",45,68,2],["Contrôle DSN et éditions",55,68,2]]),
+  MONTEE("Montée de version GMAO", "m-mv-gmao", [["Tests sur tablettes et mobiles des techniciens",45,65,2]]),
+  MONTEE("Montée de version CRM", "m-mv-crm", [["Contrôle des synchronisations messagerie",45,62,2]]),
+  MONTEE("Montée de version d'un logiciel métier", "m-mv-metier"),
+
+  /* ---------- infrastructure et poste de travail ---------- */
+  { id:"m-materiel", cat:"Infrastructure et poste de travail", nom:"Déploiement ou renouvellement de matériel",
     jalons:[["Commande passée",20,0],["Matériel livré",45,1],["Déploiement terminé",95,1]],
     taches:[["Recensement du besoin et du parc",0,12,0],["Consultation et commande",10,20,0],["Préparation / masterisation",20,45,1],
       ["Pilote sur quelques postes",45,55,2],["Déploiement",55,92,2],["Récupération et recyclage de l'ancien matériel",85,100,-1]] },
-  { id:"m-migration", nom:"Migration ou montée de version",
+  { id:"m-migration", cat:"Infrastructure et poste de travail", nom:"Migration technique (serveurs, OS, bases)",
     jalons:[["Plan de migration validé",20,1],["Pilote validé",50,0],["Bascule en production",85,1],["Ancien système arrêté",100,0]],
     taches:[["Audit de l'existant",0,12,0],["Plan de migration et retour arrière",10,20,0],["Environnement de test",20,32,1],["Migration pilote",32,50,1],
       ["Recette",50,65,2],["Communication aux utilisateurs",60,80,2],["Migration de production",75,85,2],["Support renforcé",85,95,3],["Décommissionnement",90,100,3]] },
-  { id:"m-securite", nom:"Sécurité ou conformité",
+  { id:"m-m365", cat:"Infrastructure et poste de travail", nom:"Messagerie et collaboratif (Microsoft 365, Google)",
+    jalons:[["Tenant configuré",20,0],["Pilote validé",40,1],["Migration terminée",85,1],["Ancien serveur arrêté",100,0]],
+    taches:[["Audit messagerie, partages et licences",0,10,0],["Configuration du tenant et de la sécurité",8,20,0],["Migration pilote",20,40,1],
+      ["Guides et FAQ utilisateurs",30,45,1],["Migration par vagues",40,85,2],["Formation Teams / SharePoint",50,85,2],["Décommissionnement",85,100,3]] },
+  { id:"m-reseau", cat:"Infrastructure et poste de travail", nom:"Réseau et Wi-Fi (renouvellement)",
+    jalons:[["Architecture validée",25,1],["Matériel livré",45,0],["Bascule terminée",90,1]],
+    taches:[["Audit et relevé du réseau existant",0,15,0],["Étude de couverture Wi-Fi",5,20,0],["Architecture cible et plan d'adressage",15,25,0],
+      ["Commande du matériel",25,35,1],["Configuration et maquette",45,60,2],["Bascule site par site (hors heures)",60,90,2],["Documentation réseau",85,100,-1]] },
+  { id:"m-telephonie", cat:"Infrastructure et poste de travail", nom:"Téléphonie / ToIP",
+    jalons:[["Opérateur choisi",25,1],["Portabilité des numéros",70,1],["Ancienne téléphonie résiliée",100,0]],
+    taches:[["Inventaire des lignes, numéros et usages",0,12,0],["Consultation des opérateurs",10,25,0],["Plan de numérotation et accueils",25,45,1],
+      ["Commande et livraison des postes",35,55,1],["Configuration standard et messageries",45,65,1],["Formation des standardistes",60,70,2],
+      ["Bascule et portabilité",68,72,2],["Résiliation des anciens contrats",85,100,2]] },
+  { id:"m-cloud", cat:"Infrastructure et poste de travail", nom:"Migration vers le cloud / hébergement",
+    jalons:[["Cible et hébergeur choisis",25,1],["Environnement cible prêt",45,0],["Applications migrées",85,1],["Salle serveur allégée",100,0]],
+    taches:[["Inventaire des applications et dépendances",0,15,0],["Choix de l'hébergeur et du modèle",10,25,0],["Réseau, sécurité et sauvegardes cible",25,45,1],
+      ["Migration pilote d'une application",45,55,2],["Migration des autres applications",55,85,2],["Suivi des coûts et optimisation",80,100,3]] },
+  { id:"m-sauvegarde", cat:"Infrastructure et poste de travail", nom:"Sauvegarde, PRA et continuité",
+    jalons:[["Besoins de continuité validés",20,1],["Nouvelle sauvegarde en service",60,1],["Test de reprise réussi",90,1]],
+    taches:[["Recensement des applications critiques (RTO / RPO)",0,15,0],["Validation avec la direction",15,20,0],["Choix de la solution",20,35,1],
+      ["Mise en place des sauvegardes (dont copie hors site)",35,60,1],["Rédaction du plan de reprise",50,75,2],["Test de restauration complet",75,90,2],
+      ["Planning de tests annuels",90,100,-1]] },
+
+  /* ---------- sécurité et conformité ---------- */
+  { id:"m-securite", cat:"Sécurité et conformité", nom:"Sécurité ou conformité (générique)",
     jalons:[["État des lieux terminé",20,0],["Plan d'actions validé",30,1],["Conformité atteinte",95,1]],
     taches:[["Audit / état des lieux",0,20,0],["Analyse des écarts et priorisation",20,30,1],["Mise en œuvre des mesures",30,80,2],
-      ["Sensibilisation des utilisateurs",60,85,2],["Contrôle et tests",80,92,2],["Documentation et preuves",88,100,-1]] }
+      ["Sensibilisation des utilisateurs",60,85,2],["Contrôle et tests",80,92,2],["Documentation et preuves",88,100,-1]] },
+  { id:"m-rgpd", cat:"Sécurité et conformité", nom:"Mise en conformité RGPD",
+    jalons:[["Registre des traitements établi",30,1],["Plan d'actions validé",40,1],["Actions prioritaires réalisées",90,1]],
+    taches:[["Désignation ou appui du DPO",0,8,0],["Entretiens avec chaque service",5,25,0],["Registre des traitements",15,30,0],
+      ["Analyse des écarts et des risques",30,40,1],["Mentions d'information et consentements",40,65,2],["Clauses contractuelles sous-traitants",40,70,2],
+      ["Durées de conservation et purges",50,80,2],["Procédure de violation de données",60,75,2],["Sensibilisation du personnel",70,90,2]] },
+  { id:"m-cyber", cat:"Sécurité et conformité", nom:"Plan cybersécurité (audit, NIS2)",
+    jalons:[["Audit terminé",20,1],["Plan de remédiation validé",30,1],["Mesures prioritaires en place",75,1],["Exercice de crise réalisé",95,0]],
+    taches:[["Audit de sécurité et tests d'intrusion",0,20,0],["Priorisation des vulnérabilités",20,30,1],["Correctifs et durcissement",30,75,2],
+      ["Supervision et journalisation",40,75,2],["Campagne de sensibilisation et faux phishing",50,80,2],["Procédure de gestion de crise",60,85,3],
+      ["Exercice de crise",85,95,3],["Rapport à la direction",95,100,-1]] },
+  { id:"m-mfa", cat:"Sécurité et conformité", nom:"Identités et authentification forte (MFA)",
+    jalons:[["Politique d'accès validée",25,1],["Pilote MFA validé",50,0],["MFA généralisé",90,1]],
+    taches:[["Revue des comptes et des droits",0,20,0],["Politique de mots de passe et d'accès",15,25,0],["Configuration MFA",25,40,1],
+      ["Pilote avec la DSI et un service",40,50,1],["Communication et guides",45,60,2],["Déploiement par service",55,90,2],["Procédure d'arrivée / départ",70,100,-1]] },
+
+  /* ---------- organisation et achats ---------- */
+  { id:"m-ao", cat:"Organisation et achats", nom:"Appel d'offres / consultation fournisseurs",
+    jalons:[["Cahier des charges validé",30,1],["Offres reçues",60,0],["Fournisseur retenu",90,1]],
+    taches:[["Expression du besoin",0,15,0],["Rédaction du cahier des charges et grille de notation",10,30,0],["Liste des fournisseurs consultés",25,32,1],
+      ["Envoi de la consultation",32,35,1],["Réponses aux questions",35,55,1],["Analyse des offres",60,75,2],["Soutenances et négociation",72,85,2],
+      ["Décision et notification",85,90,2],["Signature du contrat",90,100,-1]] },
+  { id:"m-site", cat:"Organisation et achats", nom:"Déménagement ou ouverture de site (volet IT)",
+    jalons:[["Besoins IT validés",20,1],["Liens opérateurs livrés",60,1],["Site opérationnel",95,1]],
+    taches:[["Recensement des besoins (postes, impression, téléphonie)",0,15,0],["Commande des liens internet et opérateurs",15,25,1],
+      ["Câblage et baie réseau",25,60,1],["Commande du matériel",25,45,1],["Installation réseau, Wi-Fi et imprimantes",60,85,2],
+      ["Déménagement des postes",85,92,2],["Support sur site au démarrage",92,100,2]] },
+  { id:"m-processus", cat:"Organisation et achats", nom:"Projet d'organisation ou de processus (sans outil)",
+    jalons:[["Diagnostic partagé",30,1],["Organisation cible validée",60,1],["Nouvelle organisation en place",95,1]],
+    taches:[["Entretiens et observation",0,20,0],["Cartographie des processus actuels",10,30,0],["Ateliers de conception de la cible",30,55,1],
+      ["Validation par la direction",55,60,1],["Procédures et fiches de poste",60,80,2],["Communication et accompagnement",70,95,2],["Suivi des indicateurs",90,100,-1]] },
+  { id:"m-changement", cat:"Organisation et achats", nom:"Formation et conduite du changement",
+    jalons:[["Plan de formation validé",25,1],["Formations réalisées",80,1],["Bilan des usages",100,0]],
+    taches:[["Analyse des publics et des besoins",0,15,0],["Plan de communication",10,25,0],["Supports de formation et tutoriels",20,45,1],
+      ["Réseau de référents / ambassadeurs",25,40,1],["Sessions de formation",45,80,1],["Permanences et questions",70,95,2],["Mesure de l'adoption",85,100,2]] }
 ];
+/* Documents et procédures : même trame, de l'existant à la revue annuelle.
+   Le test à blanc n'a de sens que pour ce qui s'exécute (PRA, procédures). */
+const DOC = (nom, id, specifiques, test) => ({ id, cat:"Documentation et gouvernance", nom,
+  jalons:[["Plan du document validé",20,0],["Première version relue",65,1]].concat(test ? [["Test à blanc réussi",85,1]] : [], [["Version validée et diffusée",95,1]]),
+  taches:[["Recensement de l'existant et des sources",0,12,0],["Plan et gabarit du document",10,20,0],["Entretiens avec les personnes concernées",15,40,1]]
+    .concat(specifiques, [["Relecture par les personnes concernées",55,65,1]],
+      test ? [["Test à blanc et corrections",65,85,2]] : [],
+      [["Validation par la direction",85,92,test ? 3 : 2],["Diffusion, classement et accès",90,95,test ? 3 : 2],["Planning de revue annuelle",95,100,-1]]) });
+
+MODELES_PROJET.push(
+  /* ---------- applications métier (industrie et services) ---------- */
+  IMPLEM("Implémentation d'un MES (pilotage d'atelier)", "m-mes", "Applications métier", [
+    ["Modélisation des lignes, postes et ordres de fabrication",25,45,2],["Interface avec l'ERP (OF, nomenclatures, stocks)",30,55,3],
+    ["Connexion des machines et automates",35,60,3],["Écrans atelier et terminaux opérateurs",45,62,3],["Pilote sur une ligne de production",60,75,3]],
+    [["Pilote atelier validé",75,1]]),
+  IMPLEM("Entrepôt et logistique (WMS)", "m-wms", "Applications métier", [
+    ["Cartographie des emplacements et flux",25,42,2],["Terminaux et étiquetage codes-barres",35,55,3],["Interface avec l'ERP et les transporteurs",35,58,3],
+    ["Inventaire de démarrage",70,76,3]]),
+  IMPLEM("PLM / gestion des données techniques (bureau d'études)", "m-plm", "Applications métier", [
+    ["Structure des articles, nomenclatures et révisions",25,48,2],["Intégration avec la CAO",30,55,3],["Reprise des plans et documents techniques",40,65,3],
+    ["Circuit de modification technique",45,60,2]]),
+  IMPLEM("Gestion des temps et badgeuses", "m-badge", "Applications métier", [
+    ["Règles horaires, cycles et compteurs",25,45,2],["Installation des badgeuses",35,55,3],["Interface avec la paie",40,60,3],["Tests sur un mois en parallèle",58,75,3]]),
+  IMPLEM("Notes de frais", "m-ndf", "Applications métier", [
+    ["Barèmes, politique de frais et circuits de validation",25,45,2],["Interface comptable",35,55,3],["Cartes de paiement et rapprochements",40,58,3]]),
+  IMPLEM("Plateforme de formation (e-learning / LMS)", "m-lms", "Applications métier", [
+    ["Catalogue et parcours de formation",25,50,2],["Import des salariés et organigramme",35,50,3],["Création des premiers modules",40,70,3]]),
+  { id:"m-signature", cat:"Applications métier", nom:"Signature électronique",
+    jalons:[["Solution choisie",25,1],["Circuits configurés",60,0],["Utilisation généralisée",90,1]],
+    taches:[["Recensement des documents à signer (RH, achats, ventes)",0,15,0],["Choix de la solution et niveau de signature",12,25,0],
+      ["Configuration des circuits et modèles",25,55,1],["Intégration avec les outils (SIRH, CRM, GED)",35,60,1],["Pilote avec un service",55,70,2],
+      ["Formation et guide",65,85,2],["Archivage à valeur probante",70,90,2]] },
+  { id:"m-appinterne", cat:"Applications métier", nom:"Petite application interne ou automatisation",
+    jalons:[["Besoin et maquette validés",25,1],["Version pilote livrée",65,1],["Mise en service",90,1]],
+    taches:[["Recueil du besoin et du processus actuel",0,12,0],["Choix de l'outil (low-code, script, développement)",10,20,0],
+      ["Maquette avec les utilisateurs",15,25,0],["Réalisation",25,60,1],["Tests avec les utilisateurs",60,75,2],["Documentation et transmission",75,90,2],["Maintenance et évolutions",90,100,-1]] },
+  { id:"m-ia", cat:"Applications métier", nom:"Déploiement d'un assistant IA (Copilot, IA générative)",
+    jalons:[["Charte d'usage validée",25,1],["Pilote terminé",60,1],["Déploiement élargi",90,1]],
+    taches:[["Identification des cas d'usage par service",0,15,0],["Analyse des risques : données, confidentialité, RGPD",10,25,0],
+      ["Charte d'usage de l'IA",15,25,0],["Revue des droits d'accès aux documents",20,40,1],["Pilote avec 10 à 20 utilisateurs",30,60,1],
+      ["Mesure des gains et retours",55,65,2],["Formation aux bons usages",60,85,2],["Déploiement par service",70,90,2],["Suivi des licences et des coûts",85,100,-1]] },
+  { id:"m-tracabilite", cat:"Applications métier", nom:"Traçabilité et étiquetage codes-barres",
+    jalons:[["Règles de traçabilité validées",25,1],["Matériel installé",55,0],["Traçabilité en service",90,1]],
+    taches:[["Exigences clients et réglementaires",0,15,0],["Formats d'étiquettes et codification",12,30,0],["Imprimantes et scanners",25,55,1],
+      ["Paramétrage dans l'ERP ou le MES",30,60,1],["Tests en atelier",60,78,2],["Formation des opérateurs",75,88,2],["Audit de traçabilité",88,100,-1]] },
+
+  /* ---------- montées de version ---------- */
+  MONTEE("Montée de version MES", "m-mv-mes", [["Tests sur une ligne de production hors cadence",40,62,2],["Planification de la coupure avec la production",55,70,3]]),
+  MONTEE("Montée de version WMS", "m-mv-wms", [["Tests des terminaux et étiquettes",45,65,2]]),
+  MONTEE("Montée de version PLM / CAO", "m-mv-plm", [["Tests de compatibilité des postes CAO",40,60,2]]),
+  MONTEE("Montée de version de la gestion des temps", "m-mv-temps", [["Contrôle des compteurs sur un mois",45,66,2]]),
+
+  /* ---------- infrastructure ---------- */
+  { id:"m-serveurs", cat:"Infrastructure et poste de travail", nom:"Renouvellement serveurs et virtualisation",
+    jalons:[["Architecture validée",25,1],["Nouvelle plateforme en service",55,1],["Machines virtuelles migrées",85,1],["Anciens serveurs retirés",100,0]],
+    taches:[["Inventaire des serveurs et des charges",0,12,0],["Dimensionnement et architecture",10,25,0],["Commande du matériel et des licences",25,35,1],
+      ["Installation et configuration de l'hyperviseur",35,55,1],["Migration des machines virtuelles",55,85,2],["Sauvegardes et supervision",60,85,2],["Retrait et effacement des anciens serveurs",85,100,3]] },
+  { id:"m-stockage", cat:"Infrastructure et poste de travail", nom:"Stockage et partages de fichiers",
+    jalons:[["Nouvelle arborescence validée",30,1],["Données migrées",80,1],["Ancien stockage arrêté",100,0]],
+    taches:[["Volumétrie et droits actuels",0,15,0],["Nouvelle arborescence et droits par service",12,30,0],["Installation du stockage",30,45,1],
+      ["Nettoyage avec les services",35,60,1],["Migration des données",60,80,1],["Contrôle des accès",80,90,2],["Arrêt de l'ancien stockage",90,100,2]] },
+  { id:"m-windows", cat:"Infrastructure et poste de travail", nom:"Mise à niveau du parc postes (Windows 11)",
+    jalons:[["Image validée",25,1],["Pilote validé",45,0],["Parc migré",90,1]],
+    taches:[["Inventaire : compatibilité matérielle et applications",0,15,0],["Préparation de l'image et des stratégies",15,25,0],
+      ["Tests des applications métier",20,40,1],["Pilote avec la DSI et un service",35,45,1],["Planning de migration par service",40,50,2],
+      ["Migration des postes",50,90,2],["Remplacement des postes incompatibles",50,90,2]] },
+  { id:"m-impression", cat:"Infrastructure et poste de travail", nom:"Parc d'impression (copieurs, impression sécurisée)",
+    jalons:[["Prestataire choisi",30,1],["Copieurs installés",70,1],["Anciens contrats résiliés",100,0]],
+    taches:[["Inventaire des imprimantes et volumes",0,15,0],["Consultation des prestataires",12,30,0],["Plan d'implantation",30,45,1],
+      ["Impression sécurisée par badge",40,65,1],["Installation et pilotes",55,70,1],["Communication et guide",65,80,2],["Retrait et résiliation",80,100,2]] },
+  { id:"m-mobile", cat:"Infrastructure et poste de travail", nom:"Flotte mobile et gestion des appareils (MDM)",
+    jalons:[["Politique mobile validée",25,1],["MDM en service",55,0],["Flotte enrôlée",90,1]],
+    taches:[["Inventaire des smartphones et forfaits",0,15,0],["Politique d'usage et charte",12,25,0],["Choix de l'outil MDM",20,35,1],
+      ["Configuration et profils",35,55,1],["Renégociation des forfaits",30,60,1],["Enrôlement des appareils",55,90,2]] },
+  { id:"m-supervision", cat:"Infrastructure et poste de travail", nom:"Supervision et alertes",
+    jalons:[["Périmètre défini",20,0],["Supervision en service",60,1],["Astreinte et procédures prêtes",90,1]],
+    taches:[["Liste des équipements et services critiques",0,20,0],["Choix de l'outil",15,30,1],["Installation et sondes",30,60,1],
+      ["Seuils et alertes",45,70,2],["Tableaux de bord",60,80,2],["Procédures de réaction",70,90,2]] },
+  { id:"m-sallesrv", cat:"Infrastructure et poste de travail", nom:"Salle serveur (onduleur, climatisation, sécurité)",
+    jalons:[["Diagnostic réalisé",20,0],["Travaux terminés",80,1],["Tests de coupure réussis",95,1]],
+    taches:[["Diagnostic électrique, thermique et accès",0,20,0],["Devis et choix des entreprises",20,40,1],["Onduleur et arrêt automatique des serveurs",40,75,1],
+      ["Climatisation redondante",40,80,1],["Contrôle d'accès et détection incendie",50,80,1],["Test de coupure électrique",85,95,2]] },
+  { id:"m-sdwan", cat:"Infrastructure et poste de travail", nom:"Liens internet et interconnexion des sites",
+    jalons:[["Opérateur choisi",30,1],["Liens livrés",70,1],["Bascule terminée",95,1]],
+    taches:[["Inventaire des liens et besoins de débit",0,15,0],["Consultation des opérateurs",12,30,0],["Commande et délais de livraison",30,70,1],
+      ["Configuration pare-feu et routage",55,75,2],["Bascule site par site",75,95,2],["Résiliation des anciens liens",90,100,-1]] },
+  { id:"m-visio", cat:"Infrastructure et poste de travail", nom:"Équipement visio des salles de réunion",
+    jalons:[["Solution choisie",30,1],["Salles équipées",80,1]],
+    taches:[["Recensement des salles et usages",0,15,0],["Test de solutions",15,30,0],["Commande",30,40,1],["Installation salle par salle",40,80,1],
+      ["Guide et formation express",70,90,1]] },
+  { id:"m-batiment", cat:"Infrastructure et poste de travail", nom:"Vidéoprotection et contrôle d'accès des bâtiments",
+    jalons:[["Cahier des charges validé",25,1],["Installation terminée",80,1],["Mise en service",95,1]],
+    taches:[["Besoins avec les services généraux",0,15,0],["Contraintes RGPD et déclarations",10,25,0],["Consultation des installateurs",20,40,1],
+      ["Réseau dédié et intégration",40,70,1],["Installation",45,80,1],["Droits d'accès et badges",70,90,2],["Information du personnel",80,95,2]] },
+
+  /* ---------- sécurité ---------- */
+  { id:"m-edr", cat:"Sécurité et conformité", nom:"Antivirus nouvelle génération (EDR)",
+    jalons:[["Solution choisie",25,1],["Pilote validé",45,0],["Parc protégé",85,1]],
+    taches:[["Comparatif et essais",0,25,0],["Politiques et exclusions",25,40,1],["Pilote sur la DSI",35,45,1],["Déploiement sur les postes",45,75,2],
+      ["Déploiement sur les serveurs",60,85,2],["Surveillance des alertes (interne ou prestataire)",75,100,-1]] },
+  { id:"m-ot", cat:"Sécurité et conformité", nom:"Sécurisation du réseau industriel (OT)",
+    jalons:[["Cartographie de l'atelier faite",25,1],["Segmentation en place",75,1],["Accès distants sécurisés",95,1]],
+    taches:[["Inventaire des automates, PC industriels et accès",0,25,0],["Analyse des flux atelier ↔ bureautique",20,35,1],["Architecture de segmentation",30,45,1],
+      ["Mise en place des pare-feu (hors cadence)",45,75,1],["Sécurisation des télémaintenances fournisseurs",60,95,2],["Procédures avec la maintenance",80,100,-1]] },
+  { id:"m-patch", cat:"Sécurité et conformité", nom:"Gestion des mises à jour de sécurité",
+    jalons:[["Processus validé",30,1],["Outil en service",60,0],["Parc à jour",90,1]],
+    taches:[["État des lieux des versions",0,15,0],["Processus et calendrier mensuel",15,30,0],["Outil de déploiement",30,60,1],
+      ["Groupes de test et de production",45,65,1],["Rattrapage des retards",60,90,2],["Indicateur mensuel de conformité",85,100,-1]] },
+  { id:"m-sensib", cat:"Sécurité et conformité", nom:"Campagne de sensibilisation cybersécurité",
+    jalons:[["Programme validé",20,1],["Sessions réalisées",80,1],["Bilan présenté",100,0]],
+    taches:[["Choix des thèmes et des supports",0,20,0],["Faux phishing initial",15,25,0],["Sessions par service",25,80,1],
+      ["Affiches et rappels",30,90,1],["Faux phishing de contrôle",80,90,1],["Bilan et indicateurs",90,100,2]] },
+  { id:"m-droits", cat:"Sécurité et conformité", nom:"Revue annuelle des droits d'accès",
+    jalons:[["Extractions faites",25,0],["Revue par les responsables terminée",70,1],["Corrections appliquées",95,1]],
+    taches:[["Extraction des comptes et droits par application",0,25,0],["Envoi aux responsables de service",25,30,1],["Relances",35,65,1],
+      ["Suppression des comptes inactifs et droits en trop",70,95,2],["Rapport et preuves pour l'audit",90,100,-1]] },
+
+  /* ---------- documentation et gouvernance ---------- */
+  DOC("Rédaction du PRA / PCA", "m-doc-pra", [["Recensement des applications critiques et délais de reprise",15,35,1],
+    ["Scénarios de sinistre et procédures de reprise",30,55,1],["Annuaire de crise et prestataires",40,55,1]], true),
+  DOC("Procédures d'exploitation informatique", "m-doc-exploit", [["Sauvegardes et restaurations",20,50,1],["Arrivées et départs des salariés",20,45,1],
+    ["Gestion des mises à jour et des incidents",30,55,1],["Tâches récurrentes (quotidiennes, mensuelles)",35,55,1]], true),
+  DOC("Modes opératoires utilisateurs", "m-doc-modeop", [["Liste des modes opératoires par application",15,25,1],["Rédaction avec captures d'écran",25,55,1],
+    ["Vidéos courtes pour les gestes fréquents",40,60,1]]),
+  DOC("Cartographie du système d'information", "m-doc-carto", [["Cartographie applicative et flux",20,45,1],["Cartographie réseau et serveurs",20,50,1],
+    ["Fournisseurs, contrats et contacts",30,55,1]]),
+  DOC("Charte informatique", "m-doc-charte", [["Rédaction de la charte",20,50,1],["Avis du CSE et des RH",45,60,1],["Annexion au règlement intérieur",60,70,1]]),
+  DOC("Politique de sécurité du SI (PSSI)", "m-doc-pssi", [["Analyse des risques",15,35,1],["Règles de sécurité par domaine",30,55,1],["Plan d'actions associé",45,60,1]]),
+  DOC("Documentation technique d'une application", "m-doc-appli", [["Architecture, serveurs et dépendances",20,45,1],["Paramétrage et spécifiques",25,50,1],
+    ["Procédure de redémarrage et contacts éditeur",35,55,1]], true),
+  { id:"m-schema", cat:"Documentation et gouvernance", nom:"Schéma directeur du SI (plan à 3 ans)",
+    jalons:[["Diagnostic partagé",30,1],["Feuille de route validée par la direction",80,1],["Présentation au comité de direction",95,1]],
+    taches:[["Entretiens avec chaque direction",0,25,0],["État des lieux applications, infrastructure, organisation",10,30,0],
+      ["Attentes métier et stratégie de l'entreprise",20,35,1],["Scénarios et projets candidats",35,55,1],["Chiffrage et priorisation",50,70,1],
+      ["Feuille de route et budget pluriannuel",65,80,1],["Présentation et arbitrages",80,95,2]] },
+  { id:"m-budget", cat:"Documentation et gouvernance", nom:"Budget informatique annuel",
+    jalons:[["Recensement terminé",40,0],["Budget présenté",80,1],["Budget validé",100,1]],
+    taches:[["Bilan des dépenses de l'année",0,25,0],["Contrats et renouvellements à venir",10,35,0],["Demandes des services",15,40,0],
+      ["Plan d'investissement et de renouvellement",40,65,1],["Arbitrages avec la direction financière",65,80,1],["Présentation au comité de direction",80,100,2]] },
+  { id:"m-licences", cat:"Documentation et gouvernance", nom:"Revue des contrats et licences",
+    jalons:[["Inventaire terminé",40,1],["Optimisations décidées",70,1],["Contrats renégociés",95,1]],
+    taches:[["Inventaire des contrats, échéances et préavis",0,30,0],["Comptage des licences réellement utilisées",15,40,0],
+      ["Identification des doublons et sous-utilisations",40,60,1],["Arbitrages",60,70,1],["Renégociations et résiliations",70,95,2],["Calendrier des échéances",90,100,-1]] },
+  { id:"m-inventaire", cat:"Documentation et gouvernance", nom:"Inventaire du parc et gestion des actifs",
+    jalons:[["Outil choisi",25,0],["Inventaire complet",70,1],["Processus en place",95,1]],
+    taches:[["Choix de l'outil d'inventaire",0,25,0],["Remontée automatique des postes et serveurs",25,50,1],["Inventaire physique et étiquetage",30,70,1],
+      ["Rapprochement avec les factures et contrats",50,75,2],["Processus d'entrée et de sortie du matériel",70,95,2]] },
+  { id:"m-itil", cat:"Documentation et gouvernance", nom:"Processus de support (incidents, demandes, changements)",
+    jalons:[["Processus définis",35,1],["Processus en application",75,1],["Premier bilan",100,0]],
+    taches:[["Analyse du fonctionnement actuel",0,15,0],["Priorités et délais de traitement",15,30,0],["Circuit des demandes et validations",20,35,0],
+      ["Gestion des changements et comité",25,40,0],["Paramétrage dans l'outil de ticketing",40,65,1],["Communication aux utilisateurs",60,75,1],["Indicateurs mensuels",75,100,2]] },
+
+  /* ---------- organisation et achats ---------- */
+  { id:"m-infogerance", cat:"Organisation et achats", nom:"Infogérance : choix et transition d'un prestataire",
+    jalons:[["Périmètre défini",20,1],["Prestataire retenu",50,1],["Transition terminée",85,1],["Premier comité de suivi",100,0]],
+    taches:[["Périmètre et niveaux de service attendus",0,20,0],["Consultation",20,40,1],["Choix et contrat (engagements, réversibilité)",40,50,1],
+      ["Transfert de connaissance et documentation",50,80,2],["Accès et outils du prestataire",55,70,2],["Période de fonctionnement accompagné",70,85,2],["Comité de suivi mensuel",85,100,3]] },
+  { id:"m-reversibilite", cat:"Organisation et achats", nom:"Changement de prestataire ou d'éditeur (réversibilité)",
+    jalons:[["Plan de réversibilité validé",25,1],["Données récupérées",65,1],["Ancien contrat clos",100,0]],
+    taches:[["Relecture du contrat et préavis",0,15,0],["Inventaire des données, accès et documents",10,25,0],["Plan de réversibilité avec le sortant",20,30,0],
+      ["Export et contrôle des données",30,65,1],["Transfert des accès et comptes",50,75,2],["Résiliation et restitution",85,100,2]] },
+  { id:"m-onboarding", cat:"Organisation et achats", nom:"Processus arrivées et départs des salariés",
+    jalons:[["Processus validé avec les RH",40,1],["Outil ou formulaire en service",75,1]],
+    taches:[["Recensement des accès et du matériel par poste",0,25,0],["Circuit avec les RH et managers",20,40,0],["Formulaire ou workflow",40,70,1],
+      ["Procédure de départ et restitution du matériel",40,70,1],["Kit d'accueil informatique",55,75,1],["Contrôle trimestriel",75,100,-1]] },
+  { id:"m-filiale", cat:"Organisation et achats", nom:"Intégration informatique d'une nouvelle entité",
+    jalons:[["Audit de l'entité terminé",25,1],["Plan d'intégration validé",35,1],["Réseau et messagerie intégrés",70,1],["Applications unifiées",95,1]],
+    taches:[["Audit : parc, applications, contrats, sécurité",0,25,0],["Plan d'intégration et budget",25,35,1],["Interconnexion réseau",35,60,2],
+      ["Migration de la messagerie et des comptes",40,70,2],["Mise aux normes de sécurité",40,80,3],["Migration vers les applications du groupe",60,95,3],["Reprise des contrats",50,90,3]] },
+  { id:"m-telecom", cat:"Organisation et achats", nom:"Renégociation des contrats télécoms",
+    jalons:[["Inventaire des lignes terminé",30,0],["Offre retenue",70,1],["Bascule terminée",100,1]],
+    taches:[["Inventaire des lignes fixes, mobiles et liens",0,30,0],["Suppression des lignes inutiles",20,40,1],["Consultation des opérateurs",30,60,1],
+      ["Négociation",55,70,1],["Bascule et portabilités",70,100,2]] }
+);
+
 const modelesDispo = () => MODELES_PROJET.concat(DB.settings.modelesPerso || []);
+function selectModele(m){
+  const opt = x => '<option value="' + esc(x.id) + '"' + (m.modeleP === x.id ? " selected" : "") + '>' + esc(x.nom) + '</option>';
+  const perso = DB.settings.modelesPerso || [];
+  return '<select id="m-modeleP" data-f="modeleP" data-rerender="1"><option value="">Projet vierge</option>' +
+    (perso.length ? '<optgroup label="Mes modèles">' + perso.map(opt).join("") + '</optgroup>' : "") +
+    CATS_MODELES.map(c => '<optgroup label="' + esc(c) + '">' + MODELES_PROJET.filter(x => x.cat === c).map(opt).join("") + '</optgroup>').join("") +
+    '</select>';
+}
+function apercuModele(id){
+  const mo = modelesDispo().find(x => x.id === id);
+  if(!mo) return "Choisissez un modèle pour poser d'un coup les jalons et les tâches types, calés sur les dates du projet. Tout reste modifiable ensuite.";
+  return "<b>" + mo.jalons.length + " jalons</b> : " + esc(mo.jalons.map(j => j[0] + (j[2] ? " ◆" : "")).join(" → ")) +
+    ". <b>" + mo.taches.length + " tâches</b>, placées entre le début et la fin du projet. ◆ = jalon clé.";
+}
 function appliquerModele(p, mid){
   const mo = modelesDispo().find(x => x.id === mid);
   if(!mo || !p.debut || !p.fin) return "";
@@ -2360,6 +2741,9 @@ function enregistrerRapide(){
    de couleur suivent. La version texte, avec des pastilles emoji, sert au
    partage sur téléphone et de secours quand le HTML est refusé.
    ============================================================ */
+/* Dans ce qui part vers l'extérieur (mails, rapport, CSV), le tiret long
+   devient un tiret simple : plus sobre, plus proche d'un mail écrit à la main. */
+const tiret = x => String(x == null ? "" : x).replace(/—/g, "-");
 const MODELES = { point:"Point d'avancement", odj:"Ordre du jour", relance:"Relance", synthese:"Synthèse direction" };
 const COUL = { vert:"#0B6B45", orange:"#B3701E", rouge:"#B32424", gris:"#888888", info:"#888888" };
 const EMOJI = { vert:"🟢", orange:"🟠", rouge:"🔴", gris:"⚪", info:"⚪" };
@@ -2396,6 +2780,7 @@ function changerModele(m, modele){
     modele === "odj" ? ref + " — ordre du jour du point projet" :
     modele === "relance" ? "Vos actions projets — point du " + auj :
     "Point portefeuille projets" + (DB.settings.organisation ? " " + DB.settings.organisation : "") + " — " + auj;
+  m.objet = tiret(m.objet);
   m.intro = modele === "point" ? "Bonjour à tous,\n\nVoici le point d'avancement du projet « " + (p ? p.nom : "") + " »." :
     modele === "odj" ? "Bonjour à tous,\n\nVoici l'ordre du jour de notre prochain point sur le projet « " + (p ? p.nom : "") + " ». N'hésitez pas à me faire part des sujets à ajouter." :
     modele === "relance" ? "Bonjour " + prenom(pe && pe.nom) + ",\n\nVoici les actions projets qui vous sont confiées et qui arrivent à échéance. Pouvez-vous me faire un retour sur leur avancement et me signaler tout blocage ?" :
@@ -2548,7 +2933,7 @@ function rendreMail(m){
   });
   fermer();
   h += '<p style="margin:16px 0 0">' + e(sig) + '</p>';
-  return { text:tx.join("\n"), html:'<div style="font-family:Segoe UI,Calibri,Arial,sans-serif;font-size:14px;line-height:1.5;color:#1a1a1a">' + h + '</div>' };
+  return { text:tiret(tx.join("\n")), html:tiret('<div style="font-family:Segoe UI,Calibri,Arial,sans-serif;font-size:14px;line-height:1.5;color:#1a1a1a">' + h + '</div>') };
 }
 async function copierRiche(html, text){
   try{
@@ -2567,7 +2952,7 @@ function adressesMail(m){
 }
 async function envoyerMail(act){
   const m = state.modal; if(!m) return;
-  const r = rendreMail(m), objet = (m.objet || "").trim();
+  const r = rendreMail(m), objet = tiret((m.objet || "").trim());
   if(m.modele === "synthese" && DB.settings.mailDirection !== (m.autres || "")){ DB.settings.mailDirection = m.autres || ""; sauver(true); }
   if(act === "mail-partager"){
     try{ await navigator.share({ title:objet, text:objet + "\n\n" + r.text }); }catch(e){}
@@ -2647,7 +3032,10 @@ function vueReglages(){
   const mp = s.modelesPerso || [];
   h += '<div class="bloc"><div class="bloc-h">Modèles de projet</div><div class="bloc-b">' +
     '<div class="aide" style="margin:0 0 6px">Proposés à la création d\'un projet. Pour en ajouter, ouvrez un projet et touchez « En faire un modèle ».</div>' +
-    MODELES_PROJET.map(x => '<div class="lig"><div class="l">' + esc(x.nom) + '<div class="d">' + x.jalons.length + ' jalons · ' + x.taches.length + ' tâches · fourni</div></div></div>').join("") +
+    '<div class="lig"><div class="l">' + MODELES_PROJET.length + ' modèles fournis<div class="d">' + CATS_MODELES.map(c => c + " (" + MODELES_PROJET.filter(x => x.cat === c).length + ")").join(" · ") + '</div></div>' +
+      '<button class="btn pt" data-act="basculer-modeles">' + (state.voirModeles ? "Masquer" : "Voir") + '</button></div>' +
+    (state.voirModeles ? CATS_MODELES.map(c => '<div class="jour-h">' + esc(c) + '</div>' + MODELES_PROJET.filter(x => x.cat === c).map(x =>
+      '<div class="lig"><div class="l">' + esc(x.nom) + '<div class="d">' + esc(x.jalons.map(j => j[0]).join(" → ")) + ' · ' + x.taches.length + ' tâches</div></div></div>').join("")).join("") : "") +
     mp.map(x => '<div class="lig"><div class="l">' + esc(x.nom) + '<div class="d">' + x.jalons.length + ' jalons · ' + x.taches.length + ' tâches · le vôtre</div></div>' +
       '<button class="btn pt dang" data-act="modele-suppr" data-id="' + x.id + '">Retirer</button></div>').join("") +
     '</div></div>';
@@ -2744,14 +3132,23 @@ function vueModal(m){
     c = '<h3>' + (m.id ? "Modifier le projet" : "Nouveau projet") + '</h3>' +
       '<div class="sous">' + (m.id ? "Tout reste modifiable." : "Le nom et deux dates suffisent pour commencer ; le reste peut attendre.") + '</div>' +
       fChamp("Nom du projet", fTxt("nom", m.nom, "Migration messagerie, nouveau SIRH…"), "", "m-nom") +
-      (!m.id ? fChamp("Partir d'un modèle", fSel("modeleP", m.modeleP, modelesDispo().map(x => [x.id, x.nom + (x.perso ? " (perso)" : "")]), "Projet vierge"),
-        "Pose les jalons et tâches types, calés sur les dates du projet. Tout reste modifiable.", "m-modeleP") : "") +
-      '<div class="duo">' + fChamp("Code", fTxt("code", m.code, "PRJ-24"), "", "m-code") +
+      (!m.id ? fChamp("Partir d'un modèle", selectModele(m), apercuModele(m.modeleP), "m-modeleP") : "") +
+      '<div class="duo">' + fChamp("Code", fTxt("code", m.code, "PRJ-26-01"), !m.id && m.codeAuto ? "Généré : service-année-numéro. Modifiable." : "", "m-code") +
         fChamp("Statut", fSel("statut", m.statut, STATUTS_P), "", "m-statut") + '</div>' +
       fChamp("Priorité", fSeg("prio", m.prio, PRIOS.map(([k,l]) => [k, l.replace(" · ", " ")]))) +
-      '<div class="duo">' + fChamp("Service demandeur", fSel("service", m.service, optsServ(m.service), "—"), "", "m-service") +
-        fChamp("Chef de projet", fSel("chef", m.chef, optsPers(), "—"), aidePers(), "m-chef") + '</div>' +
-      fChamp("Sponsor / demandeur", fTxt("sponsor", m.sponsor, "Qui porte le besoin côté métier"), "", "m-sponsor") +
+      fChamp("Service demandeur", fSel("service", m.service, optsServ(m.service).concat([["__new", "+ Nouveau service…"]]), "—", true), "", "m-service") +
+      (m.ajoutSvc ? '<div class="inline-add"><div class="duo">' +
+          fChamp("Nom du service", '<input type="text" id="m-nsvc" placeholder="Qualité, Achats…" autocomplete="off">', "", "m-nsvc") +
+          fChamp("Responsable / directeur", '<input type="text" id="m-nresp" placeholder="Prénom Nom (fonction)" autocomplete="off">', "", "m-nresp") + '</div>' +
+          '<div class="btns" style="margin:4px 0 0"><button class="btn pt pri" data-act="m-svc-ok">Ajouter le service</button><button class="btn pt" data-act="m-svc-annuler">Annuler</button></div></div>' : "") +
+      fChamp("Sponsor / demandeur", fTxt("sponsor", m.sponsor, "Qui porte le besoin côté métier"),
+        m.sponsorAuto && m.sponsor ? "Repris du responsable du service. Modifiable." : m.service && !respService(m.service) ? "Astuce : renseignez le responsable du service dans Réglages → Services pour le reprendre automatiquement." : "", "m-sponsor") +
+      fChamp("Chef de projet", fSel("chef", m.chef, optsPers().concat([["__new", "+ Nouvelle personne…"]]), "—", true), "", "m-chef") +
+      (m.ajoutChef ? '<div class="inline-add"><div class="duo">' +
+          fChamp("Nom", '<input type="text" id="m-ncnom" placeholder="Prénom Nom" autocomplete="off">', "", "m-ncnom") +
+          fChamp("Service", '<select id="m-ncsvc">' + optsServ("").map(([a,b]) => '<option value="' + esc(a) + '"' + (a === (DB.settings.services.includes("DSI") ? "DSI" : m.service) ? " selected" : "") + '>' + esc(b) + '</option>').join("") + '</select>', "", "m-ncsvc") + '</div>' +
+          fChamp("E-mail", '<input type="email" id="m-ncmail" placeholder="facultatif" autocomplete="off">', "", "m-ncmail") +
+          '<div class="btns" style="margin:4px 0 0"><button class="btn pt pri" data-act="m-chef-ok">Ajouter à l\'équipe</button><button class="btn pt" data-act="m-chef-annuler">Annuler</button></div></div>' : "") +
       '<div class="duo">' + fChamp("Début", fTxt("debut", m.debut, "", "date"), "", "m-debut") +
         fChamp("Fin prévue", fTxt("fin", m.fin, "", "date"), "", "m-fin") + '</div>' +
       (m.id ? fChamp("Fin initiale (référence)", fTxt("finBase", m.finBase, "", "date"),
@@ -2848,10 +3245,12 @@ function vueModal(m){
   else if(m.type === "rapide") c = vueRapide(m);
   else if(m.type === "services"){
     const S = DB.settings.services;
-    c = '<h3>Services</h3><div class="sous">Les services avec qui vous travaillez. Ils servent à rattacher projets et personnes, et à filtrer.</div>' +
-      S.map((s,i) => '<div class="lig" style="border-top:1px solid var(--trait2);padding:9px 0"><div class="l">' + esc(s) + '</div>' +
+    c = '<h3>Services</h3><div class="sous">Les services avec qui vous travaillez, et leur responsable : il devient automatiquement le sponsor des projets que le service demande.</div>' +
+      S.map((s,i) => '<div class="lig" style="border-top:1px solid var(--trait2);padding:9px 0;flex-wrap:wrap"><div class="l" style="flex:0 0 110px">' + esc(s) + '</div>' +
+        '<input type="text" class="svc-resp" data-svc="' + esc(s) + '" value="' + esc(respService(s)) + '" placeholder="Responsable" autocomplete="off" style="flex:1;min-width:140px;padding:7px 10px;font-size:14px">' +
         '<button class="btn pt dang" data-act="svc-suppr" data-id="' + i + '">Retirer</button></div>').join("") +
-      '<div class="champ" style="display:flex;gap:8px;margin-top:14px"><input type="text" id="m-svc" placeholder="Nouveau service" autocomplete="off">' +
+      '<div class="champ" style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><input type="text" id="m-svc" placeholder="Nouveau service" autocomplete="off" style="flex:1;min-width:130px">' +
+      '<input type="text" id="m-svcresp" placeholder="Son responsable" autocomplete="off" style="flex:1;min-width:130px">' +
       '<button class="btn pri" data-act="svc-ajout">Ajouter</button></div>' +
       '<div class="btns grow"><button class="btn" data-act="fermer-modal">Fermer</button></div>';
   }
@@ -2872,10 +3271,38 @@ function capturerModal(){
 const copie = o => JSON.parse(JSON.stringify(o));
 
 /* ---------- création des fenêtres ---------- */
+/* ---------- remplissages automatiques d'un nouveau projet ----------
+   Code : abrégé du service, année, numéro d'ordre (DSI-26-03). Sponsor : le
+   responsable déclaré pour le service. Tous deux suivent le service choisi
+   tant qu'on ne les a pas retouchés à la main. */
+function ajouterService(nom, resp){
+  const exist = DB.settings.services.find(s => norm(s) === norm(nom));
+  const n = exist || nom;
+  if(!exist) DB.settings.services.push(n);
+  if(resp){ DB.settings.respServices = DB.settings.respServices || {}; DB.settings.respServices[n] = resp; }
+  return n;
+}
+const respService = s => ((DB.settings.respServices || {})[s] || "").trim();
+function codeAuto(service, sauf){
+  const pre = (service ? norm(service).replace(/[^a-z0-9]/g, "").slice(0, 4).toUpperCase() : "") || "PRJ";
+  const base = pre + "-" + String(new Date().getFullYear()).slice(2) + "-";
+  const autres = V(DB.projets).filter(p => p.id !== sauf);
+  let n = 1;
+  autres.forEach(p => { if(p.code && p.code.startsWith(base)){ const k = parseInt(p.code.slice(base.length), 10); if(k >= n) n = k + 1; } });
+  const pris = new Set(autres.map(p => p.code));
+  while(pris.has(base + p2(n))) n++;
+  return base + p2(n);
+}
+function autoProjet(m){
+  if(!m.id && m.codeAuto) m.code = codeAuto(m.service);
+  if(m.sponsorAuto) m.sponsor = respService(m.service);
+}
 function mProjet(p){
-  if(p) return { type:"projet", ...copie(p), prio:String(p.prio || ""), avance:String(num(p.avance)), equipe:(p.equipe||[]).slice() };
-  const auj = todayISO();
-  return { type:"projet", nom:"", code:"", statut:"encours", prio:"2", service:DB.settings.f.service || "", chef:DB.personnes[DB.settings.moi] ? DB.settings.moi : "", sponsor:"",
+  if(p) return { type:"projet", ...copie(p), prio:String(p.prio || ""), avance:String(num(p.avance)), equipe:(p.equipe||[]).slice(),
+    sponsorAuto:!p.sponsor };
+  const auj = todayISO(), service = DB.settings.f.service || "";
+  return { type:"projet", nom:"", code:codeAuto(service), codeAuto:true, sponsorAuto:true, statut:"encours", prio:"2", service,
+    sponsor:respService(service), chef:DB.personnes[DB.settings.moi] ? DB.settings.moi : "",
     debut:auj, fin:addJ(auj, 90), budget:"", conso:"", charge:"", chargeConso:"", avance:"0", meteo:"auto",
     valeur:"", effort:"", equipe:[], description:"", focus:"m-nom" };
 }
@@ -3080,7 +3507,7 @@ function supprimerPersonne(id){
 }
 function dupliquerProjet(id){
   const p = DB.projets[id]; if(!p) return;
-  const n = copie(p); n.id = uid(); n.nom = p.nom + " (copie)"; n.cree = Date.now(); n.maj = Date.now(); n.conso = 0; n.chargeConso = 0;
+  const n = copie(p); n.id = uid(); n.nom = p.nom + " (copie)"; n.code = codeAuto(n.service); delete n.cloture; delete n.meteoNotee; n.cree = Date.now(); n.maj = Date.now(); n.conso = 0; n.chargeConso = 0;
   DB.projets[n.id] = n;
   const mapJ = {};
   jalonsDe(id).forEach(j => { const x = copie(j); x.id = uid(); x.projet = n.id; x.fait = false; mapJ[j.id] = x.id; DB.jalons[x.id] = x; });
@@ -3117,7 +3544,7 @@ function exporterCSV(){
       a.T.length, a.tRetard.length, a.tBloq.length, a.jRetard.length, a.rOuv.length, a.rMax || "", p.valeur, p.effort,
       dp ? frDate(dp.date, true) + " — " + dp.texte : ""].map(cel).join(";");
   });
-  telecharger("jalon-portefeuille-" + tampon() + ".csv", new Blob(["﻿" + [tete.join(";")].concat(lignes).join("\r\n")], { type:"text/csv;charset=utf-8" }));
+  telecharger("jalon-portefeuille-" + tampon() + ".csv", new Blob(["﻿" + [tete.join(";")].concat(lignes).join("\r\n").replace(/—/g, "-")], { type:"text/csv;charset=utf-8" }));
   toast(L.length + " projet" + pl(L.length) + " exporté" + pl(L.length) + " (filtres appliqués)");
 }
 function importer(){
@@ -3228,6 +3655,8 @@ function exemple(){
       taches:8, tachesFaites:8, jalons:3, jalonsAtteints:3, jalonsATemps:2, risques:2 } };
   pt(erp, J(-30), "auto", "Projet clôturé — objectifs atteints", "");
   if(!DB.settings.organisation) DB.settings.organisation = "DSI";
+  DB.settings.respServices = { "Direction":"Direction générale", "DSI":"Responsable informatique", "Finance":"DAF", "RH":"DRH",
+    "Production":"Directeur industriel", "Commercial":"Directeur commercial", "Logistique":"Responsable logistique", ...(DB.settings.respServices || {}) };
   sauver(); render(); toast("Exemple chargé : 7 projets, 8 personnes");
 }
 
@@ -3384,6 +3813,8 @@ document.addEventListener("click", async ev => {
   if(act === "enregistrer-rapide") return enregistrerRapide();
   if(act === "p-vue"){ state.pVue = id; state.q = ""; render(); return; }
   if(act === "j-filtre"){ state.jFiltre = id; render(); return; }
+  if(act === "basculer-modeles"){ state.voirModeles = !state.voirModeles; render(); return; }
+  if(act === "mes-vue"){ DB.settings.mesVue = id; sauver(true); render(); return; }
   if(act === "mes-tout"){ state.mesTout = !state.mesTout; render(); return; }
 
   /* ---- mails ---- */
@@ -3404,12 +3835,33 @@ document.addEventListener("click", async ev => {
   if(act === "module"){ DB.settings.modules[id] = !DB.settings.modules[id]; if(id === "budget" && !DB.settings.modules.budget) DB.settings.masque = false; sauver(true); render(); return; }
   if(act === "obsolete"){ DB.settings.obsolete = Number(id); sauver(true); render(); return; }
   if(act === "svc-ajout"){
-    const i = $("#m-svc"), v = (i && i.value || "").trim();
+    const i = $("#m-svc"), v = (i && i.value || "").trim(), r = (($("#m-svcresp") || {}).value || "").trim();
     if(!v) return;
-    if(!DB.settings.services.some(s => norm(s) === norm(v))) DB.settings.services.push(v);
+    ajouterService(v, r);
     sauver(); render(); const j = $("#m-svc"); if(j) j.focus(); return;
   }
-  if(act === "svc-suppr"){ DB.settings.services.splice(Number(id), 1); if(!DB.settings.services.includes(DB.settings.f.service)) DB.settings.f.service = ""; sauver(); render(); return; }
+  if(act === "m-svc-ok"){
+    const v = (($("#m-nsvc") || {}).value || "").trim(), r = (($("#m-nresp") || {}).value || "").trim();
+    if(!v){ toast("Indiquez le nom du service"); return; }
+    capturerModal();
+    const m = state.modal;
+    m.service = ajouterService(v, r); m.ajoutSvc = false; autoProjet(m);
+    sauver(); render(); toast("Service « " + m.service + " » ajouté"); return;
+  }
+  if(act === "m-svc-annuler"){ capturerModal(); state.modal.ajoutSvc = false; render(); return; }
+  if(act === "m-chef-ok"){
+    const nom = (($("#m-ncnom") || {}).value || "").trim();
+    if(!nom){ toast("Indiquez un nom"); return; }
+    capturerModal();
+    const pe = { id:uid(), nom, service:(($("#m-ncsvc") || {}).value || ""), role:"Chef de projet", email:(($("#m-ncmail") || {}).value || "").trim(),
+      dispo:2.5, note:"", cree:Date.now() };
+    DB.personnes[pe.id] = pe;
+    const m = state.modal; m.chef = pe.id; m.ajoutChef = false;
+    sauver(); render(); toast(nom + " ajouté·e à l'équipe"); return;
+  }
+  if(act === "m-chef-annuler"){ capturerModal(); state.modal.ajoutChef = false; render(); return; }
+  if(act === "svc-suppr"){ const nomS = DB.settings.services[Number(id)]; if(DB.settings.respServices) delete DB.settings.respServices[nomS];
+    DB.settings.services.splice(Number(id), 1); if(!DB.settings.services.includes(DB.settings.f.service)) DB.settings.f.service = ""; sauver(); render(); return; }
   if(act === "exporter-json") return exporterJSON();
   if(act === "exporter-csv") return exporterCSV();
   if(act === "importer") return importer();
@@ -3433,6 +3885,9 @@ document.addEventListener("input", ev => {
   const el = ev.target;
   if(el.id === "q"){ state.q = el.value; render(); return; }
   if(el.id === "set-org"){ DB.settings.organisation = el.value; sauver(); return; }
+  if(state.modal && state.modal.type === "projet" && el.id === "m-code") state.modal.codeAuto = false;
+  if(state.modal && state.modal.type === "projet" && el.id === "m-sponsor") state.modal.sponsorAuto = !el.value.trim();
+  if(el.classList && el.classList.contains("svc-resp")){ DB.settings.respServices = DB.settings.respServices || {}; DB.settings.respServices[el.dataset.svc] = el.value; sauver(); return; }
   if(el.id === "set-sig"){ DB.settings.signature = el.value; sauver(); return; }
   if(el.id === "set-dir"){ DB.settings.mailDirection = el.value; sauver(); return; }
   if(state.modal && state.modal.type === "mail" && el.closest && el.closest("#modal")){ capturerModal(); majApercuMail(); return; }
@@ -3443,7 +3898,19 @@ document.addEventListener("change", ev => {
   const el = ev.target;
   if(el.id === "set-moi"){ DB.settings.moi = el.value; sauver(true); render(); return; }
   if(el.dataset && el.dataset.filtre){ DB.settings.f[el.dataset.filtre] = el.value; sauver(true); render(); return; }
-  if(el.dataset && el.dataset.rerender){ capturerModal(); if(state.modal && el.dataset.f === "projet") state.modal.jalon = ""; render(); }
+  if(el.dataset && el.dataset.rerender){
+    capturerModal();
+    const m = state.modal;
+    if(m && el.dataset.f === "projet") m.jalon = "";
+    if(m && m.type === "projet" && el.dataset.f === "service"){
+      if(m.service === "__new"){ m.service = ""; m.ajoutSvc = true; m.focus = "m-nsvc"; }
+      else { m.ajoutSvc = false; autoProjet(m); }
+    }
+    if(m && m.type === "projet" && el.dataset.f === "chef"){
+      if(m.chef === "__new"){ m.chef = ""; m.ajoutChef = true; m.focus = "m-ncnom"; } else m.ajoutChef = false;
+    }
+    render();
+  }
 });
 document.addEventListener("keydown", ev => {
   if(ev.key === "Escape"){
@@ -3453,7 +3920,8 @@ document.addEventListener("keydown", ev => {
   }
   if(ev.key === "Enter" && state.modal && ev.target.tagName === "INPUT"){
     ev.preventDefault();
-    if(ev.target.id === "m-svc"){ const b = document.querySelector('[data-act="svc-ajout"]'); if(b) b.click(); return; }
+    const cible = { "m-svc":"svc-ajout", "m-svcresp":"svc-ajout", "m-nsvc":"m-svc-ok", "m-nresp":"m-svc-ok", "m-ncnom":"m-chef-ok", "m-ncmail":"m-chef-ok" }[ev.target.id];
+    if(cible){ const b = document.querySelector('[data-act="' + cible + '"]'); if(b) b.click(); return; }
     const b = document.querySelector(".mdl .btn.pri"); if(b) b.click();
   }
 });

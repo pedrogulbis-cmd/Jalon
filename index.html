@@ -269,6 +269,7 @@ button.tuile:active{background:var(--fond2)}
   padding:12px 2px 4px;border-bottom:1px solid var(--trait2)}
 .jour-h.dang{color:var(--dang)} .jour-h.acc{color:var(--acc)}
 .plus-r{width:100%;padding:11px 2px 4px;font-size:13px;color:var(--acc);text-align:center}
+.sheet.fixe,.mdl.fixe{animation:none}
 .inline-add{border:1px dashed var(--accB);background:var(--accF);border-radius:10px;padding:2px 12px 12px;margin:-4px 0 12px}
 /* météo du portefeuille */
 .mg{border-radius:14px;padding:14px 16px;margin:14px 0 4px;background:var(--fond2);border:1px solid var(--trait)}
@@ -1050,6 +1051,7 @@ function render(){
   const v = $("#view");
   const anc = document.querySelector(".sheet");
   const posSheet = anc ? anc.scrollTop : 0;
+  const md = document.querySelector(".mdl"), posM = md ? md.scrollTop : 0, modalAvant = state.modal;
   const posPage = window.scrollY;
   const g = document.querySelector(".gantt");
   const gx = g ? g.scrollLeft : null;
@@ -1059,6 +1061,8 @@ function render(){
   finally{ requestAnimationFrame(() => { v.style.minHeight = ""; }); }
   const neuf = document.querySelector(".sheet");
   if(neuf && posSheet) neuf.scrollTop = posSheet;
+  const md2 = document.querySelector(".mdl");
+  if(md2 && posM && state.modal === modalAvant) md2.scrollTop = posM;
   if(window.scrollY !== posPage) window.scrollTo(0, posPage);
   const g2 = document.querySelector(".gantt");
   if(g2){
@@ -1106,11 +1110,18 @@ function dessiner(){
   const s = state.sheet;
   if(s && s.t === "projet" && !DB.projets[s.id]) state.sheet = null;
   if(s && s.t === "personne" && !DB.personnes[s.id]) state.sheet = null;
-  $("#sheet").innerHTML = !state.sheet ? "" :
+  // Un panneau ou une fenêtre déjà ouverts ne rejouent pas leur animation
+  // d'entrée à chaque redessin : sans quoi chaque clic ressemble à un
+  // rechargement de la page.
+  const cle = state.sheet ? state.sheet.t + ":" + (state.sheet.id || "") : "";
+  let hs = !state.sheet ? "" :
     state.sheet.t === "projet" ? vueFiche(DB.projets[state.sheet.id]) :
     state.sheet.t === "personne" ? vuePersonne(DB.personnes[state.sheet.id]) :
     state.sheet.t === "revue" ? vueRevue() : vueRapport();
-  $("#modal").innerHTML = state.modal ? vueModal(state.modal) : "";
+  if(cle && cle === _cleSheet) hs = hs.replace('<div class="sheet', '<div class="sheet fixe');
+  _cleSheet = cle;
+  $("#sheet").innerHTML = hs;
+  $("#modal").innerHTML = htmlModal();
 
   if(fid){
     const el = document.getElementById(fid);
@@ -1125,6 +1136,27 @@ function dessiner(){
     const el = document.getElementById(state.modal.focus);
     if(el && document.activeElement !== el){ el.focus(); state.modal.focus = null; }
   }
+}
+let _cleSheet = "", _modalPrec = null;
+function htmlModal(){
+  let h = state.modal ? vueModal(state.modal) : "";
+  if(h && state.modal === _modalPrec) h = h.replace('<div class="mdl"', '<div class="mdl fixe"');
+  _modalPrec = state.modal;
+  return h;
+}
+/* Redessine la seule fenêtre ouverte, sans toucher à la page derrière : un
+   choix dans une liste ou un interrupteur ne doit rien faire bouger d'autre.
+   La position de défilement et le champ actif sont conservés. */
+function majModal(){
+  const anc = document.querySelector(".mdl"), pos = anc ? anc.scrollTop : 0;
+  const ae = document.activeElement, fid = ae && ae.id && ae.closest && ae.closest("#modal") ? ae.id : null;
+  $("#modal").innerHTML = htmlModal();
+  const nv = document.querySelector(".mdl");
+  if(nv) nv.scrollTop = pos;
+  const m = state.modal;
+  const cible = m && m.focus ? m.focus : fid;
+  if(cible){ const el = document.getElementById(cible); if(el) el.focus({ preventScroll:true }); if(m) m.focus = null; }
+  if(!state.modal && !$("#sheet").firstChild) document.body.style.overflow = "";
 }
 function libNouveau(){
   if(state.sheet && state.sheet.t === "projet") return "Nouvelle tâche";
@@ -3711,15 +3743,15 @@ document.addEventListener("click", async ev => {
   if(act === "modifier-point" && DB.journal[id]) return ouvrirModal(mPoint(DB.journal[id]));
 
   /* ---- champs des fenêtres ---- */
-  if(act === "m-set"){ capturerModal(); state.modal[el.dataset.k] = id; render(); return; }
-  if(act === "m-bool"){ capturerModal(); state.modal[el.dataset.k] = !state.modal[el.dataset.k]; render(); return; }
+  if(act === "m-set"){ capturerModal(); state.modal[el.dataset.k] = id; majModal(); return; }
+  if(act === "m-bool"){ capturerModal(); state.modal[el.dataset.k] = !state.modal[el.dataset.k]; majModal(); return; }
   if(act === "m-toggle"){
     capturerModal();
     const k = el.dataset.k, l = state.modal[k] = state.modal[k] || [];
     const i = l.indexOf(id); if(i < 0) l.push(id); else l.splice(i, 1);
-    render(); return;
+    majModal(); return;
   }
-  if(act === "m-rebaser"){ ev.preventDefault(); capturerModal(); state.modal.finBase = state.modal.fin; render(); toast("Fin initiale recalée sur " + frDate(state.modal.fin, true)); return; }
+  if(act === "m-rebaser"){ ev.preventDefault(); capturerModal(); state.modal.finBase = state.modal.fin; majModal(); toast("Fin initiale recalée sur " + frDate(state.modal.fin, true)); return; }
   if(act === "enregistrer-projet") return enregistrerProjet();
   if(act === "enregistrer-tache") return enregistrerTache();
   if(act === "enregistrer-jalon") return enregistrerJalon();
@@ -3821,11 +3853,11 @@ document.addEventListener("click", async ev => {
   if(act === "mail-projet") return ouvrirModal(mMail(el.dataset.m || "point", { projet:id }));
   if(act === "mail-personne") return ouvrirModal(mMail("relance", { personne:id }));
   if(act === "mail-synthese") return ouvrirModal(mMail("synthese", {}));
-  if(act === "mail-modele"){ capturerModal(); changerModele(state.modal, id); render(); return; }
+  if(act === "mail-modele"){ capturerModal(); changerModele(state.modal, id); majModal(); return; }
   if(act === "mail-dest"){
     const m = state.modal, cur = m.dest[id] || "";
     m.dest[id] = cur === "" ? "to" : cur === "to" ? "cc" : "";
-    capturerModal(); render(); return;
+    capturerModal(); majModal(); return;
   }
   if(act === "mail-copier" || act === "mail-ouvrir" || act === "mail-partager"){ capturerModal(); return envoyerMail(act); }
 
@@ -3846,9 +3878,9 @@ document.addEventListener("click", async ev => {
     capturerModal();
     const m = state.modal;
     m.service = ajouterService(v, r); m.ajoutSvc = false; autoProjet(m);
-    sauver(); render(); toast("Service « " + m.service + " » ajouté"); return;
+    sauver(); majModal(); toast("Service « " + m.service + " » ajouté"); return;
   }
-  if(act === "m-svc-annuler"){ capturerModal(); state.modal.ajoutSvc = false; render(); return; }
+  if(act === "m-svc-annuler"){ capturerModal(); state.modal.ajoutSvc = false; majModal(); return; }
   if(act === "m-chef-ok"){
     const nom = (($("#m-ncnom") || {}).value || "").trim();
     if(!nom){ toast("Indiquez un nom"); return; }
@@ -3857,9 +3889,9 @@ document.addEventListener("click", async ev => {
       dispo:2.5, note:"", cree:Date.now() };
     DB.personnes[pe.id] = pe;
     const m = state.modal; m.chef = pe.id; m.ajoutChef = false;
-    sauver(); render(); toast(nom + " ajouté·e à l'équipe"); return;
+    sauver(); majModal(); toast(nom + " ajouté·e à l'équipe"); return;
   }
-  if(act === "m-chef-annuler"){ capturerModal(); state.modal.ajoutChef = false; render(); return; }
+  if(act === "m-chef-annuler"){ capturerModal(); state.modal.ajoutChef = false; majModal(); return; }
   if(act === "svc-suppr"){ const nomS = DB.settings.services[Number(id)]; if(DB.settings.respServices) delete DB.settings.respServices[nomS];
     DB.settings.services.splice(Number(id), 1); if(!DB.settings.services.includes(DB.settings.f.service)) DB.settings.f.service = ""; sauver(); render(); return; }
   if(act === "exporter-json") return exporterJSON();
@@ -3909,7 +3941,7 @@ document.addEventListener("change", ev => {
     if(m && m.type === "projet" && el.dataset.f === "chef"){
       if(m.chef === "__new"){ m.chef = ""; m.ajoutChef = true; m.focus = "m-ncnom"; } else m.ajoutChef = false;
     }
-    render();
+    if(m) majModal(); else render();
   }
 });
 document.addEventListener("keydown", ev => {

@@ -78,7 +78,7 @@ header.top{position:sticky;top:0;z-index:30;background:var(--voile);
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--voile);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border-top:1px solid var(--trait);padding-bottom:env(safe-area-inset-bottom)}
-.tabs-in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr)}
+.tabs-in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(7,1fr)}
 .tab{padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:3px;
   color:var(--gris);font-size:9.5px;letter-spacing:-.01em;border-top:2px solid transparent;margin-top:-1px}
 .tab span{white-space:nowrap}
@@ -320,6 +320,47 @@ button.tuile:active{background:var(--fond2)}
 .sans{font-size:12.5px;color:var(--gris);margin:12px 0 0;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .sans button{border:1px dashed var(--trait);border-radius:999px;padding:3px 10px;color:var(--gris)}
 .sans button:hover{border-color:var(--accB);color:var(--texte)}
+
+/* ---------------- achats et licences ---------------- */
+.a-outils{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0 4px}
+.a-outils .chips{flex:1;min-width:0}
+.a-outils input,.a-outils select{padding:7px 10px;font-size:13.5px;border-radius:9px}
+.a-outils input{flex:1 1 180px;min-width:0;width:auto}
+.a-outils select{flex:0 1 auto;width:auto;max-width:100%}
+.da{display:flex;gap:11px;align-items:flex-start;padding:11px 2px;border-bottom:1px solid var(--trait2)}
+.da .ln-mid{text-align:left}
+.da-r{display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex:0 0 auto}
+.da-r .mt{font-family:"IBM Plex Mono",monospace;font-size:13.5px;font-weight:500;white-space:nowrap}
+.da-r .mt small{display:block;font-size:10.5px;color:var(--gris2);font-weight:400;text-align:right}
+.cks{display:flex;gap:6px}
+.ck{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 9px 4px 6px;border-radius:999px;
+  border:1px solid var(--trait);color:var(--gris);background:var(--carte);white-space:nowrap}
+.ck i{width:15px;height:15px;border-radius:50%;border:1.6px solid var(--gris2);display:grid;place-items:center;color:transparent}
+.ck.on{color:var(--ok);border-color:var(--okF);background:var(--okF)}
+.ck.on i{border-color:var(--ok);background:var(--ok);color:#fff}
+html[data-theme="sombre"] .ck.on i{color:#0d0d10}
+.ck:hover{border-color:var(--accB)}
+.etapes{display:flex;align-items:center;gap:0;margin-top:7px;max-width:340px}
+.etapes span{flex:1;height:4px;background:var(--trait2);border-radius:2px;margin-right:3px}
+.etapes span.f{background:var(--ok)} .etapes span.r{background:var(--dang)}
+.mois{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:6px 0 4px}
+@media(min-width:720px){.mois{grid-template-columns:repeat(12,minmax(0,1fr))}}
+.mois button{border:1px solid var(--trait2);border-radius:9px;padding:7px 2px 6px;text-align:center;background:var(--carte)}
+.mois button b{display:block;font-family:"IBM Plex Mono",monospace;font-size:16px;font-weight:500;color:var(--gris2)}
+.mois button span{font-size:11px;color:var(--gris)}
+.mois button.n b{color:var(--texte)} .mois button.att{background:var(--attF);border-color:var(--attF)} .mois button.att b{color:var(--att)}
+.mois button.dang{background:var(--dangF);border-color:var(--dangF)} .mois button.dang b{color:var(--dang)}
+.mois button.on{box-shadow:0 0 0 2px var(--acc)}
+.restant{height:5px;border-radius:3px;background:var(--trait2);overflow:hidden;margin-top:7px;max-width:340px}
+.restant i{display:block;height:100%;background:var(--ok)}
+.restant i.att{background:var(--att)} .restant i.dang{background:var(--dang)}
+.da-r .c-att,.da-r .c-dang{font-size:12.5px}
+@media(max-width:560px){
+  .da{flex-wrap:wrap}
+  .da-r{flex-direction:row;align-items:center;justify-content:space-between;width:100%;padding-left:41px}
+  .da-r .mt small{text-align:left}
+  .leg-et{display:none}
+}
 .rappel{display:flex;align-items:center;gap:10px;margin:14px 0 0;padding:10px 12px;border-radius:10px;
   background:var(--attF);color:var(--att);font-size:13px;line-height:1.4}
 .rappel span{display:grid}
@@ -633,9 +674,20 @@ input[type=range]{width:100%;accent-color:var(--acc)}
    Un seul fichier, aucune dépendance, stockage local (IndexedDB).
    Reprend l'ossature d'Ardoise : même encre, mêmes gestes.
    ============================================================ */
-const VERSION = "1.7.0";
+const VERSION = "1.8.0";
 const SCHEMA  = 1;
 const JOURNAL = [
+  { v:"1.8.0", d:"2026-11-05", t:"Achats et licences", l:[
+    "Nouvel onglet Achats : les demandes d'achat (objet, n° de DA, fournisseur, montant, date, territoire, projet lié) et les licences.",
+    "Une demande se coche « livré » puis « réceptionné » directement dans la liste ; le n° et la date de facture s'ajoutent quand elle arrive.",
+    "Les livraisons en retard, les achats à réceptionner et les factures manquantes ressortent en tête.",
+    "Les licences ont un échéancier sur 12 mois, une alerte avant expiration et un bouton « Renouveler 1 an » qui garde l'historique.",
+    "Export CSV des achats ou des licences, filtrable par territoire.",
+    "Les livraisons en retard et les licences expirées ou proches de l'échéance remontent dans les points d'attention du tableau de bord.",
+    "La fiche projet gagne un onglet Achats : les demandes rattachées, le montant engagé rapporté au budget, et la création d'une demande déjà liée au projet.",
+    "L'onglet Monde ne répète plus les indicateurs du tableau de bord : il parle de lieux (territoires actifs, sites en alerte ou à surveiller, projets hors siège).",
+    "17 nouveaux modèles de projet en deux familles : licences et logiciels (renouvellement, ajout, changement d'offre, audit éditeur, résiliation, maintenance, registre) et matériel (PC, périphériques, mobiles, réseau, serveur, envoi outre-mer avec octroi de mer, nouveau site, garantie, location, recyclage)."
+  ]},
   { v:"1.7.0", d:"2026-11-05", t:"Vue Monde", l:[
     "Nouvel onglet Monde : le portefeuille sur une carte, avec le siège à Lyon et les sites d'outre-mer (Antilles, Guyane, océan Indien, Pacifique, Saint-Pierre-et-Miquelon).",
     "Chaque territoire est une bulle dont la taille dit le nombre de projets et l'anneau leur météo ; les sites en difficulté clignotent.",
@@ -826,6 +878,10 @@ const ICONES = {
   grille:'<rect x="3.5" y="3.5" width="7" height="8" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="5" rx="1.6"/><rect x="13.5" y="11.5" width="7" height="9" rx="1.6"/><rect x="3.5" y="14.5" width="7" height="6" rx="1.6"/>',
   globe:'<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.4 2.4 3.6 5.2 3.6 8.5s-1.2 6.1-3.6 8.5c-2.4-2.4-3.6-5.2-3.6-8.5S9.6 5.9 12 3.5z"/>',
   dossier:'<path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.2h7a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',
+  panier:'<path d="M3.5 4.5h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h7.7a1.6 1.6 0 0 0 1.6-1.2l1.5-6.3H6.6"/><circle cx="9.8" cy="19.3" r="1.3"/><circle cx="17" cy="19.3" r="1.3"/>',
+  cle:'<circle cx="8" cy="15.5" r="4"/><path d="m10.9 12.6 8.6-8.6M16.5 7l2.5 2.5M14 9.5l2 2"/>',
+  camion:'<path d="M3.5 6.5h10v9h-10z"/><path d="M13.5 9.5h4l3 3.2v2.8h-7"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>',
+  carton:'<path d="M4 8 12 4l8 4v8.5L12 20.5 4 16.5z"/><path d="M4 8l8 4 8-4M12 12v8.5"/>',
   gantt:'<path d="M3.5 3.5v17h17"/><path d="M7 7.5h6M10 12h8M8.5 16.5h5"/>',
   bouclier:'<path d="M12 3.5 19 6v5.5c0 4.3-3 7.6-7 9-4-1.4-7-4.7-7-9V6z"/><path d="M12 9v4M12 16v.01"/>',
   equipe:'<circle cx="8.6" cy="8.4" r="3"/><circle cx="16.8" cy="9.6" r="2.3"/><path d="M2.6 19.6c0-3.1 2.7-4.8 6-4.8s6 1.7 6 4.8"/><path d="M16.4 14.4c2.8 0 4.9 1.5 4.9 4.3"/>',
@@ -877,7 +933,7 @@ function icoSVG(t){
    différé pour regrouper les rafales de modifications.
    ============================================================ */
 const DEFAULTS = {
-  version:SCHEMA, projets:{}, taches:{}, jalons:{}, risques:{}, personnes:{}, journal:{},
+  version:SCHEMA, projets:{}, taches:{}, jalons:{}, risques:{}, personnes:{}, journal:{}, achats:{}, licences:{},
   settings:{
     theme:"clair", accent:ACCENTS[0][0], masque:false,
     organisation:"",
@@ -931,7 +987,7 @@ async function ecouler(){
 function assembler(x){
   const d = JSON.parse(JSON.stringify(DEFAULTS));
   if(!x || typeof x !== "object") return d;
-  ["projets","taches","jalons","risques","personnes","journal"].forEach(k => { if(x[k]) d[k] = x[k]; });
+  ["projets","taches","jalons","risques","personnes","journal","achats","licences"].forEach(k => { if(x[k]) d[k] = x[k]; });
   const s = x.settings || {};
   d.settings = { ...d.settings, ...s,
     modules:{ ...d.settings.modules, ...(s.modules||{}) },
@@ -1199,7 +1255,8 @@ const TABS = [
   { id:"projets",  l:"Projets",  i:"dossier" },
   { id:"planning", l:"Planning", i:"gantt" },
   { id:"risques",  l:"Risques",  i:"bouclier" },
-  { id:"equipe",   l:"Équipe",   i:"equipe" }
+  { id:"equipe",   l:"Équipe",   i:"equipe" },
+  { id:"achats",   l:"Achats",   i:"panier" }
 ];
 const state = { tab:"bord", sheet:null, modal:null, q:"", journal:false, neuf:false,
                 gDecal:0, gOuverts:new Set(), rCell:null, rFermes:false, alertesTout:false, ptab:"synthese" };
@@ -1263,6 +1320,7 @@ function dessiner(){
   else if(state.tab === "planning") v.innerHTML = vuePlanning();
   else if(state.tab === "risques")  v.innerHTML = vueRisques();
   else if(state.tab === "equipe")   v.innerHTML = vueEquipe();
+  else if(state.tab === "achats")   v.innerHTML = vueAchats();
   else                              v.innerHTML = vueReglages();
   if(state.tab === "monde") carteMonde();
 
@@ -1319,6 +1377,7 @@ function majModal(){
 }
 function libNouveau(){
   if(state.sheet && state.sheet.t === "projet") return "Nouvelle tâche";
+  if(state.tab === "achats") return state.aVue === "lic" ? "Nouvelle licence" : "Nouvelle demande d'achat";
   return state.tab === "equipe" ? "Nouvelle personne" : state.tab === "risques" ? "Nouveau risque" : "Nouveau projet";
 }
 
@@ -1521,14 +1580,16 @@ function vueBord(){
     '</div>';
 
   // colonne gauche : points d'attention + portefeuille
-  const al = alertes(L);
+  const oN = { rouge:0, orange:1, info:2 };
+  const al = alertes(L).concat(alertesAchats()).sort((x,y) => oN[x.n] - oN[y.n]);
   const vis = state.alertesTout ? al : al.slice(0, 7);
   let g = '<div class="pan"><div class="sect"><h2>Points d\'attention</h2><span class="cnt">' + al.length + '</span><span class="sp"></span>' +
     (al.length > 7 ? '<button class="lien" data-act="alertes-tout">' + (state.alertesTout ? "Réduire" : "Tout voir") + '</button>' : "") + '</div>' +
     (al.length ? vis.map(x =>
-      '<button class="ln" data-act="ouvrir-projet" data-id="' + x.p.id + '">' +
-      '<span class="ln-ic ' + (x.n === "rouge" ? "dang" : x.n === "orange" ? "att" : "") + '">' + svg(x.n === "info" ? "horloge" : "alerte", 15, 2) + '</span>' +
-      '<span class="ln-mid"><span class="ln-t">' + esc(x.t) + '</span><span class="ln-m">' + esc(x.p.nom) + (x.p.chef ? " · " + esc(nomP(x.p.chef)) : "") + '</span></span></button>').join("")
+      '<button class="ln" data-act="' + (x.act || "ouvrir-projet") + '" data-id="' + (x.p ? x.p.id : x.id) + '">' +
+      '<span class="ln-ic ' + (x.n === "rouge" ? "dang" : x.n === "orange" ? "att" : "") + '">' + svg(x.ic || (x.n === "info" ? "horloge" : "alerte"), 15, 2) + '</span>' +
+      '<span class="ln-mid"><span class="ln-t">' + esc(x.t) + '</span><span class="ln-m">' +
+        (x.p ? esc(x.p.nom) + (x.p.chef ? " · " + esc(nomP(x.p.chef)) : "") : esc(x.m || "")) + '</span></span></button>').join("")
       : '<div class="vide petit">Rien à signaler sur cette sélection.</div>') + '</div>';
 
   const lp = trierProjets(L.filter(actif), "meteo");
@@ -1605,14 +1666,13 @@ function vueMonde(){
   CARTE.groupes = G;
   if(state.site && !site(state.site)) state.site = null;
   const occupes = G.filter(g => g.P.length);
-  const enRetard = act.filter(p => an(p).enRetard).length;
-  const rouges = act.filter(p => an(p).meteo === "rouge").length, oranges = act.filter(p => an(p).meteo === "orange").length;
-  const jRet = act.reduce((s,p) => s + an(p).jRetard.length, 0);
-  const avMoy = act.length ? Math.round(act.reduce((s,p) => s + an(p).avance, 0) / act.length) : 0;
-  const bud = act.reduce((s,p) => s + an(p).budget, 0), cons = act.reduce((s,p) => s + an(p).conso, 0);
-  const jal30 = act.reduce((s,p) => s + an(p).jProch.filter(j => diffJ(auj, j.date) <= 30).length, 0);
-  const bloq = act.reduce((s,p) => s + an(p).tBloq.length, 0);
   const horsSiege = occupes.filter(g => !g.s.siege).length;
+  // Monde ne répète pas le tableau de bord : ses indicateurs parlent de lieux.
+  const enAlerte = occupes.filter(g => g.cnt.rouge), aSurv = occupes.filter(g => !g.cnt.rouge && g.cnt.orange);
+  const actHors = act.filter(p => !siteDe(p).siege).length;
+  const retHors = act.filter(p => !siteDe(p).siege && an(p).enRetard).length;
+  const pctHors = act.length ? Math.round(actHors / act.length * 100) : 0;
+  const ecarts = [...new Set(occupes.map(g => decalageUTC(g.s.tz)).filter(Boolean))];
 
   let h = '<section class="total" style="padding-bottom:14px"><div class="vh"><div>' +
     '<div class="total-lbl">' + esc((DB.settings.organisation ? DB.settings.organisation + " · " : "") + "Vue globale au " + frDate(auj, true)) + '</div>' +
@@ -1624,17 +1684,16 @@ function vueMonde(){
       '<button class="btn" data-act="mail-synthese">' + svg("mail", 16) + 'Mail</button></div></div></section>' + barreFiltres();
 
   h += '<div class="kpis">' +
-    tuile({ l:"Projets actifs", ic:"dossier", v:String(act.length), s:occupes.length + " territoire" + pl(occupes.length) + " concerné" + pl(occupes.length), act:"tab", id:"projets" }) +
-    tuile({ l:"En retard", ic:"horloge", v:enRetard + ' <small>/ ' + act.length + '</small>', cls:enRetard ? "c-dang" : "",
-      s: jRet ? jRet + " jalon" + pl(jRet) + " dépassé" + pl(jRet) : "aucun jalon dépassé", act:"aller-projets-retard" }) +
-    tuile({ l:"En difficulté", ic:"alerte", v:String(rouges), cls:rouges ? "c-dang" : "", s:oranges + " à surveiller", act:"filtre-meteo", id:"rouge" }) +
-    tuile({ l:"Avancement moyen", ic:"gantt", v:avMoy + ' <small>%</small>', bar:avMoy }) +
-    (mo.budget ? tuile({ l:"Budget consommé", ic:"euro", v:eurC(cons) + ' <small>/ ' + eurC(bud) + '</small>', argent:true,
-      bar: bud ? cons / bud * 100 : 0, barCls: clsPct(bud ? cons/bud*100 : null), s: bud ? (masque() ? "••" : Math.round(cons / bud * 100)) + " % consommé" : "aucun budget saisi" }) : "") +
-    tuile({ l:"Jalons à 30 jours", ic:"diamant", v:String(jal30), act:"tab", id:"planning", s:"sur tous les territoires" }) +
-    tuile({ l:"Tâches bloquées", ic:"bloque", v:String(bloq), cls: bloq ? "c-att" : "", s: bloq ? "à débloquer" : "rien de bloqué" }) +
-    tuile({ l:"Sites en alerte", ic:"globe", v:String(occupes.filter(g => g.cnt.rouge).length) + ' <small>/ ' + occupes.length + '</small>',
-      cls: occupes.some(g => g.cnt.rouge) ? "c-dang" : "", s:"au moins un projet en rouge" }) +
+    tuile({ l:"Territoires actifs", ic:"globe", v:occupes.length + ' <small>/ ' + SITES.length + '</small>',
+      s:ecarts.length > 1 ? ecarts.length + " fuseaux horaires" : "un seul fuseau horaire" }) +
+    tuile({ l:"Sites en alerte", ic:"alerte", v:String(enAlerte.length), cls:enAlerte.length ? "c-dang" : "",
+      s:enAlerte.length ? esc(enAlerte.map(g => g.s.n).join(", ")) : "aucun projet en rouge",
+      act:enAlerte.length ? "monde-site" : "", id:enAlerte.length ? enAlerte[0].s.id : "" }) +
+    tuile({ l:"Sites à surveiller", ic:"horloge", v:String(aSurv.length), cls:aSurv.length ? "c-att" : "",
+      s:aSurv.length ? esc(aSurv.map(g => g.s.n).join(", ")) : "rien en orange",
+      act:aSurv.length ? "monde-site" : "", id:aSurv.length ? aSurv[0].s.id : "" }) +
+    tuile({ l:"Projets hors siège", ic:"dossier", v:actHors + ' <small>/ ' + act.length + '</small>', bar:pctHors,
+      s:pctHors + " % du portefeuille" + (retHors ? " · " + retHors + " en retard" : "") }) +
     '</div>';
 
   const zones = [["monde","Monde"],["metropole","Métropole"],["antilles","Antilles-Guyane"],["indien","Océan Indien"],["pacifique","Pacifique"]];
@@ -1644,7 +1703,6 @@ function vueMonde(){
     '<div class="carte-leg"><span>taille = nombre de projets</span><span><span class="dot rouge"></span>rouge</span>' +
       '<span><span class="dot orange"></span>orange</span><span><span class="dot vert"></span>vert</span></div>' +
     '</div><div class="pan monde-side">' + (state.site ? panneauSite(G.find(g => g.s.id === state.site)) : panneauGlobal(occupes, act)) + '</div></div>';
-  h += carteMeteo(act);
 
   h += '<div class="sect"><h2>Territoires</h2><span class="cnt">' + occupes.length + '</span><span class="sp"></span>' +
     '<span class="cnt">heure locale</span></div><div class="sites">' + occupes.map(carteSite).join("") + '</div>';
@@ -2135,6 +2193,305 @@ function vueRisques(){
 }
 
 /* ============================================================
+   ACHATS ET LICENCES
+   Deux registres simples, à côté des projets. Une demande d'achat suit le
+   chemin commande → livraison → réception, et réclame sa facture. Une
+   licence vit jusqu'à son expiration : on la voit venir des mois à l'avance
+   et on la renouvelle d'un geste.
+   ============================================================ */
+const PERIODES = [["an","par an"],["mois","par mois"],["unique","achat unique"]];
+const FILTRES_DA = [["encours","En cours"],["alivrer","À livrer"],["arecep","À réceptionner"],["sansfact","Facture attendue"],["recu","Réceptionnés"],["tout","Tout"]];
+const FILTRES_LIC = [["tout","Toutes"],["bientot","À renouveler"],["expiree","Expirées"],["active","Actives"]];
+const addAns = (iso, n) => { const d = dateDe(iso); d.setFullYear(d.getFullYear() + n); return isoDe(d); };
+const nomSite = id => (site(id) || {}).n || "";
+function etatDA(a){
+  const auj = todayISO();
+  if(a.recu) return { k:"recu", l:"Réceptionné", c:"ok", ic:"carton" };
+  if(a.livre) return { k:"livre", l:"Livré, à réceptionner", c:"acc", ic:"camion" };
+  if(a.livPrevue && a.livPrevue < auj) return { k:"retard", l:"Livraison en retard de " + diffJ(a.livPrevue, auj) + " j", c:"dang", ic:"alerte" };
+  return { k:"commande", l:"Commandé", c:"", ic:"panier" };
+}
+function etatLic(l){
+  if(!l.fin) return { k:"active", l:"Sans échéance", c:"", j:null };
+  const j = diffJ(todayISO(), l.fin), al = num(l.alerte) || 60;
+  if(j < 0) return { k:"expiree", l:"Expirée depuis " + (-j) + " j", c:"dang", j };
+  if(j <= al) return { k:"bientot", l:j === 0 ? "Expire aujourd'hui" : "Expire dans " + j + " j", c:j <= 30 ? "dang" : "att", j };
+  return { k:"active", l:"Active", c:"ok", j };
+}
+const coutAnnuel = l => l.periode === "mois" ? num(l.cout) * 12 : l.periode === "unique" ? 0 : num(l.cout);
+const factureAttendue = a => (a.livre || a.recu) && !(a.numFacture || "").trim();
+function achatsFiltres(){
+  const q = norm(state.qa), s = state.aSite || "";
+  return V(DB.achats).filter(a => (!s || a.site === s) && (!q || norm([a.objet, a.numDA, a.numCmd, a.fournisseur, a.numFacture, a.note,
+    nomSite(a.site), DB.projets[a.projet] ? DB.projets[a.projet].nom : ""].join(" ")).includes(q)));
+}
+function licencesFiltrees(){
+  const q = norm(state.qa), s = state.aSite || "";
+  return V(DB.licences).filter(l => (!s || l.site === s) && (!q || norm([l.logiciel, l.editeur, l.fournisseur, l.numContrat, l.note,
+    nomSite(l.site), nomP(l.resp)].join(" ")).includes(q)));
+}
+
+/* Ce qui, côté achats et licences, mérite d'apparaître dans les points
+   d'attention du tableau de bord. Suit le filtre de territoire. */
+function alertesAchats(){
+  const s = DB.settings.f.site || "", out = [];
+  V(DB.achats).forEach(a => {
+    if(s && a.site !== s) return;
+    const e = etatDA(a), p = DB.projets[a.projet];
+    const m = ["Achat", a.fournisseur, nomSite(a.site), p ? p.nom : ""].filter(Boolean).join(" · ");
+    if(e.k === "retard") out.push({ n:"rouge", ic:"camion", act:"modifier-achat", id:a.id, m,
+      t:"Livraison en retard de " + diffJ(a.livPrevue, todayISO()) + " j : " + a.objet });
+    else if(e.k === "livre" && a.dateLivre && diffJ(a.dateLivre, todayISO()) > 7) out.push({ n:"info", ic:"carton", act:"modifier-achat", id:a.id, m,
+      t:"Livré il y a " + diffJ(a.dateLivre, todayISO()) + " j, pas encore réceptionné : " + a.objet });
+  });
+  V(DB.licences).forEach(l => {
+    if(s && l.site !== s) return;
+    const e = etatLic(l);
+    if(e.k !== "expiree" && e.k !== "bientot") return;
+    out.push({ n:e.k === "expiree" ? "rouge" : e.c === "dang" ? "orange" : "info", ic:"cle", act:"modifier-licence", id:l.id,
+      m:["Licence", l.editeur, "échéance " + frDate(l.fin, true), nomP(l.resp)].filter(Boolean).join(" · "),
+      t:"Licence " + l.logiciel + " : " + e.l.charAt(0).toLowerCase() + e.l.slice(1) + (l.renouvAuto && e.k !== "expiree" ? " (reconduction tacite)" : "") });
+  });
+  return out;
+}
+function vueAchats(){
+  const vue = state.aVue === "lic" ? "lic" : "da";
+  const auj = todayISO(), an0 = auj.slice(0, 4);
+  if(!V(DB.achats).length && !V(DB.licences).length){
+    return '<section class="total"><div class="total-lbl">Achats et licences</div><span class="total-val">Rien pour l\'instant</span></section>' +
+      vide("Suivez vos achats et vos licences", "Une demande d'achat : objet, fournisseur, montant, date. Vous cocherez ensuite « livré » puis « réceptionné », et ajouterez la facture. Une licence : son coût et sa date d'expiration, pour la voir venir.",
+        '<button class="btn pri" data-act="nouvel-achat">' + svg("plus",16,2) + 'Demande d\'achat</button>' +
+        '<button class="btn" data-act="nouvelle-licence">' + svg("plus",16,2) + 'Licence</button>');
+  }
+  const A = achatsFiltres(), Lc = licencesFiltrees();
+  const enCours = A.filter(a => !a.recu);
+  const aLivrer = A.filter(a => !a.livre && !a.recu);
+  const retardLiv = aLivrer.filter(a => etatDA(a).k === "retard");
+  const aRecep = A.filter(a => a.livre && !a.recu);
+  const sansFact = A.filter(factureAttendue);
+  const engage = A.filter(a => (a.date || "").slice(0, 4) === an0).reduce((s,a) => s + num(a.montant), 0);
+  const enCoursMt = enCours.reduce((s,a) => s + num(a.montant), 0);
+  const E = Lc.map(l => ({ l, e:etatLic(l) }));
+  const expirees = E.filter(x => x.e.k === "expiree"), bientot = E.filter(x => x.e.k === "bientot");
+  const valides = E.filter(x => x.e.k !== "expiree");
+  const coutAn = valides.reduce((s,x) => s + coutAnnuel(x.l), 0);
+  const postes = valides.reduce((s,x) => s + num(x.l.quantite), 0);
+
+  let h = '<section class="total" style="padding-bottom:14px"><div class="vh"><div>' +
+    '<div class="total-lbl">Achats et licences' + (state.aSite ? " · " + esc(nomSite(state.aSite)) : "") + '</div>' +
+    '<span class="total-val num">' + enCours.length + ' achat' + pl(enCours.length) + ' en cours · ' + valides.length + ' licence' + pl(valides.length) + '</span>' +
+    '<div class="total-sub">' +
+      (retardLiv.length ? '<span class="c-dang"><b class="c-dang">' + retardLiv.length + '</b> livraison' + pl(retardLiv.length) + ' en retard</span>' : '<span>aucune livraison en retard</span>') +
+      (expirees.length ? '<span class="c-dang"><b class="c-dang">' + expirees.length + '</b> licence' + pl(expirees.length) + ' expirée' + pl(expirees.length) + '</span>' : "") +
+      (bientot.length ? '<span><b>' + bientot.length + '</b> à renouveler bientôt</span>' : "") + '</div></div>' +
+    '<div class="sp"></div><div class="btns noprint">' +
+      '<button class="btn pri" data-act="nouvel-achat">' + svg("plus",16,2) + 'Demande d\'achat</button>' +
+      '<button class="btn" data-act="nouvelle-licence">' + svg("plus",16,2) + 'Licence</button>' +
+      '<button class="btn" data-act="exporter-achats" title="Exporter la liste affichée">' + svg("telecharger",16) + 'CSV</button></div></div></section>';
+
+  h += '<div class="kpis">' +
+    tuile({ l:"À livrer", ic:"camion", v:String(aLivrer.length), cls:retardLiv.length ? "c-dang" : "",
+      s:retardLiv.length ? retardLiv.length + " en retard de livraison" : "aucun retard", act:"a-filtre", id:"alivrer" }) +
+    tuile({ l:"À réceptionner", ic:"carton", v:String(aRecep.length), cls:aRecep.length ? "c-att" : "",
+      s:aRecep.length ? "livrés, à contrôler" : "rien en attente", act:"a-filtre", id:"arecep" }) +
+    tuile({ l:"Factures attendues", ic:"texte", v:String(sansFact.length), cls:sansFact.length ? "c-att" : "",
+      s:"livrés sans n° de facture", act:"a-filtre", id:"sansfact" }) +
+    tuile({ l:"Engagé en " + an0, ic:"euro", v:eurC(engage), argent:true, s:eurC(enCoursMt) + " sur les achats en cours" }) +
+    tuile({ l:"Licences actives", ic:"cle", v:String(valides.length), s:postes ? postes + " postes ou utilisateurs" : "", act:"a-lfiltre", id:"tout" }) +
+    tuile({ l:"À renouveler", ic:"horloge", v:String(bientot.length), cls:bientot.length ? "c-att" : "",
+      s:bientot.length ? "échéance proche" : "rien d'imminent", act:"a-lfiltre", id:"bientot" }) +
+    tuile({ l:"Expirées", ic:"alerte", v:String(expirees.length), cls:expirees.length ? "c-dang" : "",
+      s:expirees.length ? "à régulariser" : "aucune", act:"a-lfiltre", id:"expiree" }) +
+    tuile({ l:"Coût annuel licences", ic:"euro", v:eurC(coutAn), argent:true, s:"abonnements en cours" }) +
+    '</div>';
+
+  h += '<div class="a-outils noprint"><div class="seg">' +
+      '<button class="' + (vue === "da" ? "on" : "") + '" data-act="a-vue" data-id="da">Demandes d\'achat · ' + A.length + '</button>' +
+      '<button class="' + (vue === "lic" ? "on" : "") + '" data-act="a-vue" data-id="lic">Licences · ' + Lc.length + '</button></div>' +
+    '<input type="search" id="qa" placeholder="Rechercher : fournisseur, n° de facture, logiciel…" value="' + esc(state.qa || "") + '" autocomplete="off">' +
+    '<select data-asite="1" aria-label="Territoire" class="' + (state.aSite ? "on" : "") + '"><option value="">Tous territoires</option>' +
+      SITES.map(s => '<option value="' + s.id + '"' + (state.aSite === s.id ? " selected" : "") + '>' + esc(s.n) + '</option>').join("") + '</select></div>';
+
+  return h + (vue === "lic" ? blocLicences(E) : blocAchats(A));
+}
+
+function blocAchats(A){
+  const f = state.aFiltre || "encours";
+  const test = { encours:a => !a.recu, alivrer:a => !a.livre && !a.recu, arecep:a => a.livre && !a.recu,
+    sansfact:factureAttendue, recu:a => a.recu, tout:() => true }[f] || (() => true);
+  const ordre = { retard:0, livre:1, commande:2, recu:3 };
+  const l = A.filter(test).sort((x,y) => ordre[etatDA(x).k] - ordre[etatDA(y).k] || cmp(y.date || "", x.date || ""));
+  const tot = l.reduce((s,a) => s + num(a.montant), 0);
+  return '<div class="chips" style="margin:10px 0 2px">' + FILTRES_DA.map(([k,t]) => {
+      const n = A.filter({ encours:a => !a.recu, alivrer:a => !a.livre && !a.recu, arecep:a => a.livre && !a.recu, sansfact:factureAttendue, recu:a => a.recu, tout:() => true }[k]).length;
+      return '<button class="chip ' + (f === k ? "on" : "") + '" data-act="a-filtre" data-id="' + k + '">' + t + '<span class="n">' + n + '</span></button>';
+    }).join("") + '</div>' +
+    '<div class="sect"><h2>' + esc(lib(FILTRES_DA, f)) + '</h2><span class="cnt">' + l.length + (l.length ? ' · ' + eur(tot) : "") + '</span><span class="sp"></span>' +
+      '<span class="cnt leg-et" title="Commande, livraison, réception, facture">commande › livraison › réception › facture</span></div>' +
+    (l.length ? l.map(ligneDA).join("") : '<div class="vide petit">Aucune demande d\'achat ici.</div>');
+}
+function ligneDA(a){
+  const e = etatDA(a), p = DB.projets[a.projet], fact = (a.numFacture || "").trim();
+  const txt = e.k === "recu" ? "Réceptionné" + (a.dateRecu ? " le " + frDate(a.dateRecu) : "")
+    : e.k === "livre" ? "Livré" + (a.dateLivre ? " le " + frDate(a.dateLivre) : "") + ", à réceptionner"
+    : e.l + (e.k === "commande" && a.livPrevue ? " · livraison prévue " + relJ(a.livPrevue) : "");
+  return '<div class="da">' +
+    '<span class="ln-ic ' + e.c + '">' + svg(e.ic, 15, 2) + '</span>' +
+    '<button class="ln-mid" data-act="modifier-achat" data-id="' + a.id + '">' +
+      '<span class="ln-t">' + esc(a.objet || "Sans objet") + (a.numDA ? '<span class="badge">' + esc(a.numDA) + '</span>' : "") + '</span>' +
+      '<span class="ln-m">' + esc([a.fournisseur, frDate(a.date), nomSite(a.site), p ? p.nom : ""].filter(Boolean).join(" · ")) + '</span>' +
+      '<span class="ln-n"><span class="' + (e.c === "dang" ? "c-dang" : "") + '">' + esc(txt) + '</span> · ' +
+        (fact ? "facture " + esc(fact) + (a.dateFacture ? " du " + esc(frDate(a.dateFacture)) : "")
+              : '<span class="' + (a.livre || a.recu ? "c-att" : "") + '">facture à saisir</span>') + '</span>' +
+      '<span class="etapes" title="Commande · livraison · réception · facture"><span class="f"></span>' +
+        '<span class="' + (a.livre || a.recu ? "f" : e.k === "retard" ? "r" : "") + '"></span>' +
+        '<span class="' + (a.recu ? "f" : "") + '"></span><span class="' + (fact ? "f" : "") + '"></span></span>' +
+    '</button>' +
+    '<div class="da-r"><span class="mt">' + (num(a.montant) ? eur(num(a.montant)) : "—") +
+        (num(a.quantite) > 1 ? '<small>' + num(a.quantite) + ' unités</small>' : "") + '</span>' +
+      '<div class="cks"><button class="ck' + (a.livre || a.recu ? " on" : "") + '" data-act="a-livre" data-id="' + a.id + '" title="' + (a.livre || a.recu ? "Annuler la livraison" : "Marquer comme livré") + '"><i>' + svg("check", 10, 3.2) + '</i>Livré</button>' +
+      '<button class="ck' + (a.recu ? " on" : "") + '" data-act="a-recu" data-id="' + a.id + '" title="' + (a.recu ? "Annuler la réception" : "Marquer comme réceptionné") + '"><i>' + svg("check", 10, 3.2) + '</i>Réceptionné</button></div>' +
+    '</div></div>';
+}
+
+function bandeMois(E){
+  const d0 = new Date(); d0.setDate(1); d0.setHours(12, 0, 0, 0);
+  let h = '<div class="mois">';
+  for(let i = 0; i < 12; i++){
+    const d = new Date(d0.getFullYear(), d0.getMonth() + i, 1, 12), k = d.getFullYear() + "-" + p2(d.getMonth() + 1);
+    const X = E.filter(x => x.l.fin && x.l.fin.slice(0, 7) === k);
+    const cls = !X.length ? "" : X.some(x => x.e.c === "dang") ? "dang" : X.some(x => x.e.c === "att") ? "att" : "n";
+    h += '<button class="' + cls + (state.lMois === k ? " on" : "") + '" data-act="a-mois" data-id="' + k + '" title="' +
+      esc(X.length + " expiration" + pl(X.length) + " en " + MOIS_LONG[d.getMonth()] + " " + d.getFullYear() + (X.length ? " : " + X.map(x => x.l.logiciel).join(", ") : "")) + '">' +
+      '<b>' + X.length + '</b><span>' + MOIS[d.getMonth()] + (i === 0 || d.getMonth() === 0 ? " " + String(d.getFullYear()).slice(2) : "") + '</span></button>';
+  }
+  return h + '</div>';
+}
+function blocLicences(E){
+  const f = state.lFiltre || "tout";
+  let l = E.filter(x => f === "tout" || x.e.k === f);
+  if(state.lMois) l = l.filter(x => x.l.fin && x.l.fin.slice(0, 7) === state.lMois);
+  l.sort((a,b) => cmp(a.l.fin || "9999", b.l.fin || "9999") || cmp(norm(a.l.logiciel), norm(b.l.logiciel)));
+  const mo = state.lMois ? dateDe(state.lMois + "-15") : null;
+  return '<div class="sect"><h2>Échéancier</h2><span class="cnt">expirations sur 12 mois</span><span class="sp"></span>' +
+      (state.lMois ? '<button class="lien" data-act="a-mois" data-id="' + state.lMois + '">Tous les mois</button>' : "") + '</div>' +
+    bandeMois(E) +
+    '<div class="chips" style="margin:10px 0 2px">' + FILTRES_LIC.map(([k,t]) =>
+      '<button class="chip ' + (f === k ? "on" : "") + '" data-act="a-lfiltre" data-id="' + k + '">' + t +
+      '<span class="n">' + E.filter(x => k === "tout" || x.e.k === k).length + '</span></button>').join("") + '</div>' +
+    '<div class="sect"><h2>' + esc(lib(FILTRES_LIC, f)) + (mo ? " · " + MOIS_LONG[mo.getMonth()] + " " + mo.getFullYear() : "") + '</h2><span class="cnt">' + l.length + '</span></div>' +
+    (l.length ? l.map(x => ligneLic(x.l, x.e)).join("") : '<div class="vide petit">Aucune licence ici.</div>');
+}
+function ligneLic(l, e){
+  const dur = l.debut && l.fin ? Math.max(1, diffJ(l.debut, l.fin)) : 0;
+  const reste = dur && e.j != null ? clamp(e.j / dur * 100, 0, 100) : null;
+  const q = num(l.quantite);
+  return '<div class="da">' +
+    '<span class="ln-ic ' + e.c + '">' + svg("cle", 15, 2) + '</span>' +
+    '<button class="ln-mid" data-act="modifier-licence" data-id="' + l.id + '">' +
+      '<span class="ln-t">' + esc(l.logiciel || "Licence") + (l.editeur ? ' <span style="color:var(--gris);font-size:13px">· ' + esc(l.editeur) + '</span>' : "") +
+        (l.renouvAuto ? '<span class="badge" title="Reconduction tacite">auto</span>' : "") + '</span>' +
+      '<span class="ln-m">' + esc([q ? q + " licence" + pl(q) : "", num(l.cout) ? eur(num(l.cout)) + " " + lib(PERIODES, l.periode || "an") : "",
+        l.fournisseur, nomSite(l.site), nomP(l.resp), l.numContrat ? "n° " + l.numContrat : ""].filter(Boolean).join(" · ")) + '</span>' +
+      (reste != null ? '<div class="restant" title="Part de la période restante"><i class="' + (e.c === "ok" ? "" : e.c) + '" style="width:' + reste + '%"></i></div>' : "") +
+    '</button>' +
+    '<div class="da-r"><span class="mt ' + (e.c === "dang" ? "c-dang" : e.c === "att" ? "c-att" : "") + '">' + esc(e.l) +
+        '<small>' + (l.fin ? "échéance " + esc(frDate(l.fin, true)) : "perpétuelle") + '</small></span>' +
+      (l.fin && e.k !== "active" ? '<button class="btn pt" data-act="lic-renouveler" data-id="' + l.id + '">Renouveler 1 an</button>' : "") +
+    '</div></div>';
+}
+
+function mAchat(a, pid){
+  if(a) return { ...copie(a), type:"achat", montant:a.montant ? String(a.montant) : "", quantite:String(a.quantite || 1) };
+  const p = DB.projets[pid];
+  return { type:"achat", objet:"", numDA:"", numCmd:"", fournisseur:"", date:todayISO(), montant:"", quantite:"1",
+    site:p ? siteDe(p).id : state.aSite || DB.settings.f.site || SITE_DEF, projet:p ? p.id : "", livPrevue:addJ(todayISO(), 21), livre:false, dateLivre:"",
+    recu:false, dateRecu:"", numFacture:"", dateFacture:"", note:"", focus:"m-objet" };
+}
+function mLicence(l){
+  if(l) return { ...copie(l), type:"licence", cout:l.cout ? String(l.cout) : "", quantite:l.quantite ? String(l.quantite) : "", alerte:String(l.alerte || 60) };
+  const auj = todayISO();
+  return { type:"licence", logiciel:"", editeur:"", fournisseur:"", quantite:"", cout:"", periode:"an", debut:auj, fin:addAns(auj, 1),
+    alerte:"60", renouvAuto:false, numContrat:"", site:state.aSite || DB.settings.f.site || SITE_DEF, resp:DB.personnes[DB.settings.moi] ? DB.settings.moi : "",
+    note:"", histo:[], focus:"m-logiciel" };
+}
+function enregistrerAchat(){
+  capturerModal();
+  const m = state.modal, objet = (m.objet || "").trim();
+  if(!objet){ toast("Indiquez ce qui est acheté"); return; }
+  const neuf = !m.id, a = neuf ? { id:uid(), cree:Date.now() } : DB.achats[m.id];
+  if(!a) return fermerModal();
+  const auj = todayISO(), recu = !!m.recu, livre = recu || !!m.livre;
+  Object.assign(a, { objet, numDA:(m.numDA || "").trim(), numCmd:(m.numCmd || "").trim(), fournisseur:(m.fournisseur || "").trim(),
+    date:m.date || auj, montant:num(m.montant), quantite:num(m.quantite) || 1, site:m.site || SITE_DEF, projet:m.projet || "",
+    livPrevue:m.livPrevue || "", livre, dateLivre:livre ? (m.dateLivre || auj) : "", recu, dateRecu:recu ? (m.dateRecu || auj) : "",
+    numFacture:(m.numFacture || "").trim(), dateFacture:m.dateFacture || "", note:(m.note || "").trim(), maj:Date.now() });
+  DB.achats[a.id] = a; state.modal = null; state.aVue = "da";
+  sauver(); render(); toast(neuf ? "Demande d'achat enregistrée" : "Demande d'achat mise à jour");
+}
+function enregistrerLicence(){
+  capturerModal();
+  const m = state.modal, logiciel = (m.logiciel || "").trim();
+  if(!logiciel){ toast("Indiquez le logiciel ou le service"); return; }
+  if(m.debut && m.fin && m.fin < m.debut){ toast("L'expiration précède le début"); return; }
+  const neuf = !m.id, l = neuf ? { id:uid(), cree:Date.now(), histo:[] } : DB.licences[m.id];
+  if(!l) return fermerModal();
+  Object.assign(l, { logiciel, editeur:(m.editeur || "").trim(), fournisseur:(m.fournisseur || "").trim(), quantite:num(m.quantite),
+    cout:num(m.cout), periode:m.periode || "an", debut:m.debut || "", fin:m.fin || "", alerte:num(m.alerte) || 60, renouvAuto:!!m.renouvAuto,
+    numContrat:(m.numContrat || "").trim(), site:m.site || SITE_DEF, resp:m.resp || "", note:(m.note || "").trim(), maj:Date.now() });
+  DB.licences[l.id] = l; state.modal = null; state.aVue = "lic";
+  sauver(); render(); toast(neuf ? "Licence enregistrée" : "Licence mise à jour");
+}
+function supprimerAchatLic(k, id, msg){
+  const o = DB[k][id]; if(!o) return;
+  const c = {}; garder(c, k, o); delete DB[k][id];
+  corbeille = c; state.modal = null; sauver(); render(); toast(msg, "annuler");
+}
+function cocherAchat(id, quoi){
+  const a = DB.achats[id]; if(!a) return;
+  const c = {}; garder(c, "achats", a); corbeille = c;
+  const auj = todayISO();
+  if(quoi === "livre"){
+    if(a.livre || a.recu){ a.livre = false; a.recu = false; a.dateLivre = ""; a.dateRecu = ""; }
+    else { a.livre = true; a.dateLivre = auj; }
+  } else {
+    if(a.recu){ a.recu = false; a.dateRecu = ""; }
+    else { a.recu = true; a.dateRecu = auj; if(!a.livre){ a.livre = true; a.dateLivre = auj; } }
+  }
+  a.maj = Date.now(); sauver(); render();
+  toast("« " + a.objet + " » : " + (a.recu ? "réceptionné" : a.livre ? "livré" : "en attente de livraison") +
+    (factureAttendue(a) ? " · pensez au n° de facture" : ""), "annuler");
+}
+function renouvelerLicence(id){
+  const l = DB.licences[id]; if(!l || !l.fin) return;
+  const c = {}; garder(c, "licences", l); corbeille = c;
+  l.histo = (l.histo || []).concat([{ debut:l.debut || "", fin:l.fin, cout:num(l.cout), le:todayISO() }]);
+  const base = l.fin < todayISO() ? todayISO() : l.fin;
+  l.debut = base; l.fin = addAns(base, 1); l.maj = Date.now();
+  sauver(); render(); toast("« " + l.logiciel + " » renouvelée jusqu'au " + frDate(l.fin, true), "annuler");
+}
+function exporterAchatsCSV(){
+  const cel = v => { const s = String(v == null ? "" : v); return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const n = v => v ? String(Math.round(v * 100) / 100).replace(".", ",") : "";
+  let tete, lignes, nom;
+  if(state.aVue === "lic"){
+    const L = licencesFiltrees().sort((a,b) => cmp(a.fin || "9999", b.fin || "9999"));
+    tete = ["Logiciel","Éditeur","Fournisseur","Licences","Coût €","Facturation","Coût annuel €","Début","Expiration","État","Reconduction tacite","N° contrat / facture","Territoire","Responsable","Note"];
+    lignes = L.map(l => [l.logiciel, l.editeur, l.fournisseur, l.quantite || "", n(l.cout), lib(PERIODES, l.periode || "an"), n(coutAnnuel(l)),
+      l.debut, l.fin, etatLic(l).l, l.renouvAuto ? "oui" : "", l.numContrat, nomSite(l.site), nomP(l.resp), l.note].map(cel).join(";"));
+    nom = "jalon-licences-";
+  } else {
+    const L = achatsFiltres().sort((a,b) => cmp(b.date || "", a.date || ""));
+    tete = ["Objet","N° DA","N° commande","Fournisseur","Date","Montant €","Quantité","Territoire","Projet","Livraison prévue","Livré le","Réceptionné le","État","N° facture","Date facture","Note"];
+    lignes = L.map(a => [a.objet, a.numDA, a.numCmd, a.fournisseur, a.date, n(a.montant), a.quantite, nomSite(a.site), DB.projets[a.projet] ? DB.projets[a.projet].nom : "",
+      a.livPrevue, a.dateLivre, a.dateRecu, etatDA(a).l, a.numFacture, a.dateFacture, a.note].map(cel).join(";"));
+    nom = "jalon-achats-";
+  }
+  telecharger(nom + tampon() + ".csv", new Blob(["﻿" + [tete.join(";")].concat(lignes).join("\r\n")], { type:"text/csv;charset=utf-8" }));
+  toast(lignes.length + " ligne" + pl(lignes.length) + " exportée" + pl(lignes.length));
+}
+
+/* ============================================================
    ÉQUIPE
    ============================================================ */
 function statsPersonne(pe){
@@ -2205,13 +2562,13 @@ function vuePersonne(pe){
 /* ============================================================
    FICHE PROJET
    ============================================================ */
-const PTABS = [["synthese","Synthèse"],["cadrage","Cadrage"],["taches","Tâches"],["planning","Planning"],["risques","Risques"],["journal","Journal"]];
+const PTABS = [["synthese","Synthèse"],["cadrage","Cadrage"],["taches","Tâches"],["planning","Planning"],["risques","Risques"],["achats","Achats"],["journal","Journal"]];
 function vueFiche(p){
   const a = an(p), mo = M();
   const J = journalDe(p.id);
   const onglets = PTABS.filter(([k]) => (k !== "risques" || mo.risques) && (k !== "cadrage" || mo.cadrage));
   if(!onglets.some(([k]) => k === state.ptab)) state.ptab = "synthese";
-  const nb = { taches:a.T.length, risques:a.rOuv.length, journal:J.length };
+  const nb = { taches:a.T.length, risques:a.rOuv.length, achats:V(DB.achats).filter(x => x.projet === p.id).length, journal:J.length };
   let h = '<div class="sheet"><div class="sheet-top"><button class="iconbtn" data-act="fermer-sheet" aria-label="Retour">' + svg("fleche",18) + '</button>' +
     '<span class="t">' + esc(p.nom) + '</span><span class="sp"></span>' +
     '<button class="btn pt" data-act="nouveau-point" data-id="' + p.id + '">' + svg("texte",15) + 'Point</button>' +
@@ -2237,8 +2594,31 @@ function vueFiche(p){
   else if(state.ptab === "taches") h += ficheTaches(p, a);
   else if(state.ptab === "planning") h += fichePlanning(p, a);
   else if(state.ptab === "risques") h += ficheRisques(p, a);
+  else if(state.ptab === "achats") h += ficheAchats(p);
   else h += ficheJournal(p, J);
   return h + '</div></div>';
+}
+/* Les achats rattachés au projet : ce qui est commandé, livré, reçu, et ce
+   que cela pèse au regard de son budget. */
+function ficheAchats(p){
+  const A = V(DB.achats).filter(x => x.projet === p.id);
+  const ordre = { retard:0, livre:1, commande:2, recu:3 };
+  A.sort((x,y) => ordre[etatDA(x).k] - ordre[etatDA(y).k] || cmp(y.date || "", x.date || ""));
+  const tot = A.reduce((s,x) => s + num(x.montant), 0), budget = num(p.budget);
+  const aLivrer = A.filter(x => !x.livre && !x.recu), retard = aLivrer.filter(x => etatDA(x).k === "retard");
+  const aRecep = A.filter(x => x.livre && !x.recu), sansFact = A.filter(factureAttendue);
+  let h = '<div class="sect"><h2>Achats du projet</h2><span class="cnt">' + A.length + (A.length ? " · " + eur(tot) : "") + '</span><span class="sp"></span>' +
+    '<button class="btn pt" data-act="nouvel-achat" data-id="' + p.id + '">' + svg("plus", 15, 2) + 'Demande d\'achat</button></div>';
+  if(!A.length) return h + '<div class="vide petit">Aucune demande d\'achat rattachée. Créez-en une ici, ou choisissez ce projet dans le champ « Projet lié » d\'une demande existante.</div>';
+  h += '<div class="kpis" style="margin-top:6px">' +
+    tuile({ l:"Engagé", ic:"euro", v:eurC(tot), argent:true,
+      bar:M().budget && budget ? tot / budget * 100 : null, barCls:clsPct(budget ? tot / budget * 100 : null),
+      s:M().budget && budget ? (masque() ? "••" : Math.round(tot / budget * 100)) + " % du budget projet" : "pas de budget projet saisi" }) +
+    tuile({ l:"À livrer", ic:"camion", v:String(aLivrer.length), cls:retard.length ? "c-dang" : "", s:retard.length ? retard.length + " en retard" : "aucun retard" }) +
+    tuile({ l:"À réceptionner", ic:"carton", v:String(aRecep.length), cls:aRecep.length ? "c-att" : "", s:aRecep.length ? "livrés, à contrôler" : "rien en attente" }) +
+    tuile({ l:"Factures attendues", ic:"texte", v:String(sansFact.length), cls:sansFact.length ? "c-att" : "", s:"livrés sans n° de facture" }) +
+    '</div>';
+  return h + A.map(ligneDA).join("");
 }
 function ficheSynthese(p, a, J){
   if(estArchive(p)) return panneauBilan(p) + ficheSyntheseSuite(p, a, J);
@@ -2674,7 +3054,7 @@ function carteMesActions(){
 /* Chaque modèle : des jalons [intitulé, position en % de la durée, clé ?]
    et des tâches [intitulé, début %, fin %, n° du jalon auquel elles
    mènent (-1 : aucun)]. Les positions s'adaptent à la durée du projet. */
-const CATS_MODELES = ["Applications métier", "Montées de version", "Infrastructure et poste de travail", "Sécurité et conformité", "Documentation et gouvernance", "Organisation et achats"];
+const CATS_MODELES = ["Applications métier", "Montées de version", "Licences et logiciels", "Matériel et équipements", "Infrastructure et poste de travail", "Sécurité et conformité", "Documentation et gouvernance", "Organisation et achats"];
 const MONTEE = (nom, id, extra) => ({ id, cat:"Montées de version", nom,
   jalons:[["Lancement validé avec l'éditeur",10,0],["Environnement de recette prêt",30,0],["Recette validée",70,1],["Mise en production",85,1],["Fin du support renforcé",100,0]],
   taches:[["Analyse des nouveautés, prérequis et impacts",0,10,0],["Planification avec l'éditeur ou l'intégrateur",5,12,0],
@@ -3003,6 +3383,112 @@ MODELES_PROJET.push(
     jalons:[["Inventaire des lignes terminé",30,0],["Offre retenue",70,1],["Bascule terminée",100,1]],
     taches:[["Inventaire des lignes fixes, mobiles et liens",0,30,0],["Suppression des lignes inutiles",20,40,1],["Consultation des opérateurs",30,60,1],
       ["Négociation",55,70,1],["Bascule et portabilités",70,100,2]] }
+);
+
+/* ---------- licences et logiciels ----------
+   Pensés pour aller avec l'onglet Achats : la demande d'achat et la licence
+   s'y saisissent, le projet porte le déroulé. */
+MODELES_PROJET.push(
+  { id:"m-lic-renouv", cat:"Licences et logiciels", nom:"Renouvellement d'une licence ou d'un abonnement",
+    jalons:[["Besoin confirmé",25,0],["Commande passée",55,1],["Licence renouvelée",80,1],["Licence à jour dans Jalon",100,0]],
+    taches:[["Vérifier l'échéance, le préavis et la reconduction tacite",0,10,0],["Compter les licences réellement utilisées",5,20,0],
+      ["Ajuster le nombre de licences (en plus ou en moins)",15,25,0],["Demander le devis de renouvellement",20,35,1],
+      ["Comparer avec le tarif de l'an dernier et négocier",30,45,1],["Saisir la demande d'achat (onglet Achats)",45,52,1],
+      ["Valider la commande et l'envoyer au fournisseur",50,55,1],["Recevoir et enregistrer les nouvelles clés ou le contrat",55,75,2],
+      ["Vérifier l'activation dans la console d'administration",70,80,2],["Rapprocher la facture et la saisir",75,90,3],
+      ["Mettre à jour l'expiration de la licence (onglet Achats)",85,100,3]] },
+  { id:"m-lic-ajout", cat:"Licences et logiciels", nom:"Achat de licences supplémentaires",
+    jalons:[["Besoin validé",20,1],["Licences livrées",60,1],["Utilisateurs équipés",90,1]],
+    taches:[["Recenser les nouveaux utilisateurs et leurs besoins",0,15,0],["Vérifier les licences libres à réaffecter",5,15,0],
+      ["Valider le besoin et le budget avec le demandeur",12,20,0],["Demander le devis (au prorata de l'échéance du contrat)",20,30,1],
+      ["Saisir la demande d'achat",28,35,1],["Commande et réception des licences",35,60,1],["Attribuer les licences aux utilisateurs",60,80,2],
+      ["Installer ou activer sur les postes",65,88,2],["Saisir la facture et mettre à jour le nombre de licences",85,100,-1]] },
+  { id:"m-lic-offre", cat:"Licences et logiciels", nom:"Changement d'offre ou d'édition (ex. passage à l'abonnement, E3 → E5)",
+    jalons:[["Offre cible choisie",30,1],["Contrat signé",50,1],["Bascule réalisée",80,1],["Ancienne offre close",100,0]],
+    taches:[["Comparer les éditions : fonctions, prix, conditions",0,20,0],["Identifier les utilisateurs concernés par profil",10,25,0],
+      ["Simuler le coût sur 3 ans",15,30,0],["Négocier avec l'éditeur ou le revendeur",30,45,1],["Saisir la demande d'achat",45,50,1],
+      ["Pilote sur quelques utilisateurs",50,62,2],["Communiquer les changements aux utilisateurs",55,70,2],["Basculer les licences",62,80,2],
+      ["Résilier ou laisser expirer l'ancienne offre",80,95,3],["Mettre à jour le registre des licences",90,100,-1]] },
+  { id:"m-lic-audit", cat:"Licences et logiciels", nom:"Audit de conformité éditeur (audit de licences)",
+    jalons:[["Périmètre de l'audit cadré",15,1],["Inventaire transmis à l'auditeur",55,1],["Rapport d'audit reçu",80,1],["Régularisation négociée",100,1]],
+    taches:[["Relire le contrat et la clause d'audit",0,10,0],["Désigner un interlocuteur unique et prévenir la direction",0,10,0],
+      ["Cadrer le périmètre et le calendrier avec l'auditeur",5,15,0],["Inventaire des installations et des utilisateurs",15,45,1],
+      ["Rassembler les preuves d'achat (factures, contrats)",15,45,1],["Réconcilier les droits et l'usage, corriger les écarts",35,55,1],
+      ["Répondre aux questions de l'auditeur",55,80,2],["Contester les écarts injustifiés",75,90,3],["Négocier la régularisation",85,100,3]] },
+  { id:"m-lic-fin", cat:"Licences et logiciels", nom:"Résiliation ou retrait d'un logiciel",
+    jalons:[["Décision de retrait validée",20,1],["Résiliation envoyée dans le préavis",40,1],["Logiciel désinstallé",85,1],["Données archivées",100,0]],
+    taches:[["Vérifier l'usage réel et les utilisateurs restants",0,15,0],["Repérer le préavis et la date limite de résiliation",0,10,0],
+      ["Proposer une solution de remplacement si besoin",10,25,0],["Envoyer la résiliation en recommandé",30,40,1],
+      ["Exporter et archiver les données",40,70,2],["Prévenir les utilisateurs",45,60,2],["Désinstaller et retirer les accès",60,85,2],
+      ["Supprimer la licence du registre",85,95,3],["Contrôler qu'aucune facture ne suit",90,100,3]] },
+  { id:"m-lic-maint", cat:"Licences et logiciels", nom:"Renouvellement du contrat de maintenance éditeur",
+    jalons:[["Bilan de l'année fait",30,0],["Nouveau contrat signé",70,1],["Contrat enregistré",100,0]],
+    taches:[["Bilan des incidents et du support de l'année",0,20,0],["Vérifier les niveaux de service obtenus",10,25,0],
+      ["Comparer avec d'autres prestataires de maintenance",20,40,1],["Négocier le tarif et les engagements",35,60,1],
+      ["Saisir la demande d'achat",55,65,1],["Signer le contrat",60,70,1],["Mettre à jour les contacts et le numéro de contrat",70,85,2],
+      ["Enregistrer l'échéance dans l'onglet Achats",80,100,2]] },
+  { id:"m-lic-registre", cat:"Licences et logiciels", nom:"Mise en place du registre des licences",
+    jalons:[["Liste des logiciels complète",35,1],["Registre rempli",75,1],["Revue trimestrielle en place",100,0]],
+    taches:[["Lister les logiciels installés (outil d'inventaire)",0,25,0],["Lister les abonnements en ligne (cartes, notes de frais)",0,30,0],
+      ["Rassembler contrats, factures et échéances",15,35,0],["Saisir chaque licence dans l'onglet Achats",35,70,1],
+      ["Désigner un responsable par licence",50,70,1],["Régler les délais d'alerte avant expiration",65,75,1],
+      ["Repérer les doublons et les licences dormantes",70,90,2],["Fixer une revue trimestrielle",90,100,2]] }
+);
+
+/* ---------- matériel et équipements ---------- */
+const ACHAT_MAT = (nom, id, specifiques, jalonsExtra) => ({ id, cat:"Matériel et équipements", nom,
+  jalons:[["Besoin et budget validés",15,1],["Commande passée",30,1],["Matériel livré",55,1],["Matériel déployé",85,1],["Réception soldée et facture saisie",100,0]].concat(jalonsExtra || []),
+  taches:[["Recenser le besoin (quantités, profils, sites)",0,10,0],["Définir le modèle standard et les caractéristiques",5,15,0],
+    ["Demander 2 ou 3 devis",10,22,1],["Choisir l'offre (prix, délai, garantie)",20,27,1],["Saisir la demande d'achat (onglet Achats)",25,30,1]]
+    .concat(specifiques, [
+    ["Suivre la livraison et relancer si besoin",30,55,2],["Cocher « livré » et contrôler les quantités et l'état",55,60,3],
+    ["Inventorier : numéros de série et étiquettes",58,68,3],["Rapprocher la facture et la saisir",80,95,4],["Cocher « réceptionné » dans l'onglet Achats",90,100,4]]) });
+
+MODELES_PROJET.push(
+  ACHAT_MAT("Achat et déploiement de PC (portables ou fixes)", "m-mat-pc", [
+    ["Préparer le master (image, logiciels, stratégies)",30,55,2],["Planifier les remplacements avec les utilisateurs",45,60,3],
+    ["Préparer et installer les postes",60,80,3],["Transférer les données et vérifier avec chaque utilisateur",65,85,3],
+    ["Récupérer les anciens postes et effacer les données",75,95,4]]),
+  ACHAT_MAT("Écrans, stations d'accueil et périphériques", "m-mat-periph", [
+    ["Vérifier la compatibilité avec les postes",15,25,1],["Distribuer et installer par bureau",60,82,3]]),
+  ACHAT_MAT("Smartphones et tablettes", "m-mat-mobile", [
+    ["Commander les lignes ou cartes SIM",25,40,2],["Préparer l'enrôlement dans l'outil de gestion (MDM)",35,55,2],
+    ["Remettre les appareils contre signature",60,82,3],["Récupérer et réinitialiser les anciens appareils",75,95,4]]),
+  ACHAT_MAT("Équipements réseau (switchs, bornes Wi-Fi, pare-feu)", "m-mat-reseau", [
+    ["Relevé des baies, prises et points d'accès",10,25,0],["Préparer les configurations",35,55,2],
+    ["Planifier la coupure avec les utilisateurs",45,58,3],["Installer et basculer hors heures de travail",60,80,3],
+    ["Mettre à jour les schémas réseau et la supervision",75,90,4]]),
+  ACHAT_MAT("Serveur ou stockage", "m-mat-serveur", [
+    ["Dimensionner (processeurs, mémoire, disques)",5,20,0],["Commander les licences associées (système, hyperviseur, sauvegarde)",25,35,1],
+    ["Installer en baie et câbler",55,65,3],["Installer le système et la supervision",62,78,3],["Brancher les sauvegardes et tester une restauration",70,85,3]]),
+  ACHAT_MAT("Matériel pour un site d'outre-mer (fret et octroi de mer)", "m-mat-dom", [
+    ["Choisir l'achat local ou l'envoi depuis la métropole",10,22,1],["Prévoir l'octroi de mer et les frais de fret dans le budget",12,25,1],
+    ["Préparer et masteriser le matériel avant envoi",30,40,2],["Désigner le transitaire et préparer la liste de colisage",32,42,2],
+    ["Expédition maritime ou aérienne",40,52,2],["Dédouanement et paiement de l'octroi de mer",48,55,2],
+    ["Installation sur place avec le référent local",60,82,3],["Assistance à distance les premiers jours",80,90,3]],
+    [["Matériel expédié",42,0]]),
+  { id:"m-mat-site", cat:"Matériel et équipements", nom:"Équipement complet d'un nouveau site ou agence",
+    jalons:[["Besoins du site validés",15,1],["Commandes passées",30,1],["Liaison internet livrée",55,1],["Matériel installé",80,1],["Site opérationnel",95,1]],
+    taches:[["Visite ou plan des locaux : bureaux, baie, prises",0,12,0],["Liste du matériel : postes, réseau, impression, téléphonie, visio",5,15,0],
+      ["Commander la liaison internet (délai long, surtout outre-mer)",10,20,0],["Saisir les demandes d'achat par lot",15,30,1],
+      ["Câblage et baie de brassage",30,55,2],["Suivre les livraisons",30,60,2],["Installer le réseau et le Wi-Fi",55,70,3],
+      ["Installer les postes, imprimantes et visio",62,80,3],["Comptes, droits et accès aux applications",65,82,3],
+      ["Accueil des utilisateurs et guide de démarrage",80,95,4],["Réceptionner les achats et saisir les factures",85,100,-1]] },
+  { id:"m-mat-garantie", cat:"Matériel et équipements", nom:"Extension de garantie ou contrat de maintenance matériel",
+    jalons:[["Liste du matériel à couvrir",30,0],["Contrat signé",70,1],["Échéances enregistrées",100,0]],
+    taches:[["Lister les équipements dont la garantie expire",0,20,0],["Choisir ce qui mérite d'être couvert ou remplacé",15,30,0],
+      ["Demander les devis (constructeur ou tiers mainteneur)",30,50,1],["Saisir la demande d'achat",50,60,1],["Signer le contrat",60,70,1],
+      ["Enregistrer le contrat et son échéance dans l'onglet Achats",70,90,2],["Noter la procédure d'appel au support",80,100,2]] },
+  { id:"m-mat-location", cat:"Matériel et équipements", nom:"Location longue durée du parc (leasing)",
+    jalons:[["Offre choisie",35,1],["Contrat signé",50,1],["Premier lot livré",75,1],["Plan de restitution prêt",100,0]],
+    taches:[["Comparer achat et location sur la durée",0,20,0],["Définir le catalogue et la durée de location",10,25,0],
+      ["Consulter les loueurs",20,35,0],["Négocier les conditions de fin de contrat et d'usure",30,45,1],["Signer le contrat",45,50,1],
+      ["Livraison et déploiement par lots",50,75,2],["Suivre l'inventaire des matériels loués",70,90,3],["Préparer la restitution en fin de contrat",85,100,3]] },
+  { id:"m-mat-recyclage", cat:"Matériel et équipements", nom:"Sortie et recyclage du matériel (DEEE)",
+    jalons:[["Lot à sortir identifié",25,0],["Données effacées",60,1],["Matériel enlevé",85,1],["Certificats reçus",100,0]],
+    taches:[["Lister le matériel à sortir (numéros de série)",0,20,0],["Choisir entre revente, don ou recyclage",15,25,0],
+      ["Effacer les données de façon certifiée",25,60,1],["Retirer le matériel de l'inventaire et des licences",50,65,1],
+      ["Organiser l'enlèvement par un prestataire agréé",55,85,2],["Récupérer les certificats d'effacement et de recyclage",85,100,3]] }
 );
 
 const modelesDispo = () => MODELES_PROJET.concat(DB.settings.modelesPerso || []);
@@ -4017,6 +4503,54 @@ function vueModal(m){
       piedModal(m.id ? "Enregistrer" : "Ajouter", "enregistrer-point",
         m.id ? '<button class="btn dang wide" data-act="supprimer-point" data-id="' + m.id + '">Supprimer</button>' : "");
   }
+  else if(m.type === "achat"){
+    c = '<h3>' + (m.id ? "Demande d'achat" : "Nouvelle demande d'achat") + '</h3>' +
+      '<div class="sous">Ce qu\'on achète, à qui, pour combien. La livraison, la réception et la facture se renseignent ensuite, au fil de l\'eau.</div>' +
+      fChamp("Objet", fTxt("objet", m.objet, "12 PC portables pour l'agence de Fort-de-France"), "", "m-objet") +
+      '<div class="duo">' + fChamp("N° de DA", fTxt("numDA", m.numDA, "DA-2026-041"), "", "m-numDA") +
+        fChamp("N° de commande", fTxt("numCmd", m.numCmd, "facultatif"), "", "m-numCmd") + '</div>' +
+      '<div class="duo">' + fChamp("Fournisseur", fTxt("fournisseur", m.fournisseur, "Dell, Bechtle, Orange…"), "", "m-fournisseur") +
+        fChamp("Date de la demande", fTxt("date", m.date, "", "date"), "", "m-date") + '</div>' +
+      '<div class="duo">' + fChamp("Montant (€)", fTxt("montant", m.montant, "0", "number"), "", "m-montant") +
+        fChamp("Quantité", fTxt("quantite", m.quantite, "1", "number"), "", "m-quantite") + '</div>' +
+      '<div class="duo">' + fChamp("Territoire", fSel("site", m.site || SITE_DEF, SITES.map(s => [s.id, s.n])), "", "m-site") +
+        fChamp("Projet lié", fSel("projet", m.projet, optsProj(), "Aucun"), "", "m-projet") + '</div>' +
+      (!m.livre && !m.recu ? fChamp("Livraison prévue", fTxt("livPrevue", m.livPrevue, "", "date"), "Passée cette date sans livraison, la demande ressort en retard.", "m-livPrevue") : "") +
+      fBool("livre", m.livre || m.recu, "Livré", "Le matériel ou la prestation est arrivé") +
+      (m.livre || m.recu ? fChamp("Livré le", fTxt("dateLivre", m.dateLivre || todayISO(), "", "date"), "", "m-dateLivre") : "") +
+      fBool("recu", m.recu, "Réceptionné", "Contrôlé et réceptionné : la demande est soldée") +
+      (m.recu ? fChamp("Réceptionné le", fTxt("dateRecu", m.dateRecu || todayISO(), "", "date"), "", "m-dateRecu") : "") +
+      '<div class="duo">' + fChamp("N° de facture", fTxt("numFacture", m.numFacture, "FA-123456"), "", "m-numFacture") +
+        fChamp("Date de facture", fTxt("dateFacture", m.dateFacture, "", "date"), "", "m-dateFacture") + '</div>' +
+      fChamp("Note", fArea("note", m.note, "Facultatif", 2), "", "m-note") +
+      piedModal(m.id ? "Enregistrer" : "Créer la demande", "enregistrer-achat",
+        m.id ? '<button class="btn" style="flex:1" data-act="dupliquer-achat" data-id="' + m.id + '">Dupliquer</button><button class="btn dang" style="flex:1" data-act="supprimer-achat" data-id="' + m.id + '">Supprimer</button>' : "");
+  }
+  else if(m.type === "licence"){
+    const histo = (m.histo || []).slice().reverse();
+    c = '<h3>' + (m.id ? "Licence" : "Nouvelle licence") + '</h3>' +
+      '<div class="sous">Un abonnement, un contrat de maintenance ou une licence logicielle : ce qu\'elle coûte et quand elle expire.</div>' +
+      fChamp("Logiciel ou service", fTxt("logiciel", m.logiciel, "Microsoft 365 E3, antivirus, Adobe Acrobat…"), "", "m-logiciel") +
+      '<div class="duo">' + fChamp("Éditeur", fTxt("editeur", m.editeur, "Microsoft"), "", "m-editeur") +
+        fChamp("Fournisseur / revendeur", fTxt("fournisseur", m.fournisseur, "facultatif"), "", "m-fournisseur") + '</div>' +
+      '<div class="duo">' + fChamp("Nombre de licences", fTxt("quantite", m.quantite, "50", "number"), "", "m-quantite") +
+        fChamp("Coût (€)", fTxt("cout", m.cout, "0", "number"), "", "m-cout") + '</div>' +
+      fChamp("Facturation", fSeg("periode", m.periode || "an", PERIODES)) +
+      '<div class="duo">' + fChamp("Début", fTxt("debut", m.debut, "", "date"), "", "m-debut") +
+        fChamp("Expiration", fTxt("fin", m.fin, "", "date"), "Vide pour une licence perpétuelle.", "m-fin") + '</div>' +
+      fChamp("Prévenir", fSeg("alerte", m.alerte || "60", [["30","30 j avant"],["60","60 j"],["90","90 j"],["120","120 j"]]),
+        "La licence passe « à renouveler » à partir de ce délai, en rouge dans les 30 derniers jours.") +
+      fBool("renouvAuto", m.renouvAuto, "Reconduction tacite", "Elle se renouvelle seule : l'alerte sert alors à résilier ou renégocier à temps.") +
+      '<div class="duo">' + fChamp("N° de contrat / facture", fTxt("numContrat", m.numContrat, "facultatif"), "", "m-numContrat") +
+        fChamp("Territoire", fSel("site", m.site || SITE_DEF, SITES.map(s => [s.id, s.n])), "", "m-site") + '</div>' +
+      fChamp("Responsable", fSel("resp", m.resp, optsPers(), "—"), "", "m-resp") +
+      fChamp("Note", fArea("note", m.note, "Clés, portail d'administration, contact commercial…", 2), "", "m-note") +
+      (histo.length ? '<div class="champ"><span class="lab">Renouvellements</span>' + histo.map(x =>
+        '<div class="ln" style="padding:7px 2px"><span class="ln-mid"><span class="ln-m" style="margin:0">' +
+        esc(frDate(x.debut, true) + " → " + frDate(x.fin, true) + (x.cout ? " · " + eur(x.cout) : "") + " · renouvelée le " + frDate(x.le, true)) + '</span></span></div>').join("") + '</div>' : "") +
+      piedModal(m.id ? "Enregistrer" : "Ajouter la licence", "enregistrer-licence",
+        m.id ? '<button class="btn dang wide" data-act="supprimer-licence" data-id="' + m.id + '">Supprimer la licence</button>' : "");
+  }
   else if(m.type === "mail") c = vueMail(m);
   else if(m.type === "cloture") c = vueCloture(m);
   else if(m.type === "rapide") c = vueRapide(m);
@@ -4482,7 +5016,29 @@ function exemple(){
   if(!DB.settings.organisation) DB.settings.organisation = "DSI";
   DB.settings.respServices = { "Direction":"Direction générale", "DSI":"Responsable informatique", "Finance":"DAF", "RH":"DRH",
     "Production":"Directeur industriel", "Commercial":"Directeur commercial", "Logistique":"Responsable logistique", ...(DB.settings.respServices || {}) };
-  sauver(); render(); toast("Exemple chargé : 10 projets, 8 personnes");
+  const da = o => { const id = uid(); DB.achats[id] = { id, cree:now, maj:now, numCmd:"", numFacture:"", dateFacture:"", note:"", projet:"", quantite:1,
+    livre:false, dateLivre:"", recu:false, dateRecu:"", livPrevue:"", ...o }; };
+  da({ objet:"PC portables pour l'atelier de Fort-de-France", numDA:"DA-26-112", fournisseur:"Dell", date:J(-40), montant:14400, quantite:12, site:"martinique", projet:pc,
+    livPrevue:J(-6), note:"Fournisseur relancé le " + frDate(J(-3)) });
+  da({ objet:"Écrans 27 pouces", numDA:"DA-26-118", fournisseur:"Bechtle", date:J(-25), montant:3360, quantite:16, site:"martinique", projet:pc,
+    livPrevue:J(-2), livre:true, dateLivre:J(-2) });
+  da({ objet:"Switchs d'accès 48 ports", numDA:"DA-26-120", numCmd:"BC-4471", fournisseur:"Cisco via Axians", date:J(-30), montant:21800, quantite:8, site:"reunion", projet:nac,
+    livPrevue:J(-12), livre:true, dateLivre:J(-12), recu:true, dateRecu:J(-9), numFacture:"FA-998812", dateFacture:J(-8) });
+  da({ objet:"Bornes Wi-Fi 6", numDA:"DA-26-131", fournisseur:"Ingram Micro", date:J(-10), montant:9600, quantite:24, site:"caledonie", projet:wifi, livPrevue:J(25) });
+  da({ objet:"Routeurs et SFP pour la liaison fibre", numDA:"DA-26-127", fournisseur:"Orange Business", date:J(-18), montant:6900, quantite:4, site:"guyane", projet:fibre,
+    livPrevue:J(-5), livre:true, dateLivre:J(-4), recu:true, dateRecu:J(-1) });
+  da({ objet:"Casques audio pour le support", numDA:"DA-26-102", fournisseur:"LDLC Pro", date:J(-70), montant:1250, quantite:10, site:"lyon",
+    livre:true, dateLivre:J(-60), recu:true, dateRecu:J(-58), numFacture:"F2026-1187", dateFacture:J(-59) });
+  const lic = o => { const id = uid(); DB.licences[id] = { id, cree:now, maj:now, editeur:"", fournisseur:"", numContrat:"", note:"", histo:[], periode:"an", alerte:60,
+    renouvAuto:false, site:"lyon", resp:"", ...o }; };
+  lic({ logiciel:"Microsoft 365 E3", editeur:"Microsoft", fournisseur:"SoftwareOne", quantite:180, cout:61200, debut:addAns(J(48), -1), fin:J(48), alerte:90, resp:pers.karim, numContrat:"EA-7731102" });
+  lic({ logiciel:"Antivirus EDR", editeur:"WithSecure", fournisseur:"Axians", quantite:220, cout:9900, debut:addAns(J(-6), -1), fin:J(-6), resp:pers.thomas });
+  lic({ logiciel:"Adobe Acrobat Pro", editeur:"Adobe", quantite:15, cout:2700, debut:addAns(J(21), -1), fin:J(21), renouvAuto:true, resp:pers.sophie });
+  lic({ logiciel:"Supervision réseau", editeur:"Paessler", quantite:1, cout:3400, debut:J(-120), fin:addAns(J(-120), 1), site:"reunion", resp:pers.thomas });
+  lic({ logiciel:"Outil de ticketing", editeur:"GLPI Network", quantite:12, cout:95, periode:"mois", debut:J(-200), fin:addAns(J(-200), 2), renouvAuto:true, resp:pers.sophie });
+  lic({ logiciel:"Logiciel de caisse", editeur:"Cegid", fournisseur:"Cegid Antilles", quantite:6, cout:4100, debut:addAns(J(130), -1), fin:J(130), site:"guadeloupe" });
+  lic({ logiciel:"Windows Server 2022", editeur:"Microsoft", quantite:4, cout:3800, periode:"unique", debut:J(-400), fin:"", site:"caledonie" });
+  sauver(); render(); toast("Exemple chargé : 10 projets, 8 personnes, 6 achats, 7 licences");
 }
 
 /* ============================================================
@@ -4522,8 +5078,31 @@ document.addEventListener("click", async ev => {
     if(state.sheet && state.sheet.t === "projet") return ouvrirModal(mTache(null, state.sheet.id));
     if(state.tab === "equipe") return ouvrirModal(mPersonne());
     if(state.tab === "risques" && M().risques) return ouvrirModal(mRisque(null, ""));
+    if(state.tab === "achats") return ouvrirModal(state.aVue === "lic" ? mLicence() : mAchat());
     return ouvrirModal(mProjet());
   }
+  if(act === "nouvel-achat") return ouvrirModal(mAchat(null, id));
+  if(act === "nouvelle-licence") return ouvrirModal(mLicence());
+  if(act === "modifier-achat" && DB.achats[id]) return ouvrirModal(mAchat(DB.achats[id]));
+  if(act === "modifier-licence" && DB.licences[id]) return ouvrirModal(mLicence(DB.licences[id]));
+  if(act === "enregistrer-achat") return enregistrerAchat();
+  if(act === "enregistrer-licence") return enregistrerLicence();
+  if(act === "supprimer-achat") return supprimerAchatLic("achats", id, "Demande d'achat supprimée");
+  if(act === "supprimer-licence") return supprimerAchatLic("licences", id, "Licence supprimée");
+  if(act === "dupliquer-achat" && DB.achats[id]){
+    const m = mAchat(DB.achats[id]); delete m.id;
+    Object.assign(m, { objet:m.objet + " (copie)", numDA:"", numCmd:"", numFacture:"", dateFacture:"", date:todayISO(),
+      livPrevue:addJ(todayISO(), 21), livre:false, dateLivre:"", recu:false, dateRecu:"", focus:"m-objet" });
+    return ouvrirModal(m);
+  }
+  if(act === "a-livre") return cocherAchat(id, "livre");
+  if(act === "a-recu") return cocherAchat(id, "recu");
+  if(act === "lic-renouveler") return renouvelerLicence(id);
+  if(act === "a-vue"){ state.aVue = id; render(); return; }
+  if(act === "a-filtre"){ state.aVue = "da"; state.aFiltre = id; render(); return; }
+  if(act === "a-lfiltre"){ state.aVue = "lic"; state.lFiltre = id; state.lMois = null; render(); return; }
+  if(act === "a-mois"){ state.lMois = state.lMois === id ? null : id; render(); return; }
+  if(act === "exporter-achats") return exporterAchatsCSV();
   if(act === "nouveau-projet") return ouvrirModal(mProjet());
   if(act === "nouvelle-tache") return ouvrirModal(mTache(null, id));
   if(act === "nouveau-jalon") return ouvrirModal(mJalon(null, id));
@@ -4727,7 +5306,7 @@ document.addEventListener("click", async ev => {
   if(act === "importer") return importer();
   if(act === "exemple"){
     if(!V(DB.projets).length) return exemple();
-    return ouvrirModal({ type:"confirmer", titre:"Ajouter l'exemple ?", texte:"Sept projets fictifs et huit personnes s'ajouteront à vos données. Vous pourrez les supprimer un par un.", bouton:"Ajouter", ok:exemple });
+    return ouvrirModal({ type:"confirmer", titre:"Ajouter l'exemple ?", texte:"Dix projets fictifs, huit personnes, des achats et des licences s'ajouteront à vos données. Vous pourrez les supprimer un par un.", bouton:"Ajouter", ok:exemple });
   }
   if(act === "effacer"){
     return ouvrirModal({ type:"confirmer", titre:"Tout effacer ?", danger:true, bouton:"Tout effacer",
@@ -4744,6 +5323,7 @@ document.addEventListener("click", async ev => {
 document.addEventListener("input", ev => {
   const el = ev.target;
   if(el.id === "q"){ state.q = el.value; render(); return; }
+  if(el.id === "qa"){ state.qa = el.value; render(); return; }
   if(el.id === "set-org"){ DB.settings.organisation = el.value; sauver(); return; }
   if(state.modal && state.modal.type === "projet" && el.id === "m-code") state.modal.codeAuto = false;
   if(state.modal && state.modal.type === "projet" && el.id === "m-sponsor") state.modal.sponsorAuto = !el.value.trim();
@@ -4759,6 +5339,7 @@ document.addEventListener("change", ev => {
   const el = ev.target;
   if(el.id === "set-moi"){ DB.settings.moi = el.value; sauver(true); render(); return; }
   if(el.dataset && el.dataset.filtre){ DB.settings.f[el.dataset.filtre] = el.value; sauver(true); render(); return; }
+  if(el.dataset && el.dataset.asite){ state.aSite = el.value; render(); return; }
   if(el.dataset && el.dataset.rerender){
     capturerModal();
     const m = state.modal;

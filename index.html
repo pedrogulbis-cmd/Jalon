@@ -78,7 +78,7 @@ header.top{position:sticky;top:0;z-index:30;background:var(--voile);
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--voile);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border-top:1px solid var(--trait);padding-bottom:env(safe-area-inset-bottom)}
-.tabs-in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+.tabs-in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr)}
 .tab{padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:3px;
   color:var(--gris);font-size:9.5px;letter-spacing:-.01em;border-top:2px solid transparent;margin-top:-1px}
 .tab span{white-space:nowrap}
@@ -251,6 +251,75 @@ button.tuile:active{background:var(--fond2)}
 .mleg button.on{color:var(--texte);text-decoration:underline;text-underline-offset:3px}
 .dgrid{display:grid;gap:0 18px;grid-template-columns:minmax(0,1fr)}
 .dgrid>*{min-width:0}
+
+/* ---------------- vue monde ---------------- */
+.monde{display:grid;gap:14px;grid-template-columns:minmax(0,1fr);margin-top:14px}
+@media(min-width:960px){.monde{grid-template-columns:minmax(0,1fr) 360px;align-items:start}
+  .monde-side{max-height:502px;overflow:auto}}
+.monde>*{min-width:0}
+.carte-zone{position:relative;border:1px solid var(--trait);border-radius:var(--r);overflow:hidden;background:var(--fond2)}
+.monde-carte{height:340px;width:100%;background:var(--fond2);z-index:0}
+@media(min-width:720px){.monde-carte{height:500px}}
+.carte-msg{height:100%;display:grid;place-items:center;text-align:center;padding:20px;color:var(--gris);font-size:13.5px}
+.zones{position:absolute;top:10px;left:54px;right:10px;z-index:500;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none}
+.zones button{pointer-events:auto;font-size:12px;padding:5px 10px;border-radius:999px;background:var(--voile);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--trait);color:var(--gris)}
+.zones button.on{color:var(--surAcc);background:var(--acc);border-color:var(--acc)}
+.carte-leg{position:absolute;left:10px;bottom:10px;z-index:500;display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  font-size:11.5px;color:var(--gris);background:var(--voile);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border:1px solid var(--trait);border-radius:9px;padding:5px 9px;pointer-events:none}
+.carte-leg span{display:inline-flex;align-items:center;gap:5px}
+.monde-carte .leaflet-control-zoom a{background:var(--carte);color:var(--texte);border-color:var(--trait)}
+.monde-carte .leaflet-control-attribution{background:var(--voile);color:var(--gris2);font-size:10px}
+.monde-carte .leaflet-control-attribution a{color:var(--gris)}
+/* marqueurs : un anneau découpé selon la météo des projets du territoire */
+.mk-wrap{background:none;border:0}
+.mk{position:absolute;left:0;top:0;width:0;height:0}
+.mk-pt{position:absolute;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--texte);
+  box-shadow:0 0 0 2px var(--carte)}
+.mk-fil{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.mk-fil line{stroke:var(--texte);stroke-width:1.2;opacity:.45}
+.mk-b{position:absolute;left:0;top:0;width:var(--d);height:var(--d);border-radius:50%;display:grid;place-items:center;
+  box-shadow:0 2px 10px rgba(0,0,0,.25);cursor:pointer;transition:transform .15s}
+.mk-b::after{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--carte)}
+.mk-b b{position:relative;z-index:1;font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:500;color:var(--texte)}
+.mk.siege .mk-b{box-shadow:0 0 0 3px var(--acc),0 2px 12px rgba(0,0,0,.3)}
+.mk.sel .mk-b{box-shadow:0 0 0 3px var(--carte),0 0 0 6px var(--acc),0 2px 14px rgba(0,0,0,.35)}
+.mk.alarme .mk-b::before{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--dang);
+  animation:pulse 1.8s ease-out infinite;pointer-events:none}
+@keyframes pulse{0%{transform:scale(.85);opacity:.9}100%{transform:scale(1.45);opacity:0}}
+.mk-l{position:absolute;left:0;top:0;white-space:nowrap;font-size:11.5px;font-weight:600;letter-spacing:-.01em;color:var(--texte);
+  text-shadow:0 0 3px var(--carte),0 0 3px var(--carte),0 0 6px var(--carte);pointer-events:none}
+.mk-l small{font-weight:500;color:var(--acc);margin-left:4px;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em}
+/* panneau latéral et cartes des territoires */
+.monde-side{margin:0}
+.ms-k{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:6px 0 12px}
+.ms-k div{background:var(--fond2);border-radius:9px;padding:8px 8px 7px;text-align:center}
+.ms-k b{display:block;font-size:19px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.ms-k span{font-size:10.5px;color:var(--gris)}
+.ms-h{font-size:12px;color:var(--gris);display:flex;gap:10px;flex-wrap:wrap;margin:-2px 0 4px}
+.rang{display:grid;grid-template-columns:minmax(0,1fr) 92px 28px;gap:10px;align-items:center;width:100%;text-align:left;
+  padding:9px 2px;border-bottom:1px solid var(--trait2);font-size:13.5px}
+.rang .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.rang .n small{display:block;font-weight:400;font-size:11px;color:var(--gris2)}
+.rang .c{font-family:"IBM Plex Mono",monospace;text-align:right;font-size:13px}
+.rang .mbar{height:8px}
+.sites{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.site-c{border:1px solid var(--trait);border-radius:var(--r);padding:12px 13px;background:var(--carte);text-align:left;width:100%;
+  display:block;transition:border-color .15s}
+.site-c:hover{border-color:var(--accB)}
+.site-c.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.site-h{display:flex;align-items:center;gap:6px}
+.site-n{font-weight:600;letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.site-h .sp{flex:1}
+.heure{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--gris)}
+.site-r{font-size:11.5px;color:var(--gris2);margin-top:1px}
+.site-v{font-size:26px;font-weight:600;letter-spacing:-.04em;margin:8px 0 6px;font-variant-numeric:tabular-nums}
+.site-v small{font-size:12.5px;color:var(--gris);font-weight:500;letter-spacing:-.01em;margin-left:4px}
+.site-s{font-size:11.5px;color:var(--gris);margin-top:7px;display:flex;gap:8px;flex-wrap:wrap}
+.sans{font-size:12.5px;color:var(--gris);margin:12px 0 0;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.sans button{border:1px dashed var(--trait);border-radius:999px;padding:3px 10px;color:var(--gris)}
+.sans button:hover{border-color:var(--accB);color:var(--texte)}
 .rappel{display:flex;align-items:center;gap:10px;margin:14px 0 0;padding:10px 12px;border-radius:10px;
   background:var(--attF);color:var(--att);font-size:13px;line-height:1.4}
 .rappel span{display:grid}
@@ -564,9 +633,16 @@ input[type=range]{width:100%;accent-color:var(--acc)}
    Un seul fichier, aucune dépendance, stockage local (IndexedDB).
    Reprend l'ossature d'Ardoise : même encre, mêmes gestes.
    ============================================================ */
-const VERSION = "1.6.0";
+const VERSION = "1.7.0";
 const SCHEMA  = 1;
 const JOURNAL = [
+  { v:"1.7.0", d:"2026-11-05", t:"Vue Monde", l:[
+    "Nouvel onglet Monde : le portefeuille sur une carte, avec le siège à Lyon et les sites d'outre-mer (Antilles, Guyane, océan Indien, Pacifique, Saint-Pierre-et-Miquelon).",
+    "Chaque territoire est une bulle dont la taille dit le nombre de projets et l'anneau leur météo ; les sites en difficulté clignotent.",
+    "En haut, les indicateurs clés : projets actifs, retards, projets en rouge, avancement, budget, jalons, sites en alerte.",
+    "Un toucher sur un territoire zoome dessus et liste ses projets, avec l'heure locale ; un toucher sur un projet ouvre sa fiche.",
+    "Chaque projet porte désormais un territoire (Lyon par défaut), filtrable partout et repris dans l'export CSV."
+  ]},
   { v:"1.6.0", d:"2026-09-30", t:"Outils de méthode", l:[
     "Note de cadrage : objectifs, périmètre, hors périmètre, livrables, critères de succès, contraintes, rentabilité. Elle s'envoie par mail et, à la clôture, chaque objectif est déclaré atteint, partiel ou non atteint.",
     "Rôles (RACI) : qui réalise, décide, est consulté ou informé, projet par projet. Les « informés » passent en copie des mails.",
@@ -748,6 +824,7 @@ function fermerToast(){ const t = $("#toast"); if(t) t.classList.remove("on","ag
 
 const ICONES = {
   grille:'<rect x="3.5" y="3.5" width="7" height="8" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="5" rx="1.6"/><rect x="13.5" y="11.5" width="7" height="9" rx="1.6"/><rect x="3.5" y="14.5" width="7" height="6" rx="1.6"/>',
+  globe:'<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.4 2.4 3.6 5.2 3.6 8.5s-1.2 6.1-3.6 8.5c-2.4-2.4-3.6-5.2-3.6-8.5S9.6 5.9 12 3.5z"/>',
   dossier:'<path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.2h7a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',
   gantt:'<path d="M3.5 3.5v17h17"/><path d="M7 7.5h6M10 12h8M8.5 16.5h5"/>',
   bouclier:'<path d="M12 3.5 19 6v5.5c0 4.3-3 7.6-7 9-4-1.4-7-4.7-7-9V6z"/><path d="M12 9v4M12 16v.01"/>',
@@ -806,7 +883,7 @@ const DEFAULTS = {
     organisation:"",
     services:["Direction","DSI","Finance","RH","Production","Commercial","Logistique"],
     modules:{ budget:true, charge:true, risques:true, valeur:true, cadrage:true, raci:true, reunions:true, gonogo:true, kanban:true, dependances:true },
-    f:{ service:"", chef:"", prio:"", statut:"actifs", meteo:"" },
+    f:{ service:"", chef:"", prio:"", statut:"actifs", meteo:"", site:"" },
     tri:"meteo", gZoom:"6m", obsolete:14,
     moi:"", signature:"", mailDirection:"", respServices:{}
   },
@@ -878,6 +955,38 @@ const METEOS = { vert:"Sous contrôle", orange:"À surveiller", rouge:"En diffic
 const ORDRE_M = { rouge:0, orange:1, vert:2, gris:3 };
 const TYPES_J = [["point","Point"],["decision","Décision"],["probleme","Problème"]];
 const NIV_R = { faible:"Faible", moyen:"Modéré", fort:"Fort", crit:"Critique" };
+/* Territoires : le siège et les sites d'outre-mer. « off » décale la bulle
+   (en pixels) quand la carte est vue de loin, pour que les îles voisines ne
+   se recouvrent pas ; « z » est le zoom quand on y entre. */
+const SITES = [
+  { id:"lyon",       n:"Lyon",                     r:"Métropole · siège",  lat:45.764, lon:4.836,   tz:"Europe/Paris",        z:6, off:[28,16], siege:true },
+  { id:"paris",      n:"Paris",                    r:"Métropole",          lat:48.857, lon:2.352,   tz:"Europe/Paris",        z:6, off:[-26,-22] },
+  { id:"guadeloupe", n:"Guadeloupe",               r:"Antilles",           lat:16.25,  lon:-61.58,  tz:"America/Guadeloupe",  z:8, off:[-10,-50] },
+  { id:"martinique", n:"Martinique",               r:"Antilles",           lat:14.64,  lon:-61.02,  tz:"America/Martinique",  z:8, off:[56,0] },
+  { id:"stmartin",   n:"Saint-Martin",             r:"Antilles",           lat:18.07,  lon:-63.05,  tz:"America/Marigot",     z:9, off:[-58,-28] },
+  { id:"stbarth",    n:"Saint-Barthélemy",         r:"Antilles",           lat:17.90,  lon:-62.83,  tz:"America/St_Barthelemy", z:9, off:[46,-46] },
+  { id:"guyane",     n:"Guyane",                   r:"Amérique du Sud",    lat:4.92,   lon:-52.33,  tz:"America/Cayenne",     z:6, off:[6,50] },
+  { id:"spm",        n:"Saint-Pierre-et-Miquelon", r:"Atlantique Nord",    lat:46.78,  lon:-56.18,  tz:"America/Miquelon",    z:8, off:[0,0] },
+  { id:"reunion",    n:"La Réunion",               r:"Océan Indien",       lat:-21.11, lon:55.53,   tz:"Indian/Reunion",      z:9, off:[26,22] },
+  { id:"mayotte",    n:"Mayotte",                  r:"Océan Indien",       lat:-12.78, lon:45.23,   tz:"Indian/Mayotte",      z:9, off:[-28,-20] },
+  { id:"caledonie",  n:"Nouvelle-Calédonie",       r:"Pacifique",          lat:-22.27, lon:166.44,  tz:"Pacific/Noumea",      z:7, off:[0,0] },
+  { id:"wallis",     n:"Wallis-et-Futuna",         r:"Pacifique",          lat:-13.28, lon:-176.17, tz:"Pacific/Wallis",      z:8, off:[0,-30] },
+  { id:"polynesie",  n:"Polynésie française",      r:"Pacifique",          lat:-17.53, lon:-149.57, tz:"Pacific/Tahiti",      z:7, off:[0,0] }
+];
+const SITE_DEF = "lyon";
+const siteDe = p => SITES.find(s => s.id === (p && p.site)) || SITES.find(s => s.id === SITE_DEF);
+const site = id => SITES.find(s => s.id === id);
+function heureLocale(tz){
+  try{ return new Intl.DateTimeFormat("fr-FR", { hour:"2-digit", minute:"2-digit", timeZone:tz }).format(new Date()); }
+  catch(e){ return ""; }
+}
+function decalageUTC(tz){
+  try{
+    const t = new Intl.DateTimeFormat("en-US", { timeZone:tz, timeZoneName:"shortOffset" }).formatToParts(new Date())
+      .find(x => x.type === "timeZoneName");
+    return t ? t.value.replace("GMT", "UTC").replace("-", "−") : "";
+  }catch(e){ return ""; }
+}
 const lib = (liste, k) => { const x = liste.find(e => String(e[0]) === String(k)); return x ? x[1] : ""; };
 const niveau = sc => sc >= 12 ? "crit" : sc >= 8 ? "fort" : sc >= 4 ? "moyen" : "faible";
 const scoreR = r => (r.proba||1) * (r.impact||1);
@@ -1051,7 +1160,7 @@ function chargePersonne(pid, projetsOk){
 const F_STATUTS = [["actifs","Actifs"],["encours","En cours"],["etude","À l'étude"],["termines","Terminés"],["tous","Tous statuts"]];
 function filtreActif(){
   const f = DB.settings.f;
-  return !!(f.service || f.chef || f.prio || f.meteo || f.statut !== "actifs");
+  return !!(f.service || f.chef || f.prio || f.meteo || f.site || f.statut !== "actifs");
 }
 function projetsFiltres(sansRecherche){
   const f = DB.settings.f, q = sansRecherche ? "" : norm(state.q);
@@ -1064,7 +1173,8 @@ function projetsFiltres(sansRecherche){
     if(f.statut === "etude" && p.statut !== "idee") return false;
     if(f.statut === "termines" && p.statut !== "termine") return false;
     if(f.meteo && an(p).meteo !== f.meteo) return false;
-    if(q && !norm([p.nom, p.code, p.service, nomP(p.chef), p.sponsor, p.description].join(" ")).includes(q)) return false;
+    if(f.site && siteDe(p).id !== f.site) return false;
+    if(q && !norm([p.nom, p.code, p.service, nomP(p.chef), p.sponsor, p.description, siteDe(p).n].join(" ")).includes(q)) return false;
     return true;
   });
 }
@@ -1085,6 +1195,7 @@ function trierProjets(l, mode){
    ============================================================ */
 const TABS = [
   { id:"bord",     l:"Tableau",  i:"grille" },
+  { id:"monde",    l:"Monde",    i:"globe" },
   { id:"projets",  l:"Projets",  i:"dossier" },
   { id:"planning", l:"Planning", i:"gantt" },
   { id:"risques",  l:"Risques",  i:"bouclier" },
@@ -1147,11 +1258,13 @@ function dessiner(){
 
   const v = $("#view");
   if(state.tab === "bord")          v.innerHTML = vueBord();
+  else if(state.tab === "monde")    v.innerHTML = vueMonde();
   else if(state.tab === "projets")  v.innerHTML = vueProjets();
   else if(state.tab === "planning") v.innerHTML = vuePlanning();
   else if(state.tab === "risques")  v.innerHTML = vueRisques();
   else if(state.tab === "equipe")   v.innerHTML = vueEquipe();
   else                              v.innerHTML = vueReglages();
+  if(state.tab === "monde") carteMonde();
 
   const s = state.sheet;
   if(s && s.t === "projet" && !DB.projets[s.id]) state.sheet = null;
@@ -1227,6 +1340,7 @@ function barreFiltres(){
     sel("chef", "Tous chefs de projet", chefs.map(id => [id, nomP(id)])) +
     sel("prio", "Toutes priorités", PRIOS) +
     sel("meteo", "Toutes météos", [["rouge","En difficulté"],["orange","À surveiller"],["vert","Sous contrôle"]]) +
+    sel("site", "Tous territoires", SITES.map(s => [s.id, s.n])) +
     (filtreActif() ? '<button class="raz" data-act="filtres-raz">Réinitialiser</button>' : "") +
     '</div>';
 }
@@ -1237,6 +1351,7 @@ function resumeFiltres(){
   if(f.chef) l.push(nomP(f.chef));
   if(f.prio) l.push("P" + f.prio);
   if(f.meteo) l.push(METEOS[f.meteo]);
+  if(f.site && site(f.site)) l.push(site(f.site).n);
   return l.join(" · ");
 }
 function barreAv(a, meteo){
@@ -1259,7 +1374,7 @@ function lignePortefeuille(p){
       (p.statut !== "encours" ? '<span class="badge" style="margin-left:0">' + esc(lib(STATUTS_P, p.statut)) + '</span>' : "") +
       (a.obsolete ? '<span class="badge" style="margin-left:0" title="Pas de point depuis longtemps">' + svg("horloge", 10, 2.2) + '</span>' : "") +
     '</span>' +
-    '<span class="pf-m">' + esc([nomP(p.chef), p.service, "fin " + frDate(p.fin)].filter(Boolean).join(" · ")) + ' ' + badgeFin(p, a) + '</span>' +
+    '<span class="pf-m">' + esc([nomP(p.chef), p.service, p.site && p.site !== SITE_DEF ? siteDe(p).n : "", "fin " + frDate(p.fin)].filter(Boolean).join(" · ")) + ' ' + badgeFin(p, a) + '</span>' +
     '<span class="pf-b">' + barreAv(a, a.meteo) + '</span>' +
     (mo.budget ? '<span class="pf-bud">' + (a.budget ? eurC(a.conso) + '<span class="s">sur ' + eurC(a.budget) +
       (a.budgetPct != null ? ' · ' + (masque() ? "••" : a.budgetPct) + ' %' : "") + '</span>' : '<span class="s">sans budget</span>') + '</span>' : "") +
@@ -1448,6 +1563,290 @@ function vueBord(){
   h += '<div class="dgrid"><div>' + g + '</div><div>' + d + '</div></div>';
   return h;
 }
+
+/* ============================================================
+   MONDE
+   Le portefeuille posé sur la carte : le siège à Lyon, les sites d'outre-mer,
+   et pour chacun une bulle dont l'anneau se découpe selon la météo de ses
+   projets. Un territoire se choisit sur la carte ou dans les cartes du bas ;
+   ses projets s'ouvrent d'un toucher. Tout suit les filtres.
+   ============================================================ */
+const COUL_M = { rouge:"dang", orange:"att", vert:"ok", gris:"gris2" };
+function statsSite(P){
+  const act = P.filter(actif);
+  const cnt = { rouge:0, orange:0, vert:0, gris:0 };
+  P.forEach(p => { const m = an(p).meteo; cnt[m in cnt ? m : "gris"]++; });
+  const pire = cnt.rouge ? "rouge" : cnt.orange ? "orange" : cnt.vert ? "vert" : "gris";
+  const av = act.length ? Math.round(act.reduce((s,p) => s + an(p).avance, 0) / act.length) : null;
+  return { P, act, cnt, pire, av, retard:act.filter(p => an(p).enRetard).length,
+    budget:act.reduce((s,p) => s + an(p).budget, 0), conso:act.reduce((s,p) => s + an(p).conso, 0) };
+}
+function groupesSites(L){
+  const g = new Map(SITES.map(s => [s.id, []]));
+  L.forEach(p => g.get(siteDe(p).id).push(p));
+  return SITES.map(s => ({ s, ...statsSite(g.get(s.id)) }));
+}
+function mbarM(cnt){
+  const n = cnt.rouge + cnt.orange + cnt.vert + cnt.gris;
+  if(!n) return '<div class="mbar"></div>';
+  return '<div class="mbar">' + ["rouge","orange","vert","gris"].map(k => cnt[k] ?
+    '<i style="flex:' + cnt[k] + ';background:var(--' + COUL_M[k] + ')" title="' + cnt[k] + ' ' + esc(METEOS[k].toLowerCase()) + '"></i>' : "").join("") + '</div>';
+}
+function vueMonde(){
+  const tous = V(DB.projets);
+  if(!tous.length){
+    return '<section class="total"><div class="total-lbl">Vue globale</div><span class="total-val">Aucun projet</span></section>' +
+      vide("Rien à placer sur la carte", "Créez un projet et choisissez son territoire, ou chargez l'exemple.",
+        '<button class="btn pri" data-act="nouveau-projet">' + svg("plus",16,2) + 'Nouveau projet</button>' +
+        '<button class="btn" data-act="exemple">Charger un exemple</button>');
+  }
+  const L = projetsFiltres(true), act = L.filter(actif), mo = M(), auj = todayISO();
+  const G = groupesSites(L);
+  CARTE.groupes = G;
+  if(state.site && !site(state.site)) state.site = null;
+  const occupes = G.filter(g => g.P.length);
+  const enRetard = act.filter(p => an(p).enRetard).length;
+  const rouges = act.filter(p => an(p).meteo === "rouge").length, oranges = act.filter(p => an(p).meteo === "orange").length;
+  const jRet = act.reduce((s,p) => s + an(p).jRetard.length, 0);
+  const avMoy = act.length ? Math.round(act.reduce((s,p) => s + an(p).avance, 0) / act.length) : 0;
+  const bud = act.reduce((s,p) => s + an(p).budget, 0), cons = act.reduce((s,p) => s + an(p).conso, 0);
+  const jal30 = act.reduce((s,p) => s + an(p).jProch.filter(j => diffJ(auj, j.date) <= 30).length, 0);
+  const bloq = act.reduce((s,p) => s + an(p).tBloq.length, 0);
+  const horsSiege = occupes.filter(g => !g.s.siege).length;
+
+  let h = '<section class="total" style="padding-bottom:14px"><div class="vh"><div>' +
+    '<div class="total-lbl">' + esc((DB.settings.organisation ? DB.settings.organisation + " · " : "") + "Vue globale au " + frDate(auj, true)) + '</div>' +
+    '<span class="total-val num">' + act.length + ' projet' + pl(act.length) + ' · ' + occupes.length + ' territoire' + pl(occupes.length) + '</span>' +
+    '<div class="total-sub"><span>Siège <b>Lyon</b></span><span><b>' + horsSiege + '</b> site' + pl(horsSiege) + ' hors siège</span>' +
+      '<span>' + svg("horloge", 13) + ' Lyon <b class="heure" data-tz="Europe/Paris">' + heureLocale("Europe/Paris") + '</b></span></div></div>' +
+    '<div class="sp"></div><div class="btns noprint">' +
+      '<button class="btn" data-act="rapport">' + svg("imprimer", 16) + 'Rapport</button>' +
+      '<button class="btn" data-act="mail-synthese">' + svg("mail", 16) + 'Mail</button></div></div></section>' + barreFiltres();
+
+  h += '<div class="kpis">' +
+    tuile({ l:"Projets actifs", ic:"dossier", v:String(act.length), s:occupes.length + " territoire" + pl(occupes.length) + " concerné" + pl(occupes.length), act:"tab", id:"projets" }) +
+    tuile({ l:"En retard", ic:"horloge", v:enRetard + ' <small>/ ' + act.length + '</small>', cls:enRetard ? "c-dang" : "",
+      s: jRet ? jRet + " jalon" + pl(jRet) + " dépassé" + pl(jRet) : "aucun jalon dépassé", act:"aller-projets-retard" }) +
+    tuile({ l:"En difficulté", ic:"alerte", v:String(rouges), cls:rouges ? "c-dang" : "", s:oranges + " à surveiller", act:"filtre-meteo", id:"rouge" }) +
+    tuile({ l:"Avancement moyen", ic:"gantt", v:avMoy + ' <small>%</small>', bar:avMoy }) +
+    (mo.budget ? tuile({ l:"Budget consommé", ic:"euro", v:eurC(cons) + ' <small>/ ' + eurC(bud) + '</small>', argent:true,
+      bar: bud ? cons / bud * 100 : 0, barCls: clsPct(bud ? cons/bud*100 : null), s: bud ? (masque() ? "••" : Math.round(cons / bud * 100)) + " % consommé" : "aucun budget saisi" }) : "") +
+    tuile({ l:"Jalons à 30 jours", ic:"diamant", v:String(jal30), act:"tab", id:"planning", s:"sur tous les territoires" }) +
+    tuile({ l:"Tâches bloquées", ic:"bloque", v:String(bloq), cls: bloq ? "c-att" : "", s: bloq ? "à débloquer" : "rien de bloqué" }) +
+    tuile({ l:"Sites en alerte", ic:"globe", v:String(occupes.filter(g => g.cnt.rouge).length) + ' <small>/ ' + occupes.length + '</small>',
+      cls: occupes.some(g => g.cnt.rouge) ? "c-dang" : "", s:"au moins un projet en rouge" }) +
+    '</div>';
+
+  const zones = [["monde","Monde"],["metropole","Métropole"],["antilles","Antilles-Guyane"],["indien","Océan Indien"],["pacifique","Pacifique"]];
+  h += '<div class="monde"><div class="carte-zone">' +
+    '<div id="monde-carte" class="monde-carte"></div>' +
+    '<div class="zones">' + zones.map(([k,l]) => '<button data-act="monde-zone" data-id="' + k + '" class="' + ((state.zone || "monde") === k && !state.site ? "on" : "") + '">' + l + '</button>').join("") + '</div>' +
+    '<div class="carte-leg"><span>taille = nombre de projets</span><span><span class="dot rouge"></span>rouge</span>' +
+      '<span><span class="dot orange"></span>orange</span><span><span class="dot vert"></span>vert</span></div>' +
+    '</div><div class="pan monde-side">' + (state.site ? panneauSite(G.find(g => g.s.id === state.site)) : panneauGlobal(occupes, act)) + '</div></div>';
+  h += carteMeteo(act);
+
+  h += '<div class="sect"><h2>Territoires</h2><span class="cnt">' + occupes.length + '</span><span class="sp"></span>' +
+    '<span class="cnt">heure locale</span></div><div class="sites">' + occupes.map(carteSite).join("") + '</div>';
+  const libres = G.filter(g => !g.P.length);
+  if(libres.length) h += '<div class="sans"><span>Sans projet :</span>' + libres.map(g =>
+    '<button data-act="monde-site" data-id="' + g.s.id + '">' + esc(g.s.n) + '</button>').join("") + '</div>';
+  return h;
+}
+function carteSite(g){
+  const s = g.s;
+  return '<button class="site-c' + (state.site === s.id ? " sel" : "") + '" data-act="monde-site" data-id="' + s.id + '">' +
+    '<div class="site-h"><span class="dot ' + g.pire + '"></span><span class="site-n">' + esc(s.n) + '</span>' +
+      (s.siege ? '<span class="badge acc plein">siège</span>' : "") + '<span class="sp"></span>' +
+      '<span class="heure" data-tz="' + s.tz + '">' + heureLocale(s.tz) + '</span></div>' +
+    '<div class="site-r">' + esc(s.r) + ' · ' + esc(decalageUTC(s.tz)) + '</div>' +
+    '<div class="site-v">' + g.act.length + '<small>projet' + pl(g.act.length) + ' actif' + pl(g.act.length) + '</small></div>' +
+    mbarM(g.cnt) +
+    '<div class="site-s">' +
+      (g.retard ? '<span class="c-dang">' + g.retard + ' en retard</span>' : '<span>aucun retard</span>') +
+      (g.av != null ? '<span>av. moyen ' + g.av + ' %</span>' : "") +
+      (M().budget && g.budget ? '<span>' + eurC(g.budget) + '</span>' : "") +
+    '</div></button>';
+}
+function ligneMonde(p, avecSite){
+  const a = an(p);
+  return '<button class="ln" data-act="ouvrir-projet" data-id="' + p.id + '">' +
+    '<span class="ln-ic" style="background:none"><span class="dot ' + a.meteo + '"></span></span>' +
+    '<span class="ln-mid"><span class="ln-t">' + esc(p.nom) + badgeFin(p, a) + '</span>' +
+    '<span class="ln-m">' + esc([avecSite ? siteDe(p).n : "", nomP(p.chef), "fin " + frDate(p.fin)].filter(Boolean).join(" · ")) + '</span>' +
+    barreAv(a, a.meteo) + '</span>' +
+    '<span class="ln-r">' + a.avance + ' %</span></button>';
+}
+function panneauGlobal(occupes, act){
+  const tri = occupes.slice().sort((a,b) => b.cnt.rouge - a.cnt.rouge || b.cnt.orange - a.cnt.orange || b.P.length - a.P.length);
+  const chauds = trierProjets(act.filter(p => an(p).meteo === "rouge" || an(p).enRetard), "meteo");
+  return '<div class="sect"><h2>Où ça coince</h2><span class="cnt">par territoire</span></div>' +
+    (tri.length ? tri.map(g => '<button class="rang" data-act="monde-site" data-id="' + g.s.id + '">' +
+      '<span class="n">' + esc(g.s.n) + '<small>' + esc(g.s.r) + (g.retard ? ' · <span class="c-dang">' + g.retard + ' en retard</span>' : "") + '</small></span>' +
+      mbarM(g.cnt) + '<span class="c">' + g.P.length + '</span></button>').join("") : '<div class="vide petit">Aucun projet dans cette sélection.</div>') +
+    '<div class="sect"><h2>Projets à regarder</h2><span class="cnt">' + chauds.length + '</span></div>' +
+    (chauds.length ? chauds.slice(0, 6).map(p => ligneMonde(p, true)).join("") : '<div class="vide petit">Aucun projet en rouge ni en retard.</div>');
+}
+function panneauSite(g){
+  const s = g.s, P = trierProjets(g.P, "meteo");
+  return '<div class="sect"><h2>' + esc(s.n) + '</h2>' + (s.siege ? '<span class="badge acc plein">siège</span>' : "") +
+      '<span class="sp"></span><button class="iconbtn" data-act="monde-tout" title="Revenir à la vue monde" aria-label="Revenir à la vue monde" style="width:30px;height:30px;flex-basis:30px">' + svg("croix", 15) + '</button></div>' +
+    '<div class="ms-h"><span>' + esc(s.r) + '</span><span>' + svg("horloge", 12) + ' <b class="heure" data-tz="' + s.tz + '">' + heureLocale(s.tz) + '</b> ' + esc(decalageUTC(s.tz)) + '</span></div>' +
+    '<div class="ms-k"><div><b>' + g.act.length + '</b><span>actifs</span></div>' +
+      '<div><b class="' + (g.retard ? "c-dang" : "") + '">' + g.retard + '</b><span>en retard</span></div>' +
+      '<div><b class="' + (g.cnt.rouge ? "c-dang" : "") + '">' + g.cnt.rouge + '</b><span>en rouge</span></div>' +
+      '<div><b>' + (g.av != null ? g.av + "%" : "—") + '</b><span>avancement</span></div></div>' +
+    mbarM(g.cnt) +
+    (P.length ? '<div style="margin-top:8px">' + P.map(p => ligneMonde(p, false)).join("") + '</div>'
+      : '<div class="vide petit">Aucun projet ici dans cette sélection.</div>') +
+    '<div class="btns" style="margin:12px 0 6px">' +
+      (P.length ? '<button class="btn pt" data-act="monde-projets" data-id="' + s.id + '">' + svg("dossier", 15) + 'Voir dans Projets</button>' : "") +
+      '<button class="btn pt" data-act="nouveau-projet-site" data-id="' + s.id + '">' + svg("plus", 15, 2) + 'Projet ici</button></div>';
+}
+
+/* ---------- la carte : Leaflet, chargé à la première visite de l'onglet.
+   Le conteneur survit aux redessins : on le raccroche à la page au lieu de
+   recréer la carte, pour garder le zoom et la position. ---------- */
+const CARTE = { el:null, map:null, tuiles:null, theme:"", calque:null, arcs:null, groupes:[], cadree:false };
+let _leaflet = null;
+function chargerLeaflet(){
+  if(window.L && window.L.map) return Promise.resolve(window.L);
+  if(_leaflet) return _leaflet;
+  _leaflet = new Promise((res, rej) => {
+    const base = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/";
+    const c = document.createElement("link"); c.rel = "stylesheet"; c.href = base + "leaflet.min.css"; document.head.appendChild(c);
+    const s = document.createElement("script"); s.src = base + "leaflet.min.js"; s.async = true;
+    s.onload = () => window.L ? res(window.L) : rej(new Error("Leaflet absent"));
+    s.onerror = () => rej(new Error("chargement impossible"));
+    document.head.appendChild(s);
+  });
+  return _leaflet;
+}
+const lonC = lon => lon < -140 ? lon + 360 : lon;   // le Pacifique reste d'un seul tenant
+const llSite = s => [s.lat, lonC(s.lon)];
+const ZONES = {
+  metropole:[[41.5,-4.5],[51.2,9.5]], antilles:[[3,-64.5],[19,-51]], indien:[[-22.5,43.5],[-11.5,57]], pacifique:[[-24,163],[-12,212]]
+};
+function carteMonde(){
+  const ph = document.getElementById("monde-carte");
+  if(!ph) return;
+  if(CARTE.el){
+    ph.replaceWith(CARTE.el);
+    if(CARTE.map){ CARTE.map.invalidateSize(false); majCarte(); }
+    return;
+  }
+  CARTE.el = ph;
+  ph.innerHTML = '<div class="carte-msg">Chargement de la carte…</div>';
+  chargerLeaflet().then(L => {
+    const el = CARTE.el; el.innerHTML = "";
+    const map = L.map(el, { zoomControl:true, scrollWheelZoom:false, minZoom:1, maxZoom:12, zoomSnap:.25, worldCopyJump:false, attributionControl:true });
+    map.attributionControl.setPrefix(false);
+    CARTE.map = map;
+    CARTE.arcs = L.layerGroup().addTo(map);
+    CARTE.calque = L.layerGroup().addTo(map);
+    map.on("zoomend", dessinerMarqueurs);
+    // Une carte créée pendant que la page est masquée n'a pas de taille : on
+    // la recadre dès qu'elle en reçoit une.
+    if(window.ResizeObserver) new ResizeObserver(() => {
+      if(!el.isConnected || !el.offsetWidth) return;
+      map.invalidateSize(false);
+      if(!CARTE.cadree) majCarte();
+    }).observe(el);
+    el.addEventListener("wheel", e => { if(e.ctrlKey){ e.preventDefault(); map.setZoom(map.getZoom() + (e.deltaY < 0 ? .5 : -.5)); } }, { passive:false });
+    majCarte();
+  }).catch(() => {
+    if(CARTE.el) CARTE.el.innerHTML = '<div class="carte-msg"><div><b style="color:var(--texte)">Carte indisponible hors connexion</b><br>' +
+      'Les territoires restent consultables ci-dessous.</div></div>';
+  });
+}
+function majCarte(){
+  const L = window.L, map = CARTE.map;
+  if(!L || !map) return;
+  const th = document.documentElement.getAttribute("data-theme") === "sombre" ? "dark" : "light";
+  if(CARTE.theme !== th){
+    if(CARTE.tuiles) map.removeLayer(CARTE.tuiles);
+    CARTE.tuiles = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_" + (th === "dark" ? "Dark" : "Light") +
+      "_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+      maxZoom:16, maxNativeZoom:16,
+      attribution:'Fond &copy; <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a>, HERE, Garmin, &copy; OpenStreetMap'
+    }).addTo(map);
+    CARTE.theme = th;
+  }
+  if(!CARTE.cadree && CARTE.el && CARTE.el.offsetWidth > 50 && CARTE.el.offsetHeight > 50){
+    CARTE.cadree = true;
+    map.invalidateSize(false);
+    if(state.site && site(state.site)) map.setView(llSite(site(state.site)), site(state.site).z);
+    else cadrer(state.zone || "monde", false);
+  }
+  if(!map._loaded) map.setView([15, 40], 2, { animate:false });
+  dessinerMarqueurs();
+}
+function cadrer(zone, anime){
+  const map = CARTE.map; if(!map) return;
+  const o = { padding:[40,40], animate:anime !== false, duration:.8 };
+  if(ZONES[zone]){ if(anime === false) map.fitBounds(ZONES[zone], { padding:[40,40], animate:false }); else map.flyToBounds(ZONES[zone], o); return; }
+  const pts = CARTE.groupes.filter(g => g.P.length || g.s.siege).map(g => llSite(g.s));
+  if(pts.length < 2) SITES.forEach(s => pts.push(llSite(s)));
+  const b = window.L.latLngBounds(pts);
+  if(anime === false) map.fitBounds(b, { padding:[60,60], maxZoom:5, animate:false });
+  else map.flyToBounds(b, { ...o, padding:[60,60], maxZoom:5 });
+}
+/* Une ligne courbe du siège vers chaque site : des points sur un arc
+   de Bézier, bombé vers le nord. */
+function arc(a, b){
+  const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+  const dx = b[1] - a[1], dy = b[0] - a[0], d = Math.sqrt(dx*dx + dy*dy);
+  const c = [mx + d * .2, my];
+  const pts = [];
+  for(let i = 0; i <= 40; i++){
+    const t = i / 40, u = 1 - t;
+    pts.push([u*u*a[0] + 2*u*t*c[0] + t*t*b[0], u*u*a[1] + 2*u*t*c[1] + t*t*b[1]]);
+  }
+  return pts;
+}
+function couleurVar(n){ return getComputedStyle(document.documentElement).getPropertyValue("--" + n).trim() || "#888"; }
+function dessinerMarqueurs(){
+  const L = window.L, map = CARTE.map;
+  if(!L || !map || !CARTE.calque) return;
+  CARTE.calque.clearLayers(); CARTE.arcs.clearLayers();
+  const z = map.getZoom(), f = z <= 3 ? 1 : z <= 4.5 ? .5 : 0;
+  const siege = SITES.find(s => s.siege);
+  CARTE.groupes.forEach(g => {
+    const s = g.s, n = g.P.length;
+    if(!n && !s.siege && state.site !== s.id) return;
+    if(!s.siege && n) CARTE.arcs.addLayer(L.polyline(arc(llSite(siege), llSite(s)), {
+      color:couleurVar(COUL_M[g.pire]), weight:1.6, opacity:.6, dashArray:"3 7", interactive:false }));
+    const d = Math.round(32 + 9 * Math.sqrt(n));
+    const dx = s.off[0] * f, dy = s.off[1] * f;
+    const tot = g.cnt.rouge + g.cnt.orange + g.cnt.vert + g.cnt.gris;
+    let fond = "var(--trait)";
+    if(tot){
+      let acc = 0;
+      fond = "conic-gradient(" + ["rouge","orange","vert","gris"].filter(k => g.cnt[k]).map(k => {
+        const a0 = acc / tot * 360; acc += g.cnt[k]; const a1 = acc / tot * 360;
+        return "var(--" + COUL_M[k] + ") " + a0 + "deg " + a1 + "deg";
+      }).join(",") + ")";
+    }
+    const html = '<div class="mk' + (s.siege ? " siege" : "") + (state.site === s.id ? " sel" : "") + (g.cnt.rouge ? " alarme" : "") + '" style="--d:' + d + 'px">' +
+      (dx || dy ? '<svg class="mk-fil" width="1" height="1"><line x1="0" y1="0" x2="' + dx + '" y2="' + dy + '"/></svg>' : "") +
+      '<span class="mk-pt"></span>' +
+      '<span class="mk-b" style="transform:translate(' + (dx - d/2) + 'px,' + (dy - d/2) + 'px);background:' + fond + '"><b>' + n + '</b></span>' +
+      '<span class="mk-l" style="transform:translate(calc(-50% + ' + dx + 'px),' + (dy + d/2 + 3) + 'px)">' + esc(s.n) + (s.siege ? '<small>siège</small>' : "") + '</span></div>';
+    const m = L.marker(llSite(s), { icon:L.divIcon({ className:"mk-wrap", html, iconSize:[0,0], iconAnchor:[0,0] }),
+      title:s.n + " — " + n + " projet" + pl(n), keyboard:true, zIndexOffset:state.site === s.id ? 1000 : s.siege ? 500 : n * 10 });
+    m.on("click", () => choisirSite(s.id));
+    CARTE.calque.addLayer(m);
+  });
+}
+function choisirSite(id){
+  const s = site(id); if(!s) return;
+  state.site = id; state.zone = null;
+  if(state.tab !== "monde"){ state.tab = "monde"; state.sheet = null; }
+  render();
+  if(CARTE.map) CARTE.map.flyTo(llSite(s), s.z, { duration:.9 });
+  else CARTE.cadree = false;
+}
+setInterval(() => document.querySelectorAll("[data-tz]").forEach(el => { el.textContent = heureLocale(el.dataset.tz); }), 30000);
 
 /* ---------- matrice valeur / effort ----------
    La valeur se juge, elle se saisit à la main. L'effort, lui, se déduit en
@@ -1823,7 +2222,9 @@ function vueFiche(p){
     (a.manuel ? '<span class="badge plein" title="Météo forcée à la main">forcée</span>' : "") +
     '<span class="badge plein">' + esc(lib(STATUTS_P, p.statut)) + '</span>' +
     (p.prio ? '<span class="badge plein' + (p.prio == 1 ? " acc" : "") + '">' + esc(lib(PRIOS, p.prio)) + '</span>' : "") +
-    (p.service ? '<span>' + esc(p.service) + '</span>' : "") + '</div>';
+    (p.service ? '<span>' + esc(p.service) + '</span>' : "") +
+    '<button class="lien" data-act="monde-site" data-id="' + siteDe(p).id + '" title="Voir sur la carte" style="display:inline-flex;align-items:center;gap:4px;color:var(--gris)">' +
+      svg("globe", 13) + esc(siteDe(p).n) + '</button></div>';
   if(a.raisons.length) h += '<ul class="raisons">' + a.raisons.map(r => '<li><span class="dot ' + r.n + '"></span>' + esc(r.t) + '</li>').join("") + '</ul>';
   if(a.manuel && a.meteo !== a.meteoAuto) h += '<div class="aide">Le calcul automatique donnerait : ' + METEOS[a.meteoAuto].toLowerCase() + '.</div>';
   h += '</div>';
@@ -3514,6 +3915,8 @@ function vueModal(m){
           fChamp("Nom du service", '<input type="text" id="m-nsvc" placeholder="Qualité, Achats…" autocomplete="off">', "", "m-nsvc") +
           fChamp("Responsable / directeur", '<input type="text" id="m-nresp" placeholder="Prénom Nom (fonction)" autocomplete="off">', "", "m-nresp") + '</div>' +
           '<div class="btns" style="margin:4px 0 0"><button class="btn pt pri" data-act="m-svc-ok">Ajouter le service</button><button class="btn pt" data-act="m-svc-annuler">Annuler</button></div></div>' : "") +
+      fChamp("Territoire", fSel("site", m.site || SITE_DEF, SITES.map(s => [s.id, s.n + (s.siege ? " (siège)" : "")])),
+        "Où le projet se déroule : il apparaît à cet endroit sur la carte de l'onglet Monde.", "m-site") +
       fChamp("Sponsor / demandeur", fTxt("sponsor", m.sponsor, "Qui porte le besoin côté métier"),
         m.sponsorAuto && m.sponsor ? "Repris du responsable du service. Modifiable." : m.service && !respService(m.service) ? "Astuce : renseignez le responsable du service dans Réglages → Services pour le reprendre automatiquement." : "", "m-sponsor") +
       fChamp("Chef de projet", fSel("chef", m.chef, optsPers().concat([["__new", "+ Nouvelle personne…"]]), "—", true), "", "m-chef") +
@@ -3678,6 +4081,7 @@ function mProjet(p){
     sponsorAuto:!p.sponsor };
   const auj = todayISO(), service = DB.settings.f.service || "";
   return { type:"projet", nom:"", code:codeAuto(service), codeAuto:true, sponsorAuto:true, statut:"encours", prio:"2", service,
+    site:state.siteNouveau || DB.settings.f.site || (state.tab === "monde" && state.site) || SITE_DEF,
     sponsor:respService(service), chef:DB.personnes[DB.settings.moi] ? DB.settings.moi : "",
     debut:auj, fin:addJ(auj, 90), budget:"", conso:"", charge:"", chargeConso:"", avance:"0", meteo:"auto",
     valeur:"", effort:"", equipe:[], description:"", focus:"m-nom" };
@@ -3718,7 +4122,7 @@ function enregistrerProjet(){
   if(!p) return fermerModal();
   const av = { fin:p.fin, statut:p.statut };
   Object.assign(p, {
-    nom, code:(m.code||"").trim(), statut:m.statut || "encours", prio:m.prio || "", service:m.service || "", chef:m.chef || "",
+    nom, code:(m.code||"").trim(), statut:m.statut || "encours", prio:m.prio || "", service:m.service || "", site:m.site || SITE_DEF, chef:m.chef || "",
     sponsor:(m.sponsor||"").trim(), debut:m.debut || "", fin:m.fin || "", budget:num(m.budget), conso:num(m.conso),
     charge:num(m.charge), chargeConso:num(m.chargeConso), avance:clamp(num(m.avance), 0, 100), meteo:m.meteo || "auto",
     valeur:m.valeur || "", effort:m.effort || "", equipe:(m.equipe||[]).filter(id => DB.personnes[id]),
@@ -3912,12 +4316,12 @@ function exporterCSV(){
   const L = trierProjets(projetsFiltres(true), "prio");
   const cel = v => { const s = String(v == null ? "" : v); return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const n = v => v == null || v === "" ? "" : String(Math.round(v * 10) / 10).replace(".", ",");
-  const tete = ["Projet","Code","Service","Chef de projet","Sponsor","Priorité","Statut","Météo","Météo forcée","Avancement %","Temps écoulé %",
+  const tete = ["Projet","Code","Service","Territoire","Chef de projet","Sponsor","Priorité","Statut","Météo","Météo forcée","Avancement %","Temps écoulé %",
     "Début","Fin prévue","Fin initiale","Glissement (j)","Retard (j)","Budget €","Consommé €","Projection €","Charge prévue j/h","Charge consommée j/h",
     "Tâches","Tâches en retard","Tâches bloquées","Jalons en retard","Risques ouverts","Risque max","Valeur","Effort","Dernier point"];
   const lignes = L.map(p => {
     const a = an(p), dp = notesDe(p.id)[0];
-    return [p.nom, p.code, p.service, nomP(p.chef), p.sponsor, p.prio ? "P" + p.prio : "", lib(STATUTS_P, p.statut), METEOS[a.meteo], a.manuel ? "oui" : "",
+    return [p.nom, p.code, p.service, siteDe(p).n, nomP(p.chef), p.sponsor, p.prio ? "P" + p.prio : "", lib(STATUTS_P, p.statut), METEOS[a.meteo], a.manuel ? "oui" : "",
       a.avance, a.tempsPct, p.debut, p.fin, p.finBase, a.glissement, a.joursRetard, n(a.budget), n(a.conso), n(a.eac), n(a.chargePrev), n(a.chargeConso),
       a.T.length, a.tRetard.length, a.tBloq.length, a.jRetard.length, a.rOuv.length, a.rMax || "", p.valeur, p.effort,
       dp ? frDate(dp.date, true) + " — " + dp.texte : ""].map(cel).join(";");
@@ -3961,7 +4365,7 @@ function exemple(){
   const ris = (p, titre, proba, impact, action, resp, o) => { const id = uid(); DB.risques[id] = { id, projet:p, titre, proba, impact, strat:"reduire", action, resp:pers[resp]||"", echeance:"", statut:"ouvert", cree:now, ...(o||{}) }; };
   const pt = (p, d, type, texte, meteo) => { const id = uid(); DB.journal[id] = { id, projet:p, date:d, type, texte, meteo, cree:now }; };
 
-  const m365 = proj({ nom:"Migration Microsoft 365", code:"DSI-01", service:"DSI", chef:pers.julie, sponsor:"Direction générale", prio:"1", statut:"encours",
+  const m365 = proj({ nom:"Migration Microsoft 365", code:"DSI-01", service:"DSI", site:"lyon", chef:pers.julie, sponsor:"Direction générale", prio:"1", statut:"encours",
     debut:J(-100), fin:J(60), budget:85000, conso:38000, valeur:"4", equipe:[pers.karim, pers.sophie],
     description:"Migrer messagerie, fichiers et visio de l'ensemble des 350 utilisateurs vers Microsoft 365. Décommissionner Exchange on-premise." });
   const j1 = jal(m365, "Pilote validé", J(-60), { fait:true }), j2 = jal(m365, "Vague 1 migrée", J(10)), j3 = jal(m365, "Bascule complète", J(55), { cle:true });
@@ -3977,7 +4381,7 @@ function exemple(){
   pt(m365, J(-7), "point", "Vague 1 à 65 %. Quelques boîtes volumineuses ralentissent la synchro, on les traite de nuit.", "vert");
   pt(m365, J(-30), "decision", "Comité : la vague 2 démarre après la clôture comptable, pas avant.", "vert");
 
-  const pc = proj({ nom:"Renouvellement du parc PC", code:"DSI-02", service:"Production", chef:pers.julie, sponsor:"Directeur industriel", prio:"2", statut:"encours",
+  const pc = proj({ nom:"Renouvellement du parc PC", code:"DSI-02", service:"Production", site:"martinique", chef:pers.julie, sponsor:"Directeur industriel", prio:"2", statut:"encours",
     debut:J(-75), fin:J(20), budget:140000, conso:121000, valeur:"3", effort:"2", equipe:[pers.sophie, pers.lucas],
     description:"Remplacer 180 postes de plus de 5 ans sur les deux sites de production." });
   const k1 = jal(pc, "Livraison du matériel", J(-6), { cle:true }), k2 = jal(pc, "Parc déployé", J(20));
@@ -3989,7 +4393,7 @@ function exemple(){
   ris(pc, "Rupture de stock chez le fournisseur", 3, 4, "Relance hebdomadaire, alternative chez un second distributeur", "julie");
   pt(pc, J(-3), "probleme", "Livraison du lot 2 repoussée par le fournisseur, sans date ferme. Site B à l'arrêt.", "rouge");
 
-  const sirh = proj({ nom:"Nouveau SIRH", code:"RH-01", service:"RH", chef:pers.claire, sponsor:"DRH", prio:"1", statut:"cadrage",
+  const sirh = proj({ nom:"Nouveau SIRH", code:"RH-01", service:"RH", site:"lyon", chef:pers.claire, sponsor:"DRH", prio:"1", statut:"cadrage",
     debut:J(-25), fin:J(240), budget:210000, conso:9000, valeur:"4", effort:"4", equipe:[pers.julie, pers.marc],
     description:"Remplacer l'outil de paie et de gestion des temps. Cadrage en cours avec la DRH." });
   const s1 = jal(sirh, "Cahier des charges validé", J(15), { cle:true }), s2 = jal(sirh, "Choix de l'éditeur", J(70));
@@ -4001,7 +4405,7 @@ function exemple(){
   ris(sirh, "Reprise des données de paie historiques", 2, 4, "Prévoir un lot dédié dans le cahier des charges", "claire");
   pt(sirh, J(-5), "point", "Trois ateliers sur quatre réalisés. Bon engagement des gestionnaires de paie.", "vert");
 
-  const nac = proj({ nom:"Sécurisation du réseau (NAC)", code:"DSI-03", service:"DSI", chef:pers.thomas, sponsor:"RSSI", prio:"2", statut:"encours",
+  const nac = proj({ nom:"Sécurisation du réseau (NAC)", code:"DSI-03", service:"DSI", site:"reunion", chef:pers.thomas, sponsor:"RSSI", prio:"2", statut:"encours",
     debut:J(-100), fin:J(25), finBase:J(-5), budget:45000, conso:31000, valeur:"3", effort:"3", equipe:[pers.karim],
     description:"Contrôle d'accès au réseau : seuls les postes gérés accèdent au LAN." });
   jal(nac, "Architecture validée", J(-70), { fait:true });
@@ -4013,7 +4417,7 @@ function exemple(){
   ris(nac, "Coupure d'équipements de production non recensés", 3, 3, "Période de surveillance allongée d'un mois", "thomas");
   pt(nac, J(-20), "decision", "Fin repoussée d'un mois pour allonger la phase de surveillance.", "orange");
 
-  const demat = proj({ nom:"Dématérialisation des factures", code:"FIN-01", service:"Finance", chef:pers.marc, sponsor:"DAF", prio:"2", statut:"encours",
+  const demat = proj({ nom:"Dématérialisation des factures", code:"FIN-01", service:"Finance", site:"guadeloupe", chef:pers.marc, sponsor:"DAF", prio:"2", statut:"encours",
     debut:J(-45), fin:J(80), budget:60000, conso:17000, valeur:"3", equipe:[pers.julie],
     description:"Réception et circuit de validation des factures fournisseurs, conformité facturation électronique." });
   const d1 = jal(demat, "Paramétrage terminé", J(20)), d2 = jal(demat, "Mise en production", J(75), { cle:true });
@@ -4022,7 +4426,27 @@ function exemple(){
   tac(demat, "Tests avec 10 fournisseurs", "marc", J(22), J(55), "afaire", 0, 6, 0, { jalon:d2 });
   pt(demat, J(-4), "point", "Paramétrage dans les temps, premiers circuits testés.", "vert");
 
-  proj({ nom:"Portail client v2", code:"COM-01", service:"Commercial", chef:pers.nadia, sponsor:"Directeur commercial", prio:"3", statut:"pause",
+  const fibre = proj({ nom:"Liaison fibre inter-sites", code:"DSI-04", service:"DSI", site:"guyane", chef:pers.thomas, sponsor:"Responsable informatique", prio:"1", statut:"encours",
+    debut:J(-50), fin:J(-4), budget:52000, conso:47000, valeur:"4", equipe:[pers.karim], vieux:9,
+    description:"Raccorder l'agence de Cayenne au cœur de réseau en fibre, avec lien de secours 4G." });
+  jal(fibre, "Étude opérateur", J(-35), { fait:true }); jal(fibre, "Lien en service", J(-4), { cle:true });
+  tac(fibre, "Travaux de génie civil", "thomas", J(-30), J(-6), "encours", 70, 6, 6, { motif:"" });
+  tac(fibre, "Recette du lien et bascule", "karim", J(-8), J(-2), "afaire", 0, 3, 0);
+  ris(fibre, "Saison des pluies : chantier ralenti", 4, 3, "Renfort de l'équipe génie civil, travaux de nuit", "thomas");
+  pt(fibre, J(-9), "probleme", "Génie civil retardé par les intempéries, mise en service décalée.", "rouge");
+  const wifi = proj({ nom:"Wi-Fi des agences", code:"DSI-05", service:"DSI", site:"caledonie", chef:pers.karim, prio:"3", statut:"encours",
+    debut:J(-20), fin:J(45), budget:18000, conso:4000, valeur:"2", equipe:[pers.sophie],
+    description:"Couverture Wi-Fi des trois agences de Nouméa, réseau invités séparé." });
+  tac(wifi, "Relevé radio des agences", "sophie", J(-20), J(-5), "fait", 100, 2, 2);
+  tac(wifi, "Pose des bornes", "karim", J(0), J(30), "afaire", 0, 4, 0);
+  pt(wifi, J(-5), "point", "Relevé radio terminé, commande des bornes passée.", "vert");
+  const tah = proj({ nom:"Téléphonie IP Papeete", code:"DSI-06", service:"DSI", site:"polynesie", chef:pers.julie, prio:"2", statut:"encours",
+    debut:J(-30), fin:J(60), budget:24000, conso:9000, valeur:"3", equipe:[pers.thomas],
+    description:"Remplacer l'autocommutateur de l'agence de Papeete par la téléphonie IP du groupe." });
+  tac(tah, "Portabilité des numéros", "thomas", J(-30), J(-2), "encours", 60, 3, 2);
+  tac(tah, "Déploiement des postes", "thomas", J(5), J(50), "afaire", 0, 5, 0);
+  pt(tah, J(-6), "point", "Portabilité en cours avec l'opérateur local, décalage horaire géré en réunion du matin.", "orange");
+  proj({ nom:"Portail client v2", code:"COM-01", service:"Commercial", site:"mayotte", chef:pers.nadia, sponsor:"Directeur commercial", prio:"3", statut:"pause",
     debut:J(-60), fin:J(150), budget:70000, conso:8000, avance:15, valeur:"2", effort:"3", vieux:40,
     description:"Refonte de l'espace client. En pause en attendant l'arbitrage budgétaire." });
   const erp = proj({ nom:"Montée de version ERP", code:"LOG-01", service:"Logistique", chef:pers.karim, prio:"2", statut:"termine",
@@ -4058,7 +4482,7 @@ function exemple(){
   if(!DB.settings.organisation) DB.settings.organisation = "DSI";
   DB.settings.respServices = { "Direction":"Direction générale", "DSI":"Responsable informatique", "Finance":"DAF", "RH":"DRH",
     "Production":"Directeur industriel", "Commercial":"Directeur commercial", "Logistique":"Responsable logistique", ...(DB.settings.respServices || {}) };
-  sauver(); render(); toast("Exemple chargé : 7 projets, 8 personnes");
+  sauver(); render(); toast("Exemple chargé : 10 projets, 8 personnes");
 }
 
 /* ============================================================
@@ -4076,6 +4500,11 @@ document.addEventListener("click", async ev => {
   /* ---- navigation ---- */
   if(act === "tab"){ state.tab = id; state.sheet = null; state.seulRetard = false; if(id === "planning") state.gRecentrer = true; render(); window.scrollTo(0,0); return; }
   if(act === "ouvrir-projet"){ ouvrirProjet(id); return; }
+  if(act === "monde-site"){ choisirSite(id); if(state.tab === "monde"){ const z = document.querySelector(".carte-zone"); if(z && z.getBoundingClientRect().top < 0) z.scrollIntoView({ behavior:"smooth", block:"start" }); } return; }
+  if(act === "monde-tout"){ state.site = null; state.zone = "monde"; render(); cadrer("monde"); return; }
+  if(act === "monde-zone"){ state.site = null; state.zone = id; render(); cadrer(id); return; }
+  if(act === "monde-projets"){ DB.settings.f.site = id; state.tab = "projets"; state.sheet = null; sauver(true); render(); window.scrollTo(0,0); return; }
+  if(act === "nouveau-projet-site"){ state.siteNouveau = id; ouvrirModal(mProjet()); state.siteNouveau = null; return; }
   if(act === "ouvrir-personne"){ state.sheet = { t:"personne", id }; state.modal = null; render(); return; }
   if(act === "fermer-sheet"){ state.sheet = null; render(); return; }
   if(act === "fermer-modal"){ if(ev.target === el || el.tagName === "BUTTON") fermerModal(); return; }

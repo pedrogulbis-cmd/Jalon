@@ -537,6 +537,10 @@ html[data-theme="sombre"] .chk.on .chk-b{color:#0d0d10}
   box-shadow:var(--ombre);max-height:92vh;overflow:auto;overscroll-behavior:contain;
   padding:18px 18px calc(18px + env(safe-area-inset-bottom));animation:mte .2s cubic-bezier(.22,.7,.3,1)}
 @media(min-width:560px){.mdl{border-radius:16px}}
+/* Un clic à côté de la fenêtre ne la ferme pas (on y perdrait sa saisie) :
+   elle frémit pour rappeler qu'on en sort par Annuler ou Enregistrer. */
+.mdl.secoue{animation:secoue .32s ease}
+@keyframes secoue{0%,100%{transform:none}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
 .mdl h3{font-size:17px;margin-bottom:2px}
 .mdl .sous{font-size:13px;color:var(--gris);margin-bottom:10px}
 .champ{margin:12px 0}
@@ -686,6 +690,7 @@ const JOURNAL = [
     "Les livraisons en retard et les licences expirées ou proches de l'échéance remontent dans les points d'attention du tableau de bord.",
     "La fiche projet gagne un onglet Achats : les demandes rattachées, le montant engagé rapporté au budget, et la création d'une demande déjà liée au projet.",
     "L'onglet Monde ne répète plus les indicateurs du tableau de bord : il parle de lieux (territoires actifs, sites en alerte ou à surveiller, projets hors siège).",
+    "Correction : un clic à côté d'une fenêtre de saisie ne la ferme plus (on y perdait tout). Échap ne la ferme plus non plus dès qu'on a commencé à saisir : on sort par Enregistrer ou Annuler.",
     "17 nouveaux modèles de projet en deux familles : licences et logiciels (renouvellement, ajout, changement d'offre, audit éditeur, résiliation, maintenance, registre) et matériel (PC, périphériques, mobiles, réseau, serveur, envoi outre-mer avec octroi de mer, nouveau site, garantie, location, recyclage)."
   ]},
   { v:"1.7.0", d:"2026-11-05", t:"Vue Monde", l:[
@@ -4573,9 +4578,16 @@ function vueModal(m){
       '<button class="btn ' + (m.danger ? "dang" : "pri") + '" data-act="confirmer-ok">' + esc(m.bouton || "Confirmer") + '</button></div>';
   }
   if(!c){ state.modal = null; return ""; }
-  return '<div class="mdl-bg" data-act="fermer-modal"><div class="mdl" data-act="rien" role="dialog" aria-modal="true">' + c + '</div></div>';
+  return '<div class="mdl-bg" data-act="fond-modal"><div class="mdl" data-act="rien" role="dialog" aria-modal="true">' + c + '</div></div>';
 }
 function ouvrirModal(m){ state.modal = m; render(); }
+/* Fermer par erreur une fenêtre en cours de saisie fait tout perdre : ni le
+   clic à côté ni Échap (dès qu'on a commencé à saisir) ne la ferment. */
+function secouerModal(msg){
+  const d = document.querySelector(".mdl"); if(!d) return;
+  d.classList.remove("secoue"); void d.offsetWidth; d.classList.add("secoue");
+  if(msg) toast(msg);
+}
 function fermerModal(){ state.modal = null; render(); }
 function capturerModal(){
   const m = state.modal; if(!m) return;
@@ -5052,6 +5064,7 @@ document.addEventListener("click", async ev => {
   if(!el) return;
   const act = el.dataset.act, id = el.dataset.id;
   if(act === "rien"){ if(ev.target.closest("[data-act]") === el) ev.stopPropagation(); return; }
+  if(state.modal && act.startsWith("m-") && el.closest("#modal")) state.modal.sale = true;
 
   /* ---- navigation ---- */
   if(act === "tab"){ state.tab = id; state.sheet = null; state.seulRetard = false; if(id === "planning") state.gRecentrer = true; render(); window.scrollTo(0,0); return; }
@@ -5063,7 +5076,8 @@ document.addEventListener("click", async ev => {
   if(act === "nouveau-projet-site"){ state.siteNouveau = id; ouvrirModal(mProjet()); state.siteNouveau = null; return; }
   if(act === "ouvrir-personne"){ state.sheet = { t:"personne", id }; state.modal = null; render(); return; }
   if(act === "fermer-sheet"){ state.sheet = null; render(); return; }
-  if(act === "fermer-modal"){ if(ev.target === el || el.tagName === "BUTTON") fermerModal(); return; }
+  if(act === "fond-modal"){ if(ev.target === el) secouerModal(); return; }
+  if(act === "fermer-modal"){ if(el.tagName === "BUTTON") fermerModal(); return; }
   if(act === "ptab"){ state.ptab = id; render(); return; }
   if(act === "journal-ouvrir" || act === "basculer-journal"){
     state.journal = act === "journal-ouvrir" ? true : !state.journal; state.neuf = false; DB.meta.vue = VERSION; sauver(true);
@@ -5322,6 +5336,7 @@ document.addEventListener("click", async ev => {
 
 document.addEventListener("input", ev => {
   const el = ev.target;
+  if(state.modal && el.closest && el.closest("#modal")) state.modal.sale = true;
   if(el.id === "q"){ state.q = el.value; render(); return; }
   if(el.id === "qa"){ state.qa = el.value; render(); return; }
   if(el.id === "set-org"){ DB.settings.organisation = el.value; sauver(); return; }
@@ -5383,7 +5398,12 @@ document.addEventListener("drop", ev => {
 document.addEventListener("keydown", ev => {
   if(ev.key === "Enter" && /^moi-(nom|role|mail)$/.test(ev.target.id || "")){ ev.preventDefault(); const b = document.querySelector('[data-act="moi-creer"]'); if(b) b.click(); return; }
   if(ev.key === "Escape"){
-    if(state.modal){ fermerModal(); ev.preventDefault(); }
+    if(state.modal){
+      ev.preventDefault();
+      if(state.modal.sale) secouerModal("Saisie en cours : Enregistrer pour garder, Annuler pour abandonner");
+      else fermerModal();
+    }
+    else if(state.sheet && state.sheet.t === "revue") secouerModal();
     else if(state.sheet){ state.sheet = null; render(); ev.preventDefault(); }
     return;
   }

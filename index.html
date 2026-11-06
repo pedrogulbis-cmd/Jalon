@@ -355,6 +355,18 @@ html[data-theme="sombre"] .ck.on i{color:#0d0d10}
 .restant i{display:block;height:100%;background:var(--ok)}
 .restant i.att{background:var(--att)} .restant i.dang{background:var(--dang)}
 .da-r .c-att,.da-r .c-dang{font-size:12.5px}
+.lic-tot{font-weight:600;color:var(--texte)}
+.lig-cout{display:grid;grid-template-columns:minmax(0,1fr) 110px 120px 34px;gap:6px;align-items:center;margin-bottom:6px}
+.lig-cout input,.lig-cout select{padding:8px 9px;font-size:14px;min-width:0;width:100%}
+.lig-cout .iconbtn{width:34px;height:34px}
+@media(max-width:480px){
+  .lig-cout{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 34px}
+  .lig-cout input[data-lk="l"]{grid-column:1 / -1}
+}
+.lic-total{margin-top:10px;padding:11px 13px;border-radius:10px;background:var(--accF);border:1px solid var(--accB);
+  display:flex;flex-direction:column;gap:3px}
+.lic-total .d{font-size:12.5px;color:var(--gris)}
+.lic-total .t{font-size:18px;font-weight:600;letter-spacing:-.02em;font-family:"IBM Plex Mono",monospace}
 @media(max-width:560px){
   .da{flex-wrap:wrap}
   .da-r{flex-direction:row;align-items:center;justify-content:space-between;width:100%;padding-left:41px}
@@ -691,6 +703,7 @@ const JOURNAL = [
     "La fiche projet gagne un onglet Achats : les demandes rattachées, le montant engagé rapporté au budget, et la création d'une demande déjà liée au projet.",
     "L'onglet Monde ne répète plus les indicateurs du tableau de bord : il parle de lieux (territoires actifs, sites en alerte ou à surveiller, projets hors siège).",
     "Correction : un clic à côté d'une fenêtre de saisie ne la ferme plus (on y perdait tout). Échap ne la ferme plus non plus dès qu'on a commencé à saisir : on sort par Enregistrer ou Annuler.",
+    "Licences : prix unitaire × nombre de licences, autant de lignes de coût que le devis en compte (maintenance, support, installation…), chacune avec sa périodicité, et le total affiché pendant la saisie comme dans la liste.",
     "17 nouveaux modèles de projet en deux familles : licences et logiciels (renouvellement, ajout, changement d'offre, audit éditeur, résiliation, maintenance, registre) et matériel (PC, périphériques, mobiles, réseau, serveur, envoi outre-mer avec octroi de mer, nouveau site, garantie, location, recyclage)."
   ]},
   { v:"1.7.0", d:"2026-11-05", t:"Vue Monde", l:[
@@ -2223,7 +2236,35 @@ function etatLic(l){
   if(j <= al) return { k:"bientot", l:j === 0 ? "Expire aujourd'hui" : "Expire dans " + j + " j", c:j <= 30 ? "dang" : "att", j };
   return { k:"active", l:"Active", c:"ok", j };
 }
-const coutAnnuel = l => l.periode === "mois" ? num(l.cout) * 12 : l.periode === "unique" ? 0 : num(l.cout);
+/* Coût d'une licence : le prix unitaire × le nombre de licences, plus autant
+   de lignes que le devis en compte (maintenance, support, installation…),
+   chacune avec sa périodicité. Les licences saisies avant la 1.8 n'avaient
+   qu'un coût global : il tient lieu de ligne principale. */
+const annualise = (m, p) => p === "mois" ? m * 12 : p === "unique" ? 0 : m;
+const LIB_PER = { an:"/ an", mois:"/ mois", unique:"unique" };
+function coutsLic(l){
+  const q = num(l.quantite) || 1;
+  const pu = l.prixU != null && l.prixU !== "" ? num(l.prixU) : null;
+  const base = pu != null ? pu * q : num(l.cout);
+  const per = l.periode || "an";
+  const lignes = (l.lignes || []).filter(x => num(x.m)).map(x => ({ l:(x.l || "").trim() || "Autre coût", m:num(x.m), p:x.p || "an" }));
+  const tout = [{ m:base, p:per }].concat(lignes);
+  return { q, pu, base, per, lignes,
+    parAn:tout.reduce((s,x) => s + annualise(x.m, x.p), 0),
+    unique:tout.filter(x => x.p === "unique").reduce((s,x) => s + x.m, 0) };
+}
+const coutAnnuel = l => coutsLic(l).parAn;
+function totalLicTexte(c){
+  const t = [c.parAn ? eur(c.parAn) + " / an" : "", c.unique ? eur(c.unique) + (c.parAn ? " ponctuel" : "") : ""].filter(Boolean);
+  return t.length ? t.join(" + ") : "—";
+}
+/* Détail lisible : « 4 × 360 € = 1 440 € / an · Maintenance 300 € / an ». */
+function detailLic(c){
+  const d = [];
+  if(c.base) d.push((c.pu != null && c.q > 1 ? c.q + " × " + eur(c.pu) + " = " : "") + eur(c.base) + " " + LIB_PER[c.per]);
+  c.lignes.forEach(x => d.push(x.l + " " + eur(x.m) + " " + LIB_PER[x.p]));
+  return d.join(" · ");
+}
 const factureAttendue = a => (a.livre || a.recu) && !(a.numFacture || "").trim();
 function achatsFiltres(){
   const q = norm(state.qa), s = state.aSite || "";
@@ -2390,14 +2431,16 @@ function blocLicences(E){
 function ligneLic(l, e){
   const dur = l.debut && l.fin ? Math.max(1, diffJ(l.debut, l.fin)) : 0;
   const reste = dur && e.j != null ? clamp(e.j / dur * 100, 0, 100) : null;
-  const q = num(l.quantite);
+  const q = num(l.quantite), c = coutsLic(l), det = detailLic(c);
   return '<div class="da">' +
     '<span class="ln-ic ' + e.c + '">' + svg("cle", 15, 2) + '</span>' +
     '<button class="ln-mid" data-act="modifier-licence" data-id="' + l.id + '">' +
       '<span class="ln-t">' + esc(l.logiciel || "Licence") + (l.editeur ? ' <span style="color:var(--gris);font-size:13px">· ' + esc(l.editeur) + '</span>' : "") +
         (l.renouvAuto ? '<span class="badge" title="Reconduction tacite">auto</span>' : "") + '</span>' +
-      '<span class="ln-m">' + esc([q ? q + " licence" + pl(q) : "", num(l.cout) ? eur(num(l.cout)) + " " + lib(PERIODES, l.periode || "an") : "",
+      '<span class="ln-m">' + esc([q ? q + " licence" + pl(q) : "",
         l.fournisseur, nomSite(l.site), nomP(l.resp), l.numContrat ? "n° " + l.numContrat : ""].filter(Boolean).join(" · ")) + '</span>' +
+      (c.parAn || c.unique ? '<span class="ln-n"><b class="lic-tot">Total ' + esc(totalLicTexte(c)) + '</b>' +
+        (c.lignes.length || (c.pu != null && c.q > 1) ? ' <span style="color:var(--gris2)">· ' + esc(det) + '</span>' : "") + '</span>' : "") +
       (reste != null ? '<div class="restant" title="Part de la période restante"><i class="' + (e.c === "ok" ? "" : e.c) + '" style="width:' + reste + '%"></i></div>' : "") +
     '</button>' +
     '<div class="da-r"><span class="mt ' + (e.c === "dang" ? "c-dang" : e.c === "att" ? "c-att" : "") + '">' + esc(e.l) +
@@ -2406,6 +2449,28 @@ function ligneLic(l, e){
     '</div></div>';
 }
 
+/* Dans la fiche licence : les autres lignes du devis, puis le total, recalculé
+   à chaque frappe. */
+const LIGNES_TYPES = ["Maintenance", "Support", "Installation", "Formation", "Hébergement"];
+function blocCoutsLic(m){
+  const L = m.lignes || [];
+  return '<div class="champ"><span class="lab">Autres coûts du devis</span>' +
+    L.map((x, i) => '<div class="lig-cout">' +
+      '<input type="text" data-lg="' + i + '" data-lk="l" value="' + esc(x.l) + '" placeholder="Maintenance, support…" autocomplete="off" aria-label="Libellé">' +
+      '<input type="number" data-lg="' + i + '" data-lk="m" value="' + esc(x.m) + '" placeholder="Montant €" inputmode="decimal" step="any" min="0" aria-label="Montant">' +
+      '<select data-lg="' + i + '" data-lk="p" aria-label="Périodicité">' + PERIODES.map(([k,t]) =>
+        '<option value="' + k + '"' + ((x.p || "an") === k ? " selected" : "") + '>' + t + '</option>').join("") + '</select>' +
+      '<button type="button" class="iconbtn" data-act="m-lig-del" data-id="' + i + '" title="Retirer la ligne" aria-label="Retirer la ligne">' + svg("croix", 15) + '</button></div>').join("") +
+    '<div class="chipsw" style="margin-top:4px">' + LIGNES_TYPES.map(t =>
+      '<button type="button" class="chip" data-act="m-lig-add" data-id="' + esc(t) + '">+ ' + esc(t) + '</button>').join("") +
+      '<button type="button" class="chip" data-act="m-lig-add" data-id="">+ Autre ligne</button></div>' +
+    '<div class="lic-total" id="lic-total">' + totalLicHTML(m) + '</div></div>';
+}
+function totalLicHTML(m){
+  const c = coutsLic({ quantite:m.quantite, prixU:m.prixU === "" ? null : m.prixU, periode:m.periode, lignes:m.lignes });
+  if(!c.parAn && !c.unique) return '<span class="d">Renseignez le prix unitaire : le total s\'affiche ici.</span>';
+  return '<span class="d">' + esc(detailLic(c)) + '</span><span class="t">Total ' + esc(totalLicTexte(c)) + '</span>';
+}
 function mAchat(a, pid){
   if(a) return { ...copie(a), type:"achat", montant:a.montant ? String(a.montant) : "", quantite:String(a.quantite || 1) };
   const p = DB.projets[pid];
@@ -2414,9 +2479,15 @@ function mAchat(a, pid){
     recu:false, dateRecu:"", numFacture:"", dateFacture:"", note:"", focus:"m-objet" };
 }
 function mLicence(l){
-  if(l) return { ...copie(l), type:"licence", cout:l.cout ? String(l.cout) : "", quantite:l.quantite ? String(l.quantite) : "", alerte:String(l.alerte || 60) };
+  if(l){
+    // Une licence d'avant le prix unitaire : on le déduit du coût global.
+    const q = num(l.quantite) || 1;
+    const pu = l.prixU != null && l.prixU !== "" ? num(l.prixU) : num(l.cout) ? Math.round(num(l.cout) / q * 100) / 100 : "";
+    return { ...copie(l), type:"licence", prixU:pu === "" ? "" : String(pu), quantite:l.quantite ? String(l.quantite) : "", alerte:String(l.alerte || 60),
+      lignes:(l.lignes || []).map(x => ({ l:x.l || "", m:x.m ? String(x.m) : "", p:x.p || "an" })) };
+  }
   const auj = todayISO();
-  return { type:"licence", logiciel:"", editeur:"", fournisseur:"", quantite:"", cout:"", periode:"an", debut:auj, fin:addAns(auj, 1),
+  return { type:"licence", logiciel:"", editeur:"", fournisseur:"", quantite:"1", prixU:"", lignes:[], periode:"an", debut:auj, fin:addAns(auj, 1),
     alerte:"60", renouvAuto:false, numContrat:"", site:state.aSite || DB.settings.f.site || SITE_DEF, resp:DB.personnes[DB.settings.moi] ? DB.settings.moi : "",
     note:"", histo:[], focus:"m-logiciel" };
 }
@@ -2441,9 +2512,12 @@ function enregistrerLicence(){
   if(m.debut && m.fin && m.fin < m.debut){ toast("L'expiration précède le début"); return; }
   const neuf = !m.id, l = neuf ? { id:uid(), cree:Date.now(), histo:[] } : DB.licences[m.id];
   if(!l) return fermerModal();
-  Object.assign(l, { logiciel, editeur:(m.editeur || "").trim(), fournisseur:(m.fournisseur || "").trim(), quantite:num(m.quantite),
-    cout:num(m.cout), periode:m.periode || "an", debut:m.debut || "", fin:m.fin || "", alerte:num(m.alerte) || 60, renouvAuto:!!m.renouvAuto,
+  const lignes = (m.lignes || []).filter(x => (x.l || "").trim() || num(x.m))
+    .map(x => ({ l:(x.l || "").trim() || "Autre coût", m:num(x.m), p:x.p || "an" }));
+  Object.assign(l, { logiciel, editeur:(m.editeur || "").trim(), fournisseur:(m.fournisseur || "").trim(), quantite:num(m.quantite) || 1,
+    prixU:num(m.prixU), lignes, periode:m.periode || "an", debut:m.debut || "", fin:m.fin || "", alerte:num(m.alerte) || 60, renouvAuto:!!m.renouvAuto,
     numContrat:(m.numContrat || "").trim(), site:m.site || SITE_DEF, resp:m.resp || "", note:(m.note || "").trim(), maj:Date.now() });
+  l.cout = coutsLic(l).base;   // gardé pour les anciennes sauvegardes et l'export
   DB.licences[l.id] = l; state.modal = null; state.aVue = "lic";
   sauver(); render(); toast(neuf ? "Licence enregistrée" : "Licence mise à jour");
 }
@@ -2470,7 +2544,8 @@ function cocherAchat(id, quoi){
 function renouvelerLicence(id){
   const l = DB.licences[id]; if(!l || !l.fin) return;
   const c = {}; garder(c, "licences", l); corbeille = c;
-  l.histo = (l.histo || []).concat([{ debut:l.debut || "", fin:l.fin, cout:num(l.cout), le:todayISO() }]);
+  const cl = coutsLic(l);
+  l.histo = (l.histo || []).concat([{ debut:l.debut || "", fin:l.fin, cout:cl.parAn || cl.unique, le:todayISO() }]);
   const base = l.fin < todayISO() ? todayISO() : l.fin;
   l.debut = base; l.fin = addAns(base, 1); l.maj = Date.now();
   sauver(); render(); toast("« " + l.logiciel + " » renouvelée jusqu'au " + frDate(l.fin, true), "annuler");
@@ -2481,9 +2556,10 @@ function exporterAchatsCSV(){
   let tete, lignes, nom;
   if(state.aVue === "lic"){
     const L = licencesFiltrees().sort((a,b) => cmp(a.fin || "9999", b.fin || "9999"));
-    tete = ["Logiciel","Éditeur","Fournisseur","Licences","Coût €","Facturation","Coût annuel €","Début","Expiration","État","Reconduction tacite","N° contrat / facture","Territoire","Responsable","Note"];
-    lignes = L.map(l => [l.logiciel, l.editeur, l.fournisseur, l.quantite || "", n(l.cout), lib(PERIODES, l.periode || "an"), n(coutAnnuel(l)),
-      l.debut, l.fin, etatLic(l).l, l.renouvAuto ? "oui" : "", l.numContrat, nomSite(l.site), nomP(l.resp), l.note].map(cel).join(";"));
+    tete = ["Logiciel","Éditeur","Fournisseur","Licences","Prix unitaire €","Coût des licences €","Facturation","Autres coûts","Total annuel €","Total ponctuel €","Début","Expiration","État","Reconduction tacite","N° contrat / facture","Territoire","Responsable","Note"];
+    lignes = L.map(l => { const c = coutsLic(l); return [l.logiciel, l.editeur, l.fournisseur, l.quantite || "", c.pu != null ? n(c.pu) : "", n(c.base), lib(PERIODES, c.per),
+      c.lignes.map(x => x.l + " " + n(x.m) + " " + LIB_PER[x.p]).join(" | "), n(c.parAn), n(c.unique),
+      l.debut, l.fin, etatLic(l).l, l.renouvAuto ? "oui" : "", l.numContrat, nomSite(l.site), nomP(l.resp), l.note].map(cel).join(";"); });
     nom = "jalon-licences-";
   } else {
     const L = achatsFiltres().sort((a,b) => cmp(b.date || "", a.date || ""));
@@ -4538,9 +4614,10 @@ function vueModal(m){
       fChamp("Logiciel ou service", fTxt("logiciel", m.logiciel, "Microsoft 365 E3, antivirus, Adobe Acrobat…"), "", "m-logiciel") +
       '<div class="duo">' + fChamp("Éditeur", fTxt("editeur", m.editeur, "Microsoft"), "", "m-editeur") +
         fChamp("Fournisseur / revendeur", fTxt("fournisseur", m.fournisseur, "facultatif"), "", "m-fournisseur") + '</div>' +
-      '<div class="duo">' + fChamp("Nombre de licences", fTxt("quantite", m.quantite, "50", "number"), "", "m-quantite") +
-        fChamp("Coût (€)", fTxt("cout", m.cout, "0", "number"), "", "m-cout") + '</div>' +
-      fChamp("Facturation", fSeg("periode", m.periode || "an", PERIODES)) +
+      '<div class="duo">' + fChamp("Nombre de licences", fTxt("quantite", m.quantite, "1", "number"), "", "m-quantite") +
+        fChamp("Prix unitaire (€)", fTxt("prixU", m.prixU, "0", "number"), "Prix d'une licence, hors autres lignes.", "m-prixU") + '</div>' +
+      fChamp("Facturation des licences", fSeg("periode", m.periode || "an", PERIODES)) +
+      blocCoutsLic(m) +
       '<div class="duo">' + fChamp("Début", fTxt("debut", m.debut, "", "date"), "", "m-debut") +
         fChamp("Expiration", fTxt("fin", m.fin, "", "date"), "Vide pour une licence perpétuelle.", "m-fin") + '</div>' +
       fChamp("Prévenir", fSeg("alerte", m.alerte || "60", [["30","30 j avant"],["60","60 j"],["90","90 j"],["120","120 j"]]),
@@ -4592,6 +4669,7 @@ function fermerModal(){ state.modal = null; render(); }
 function capturerModal(){
   const m = state.modal; if(!m) return;
   document.querySelectorAll("#modal [data-f]").forEach(el => { m[el.dataset.f] = el.value; });
+  document.querySelectorAll("#modal [data-lg]").forEach(el => { const x = (m.lignes || [])[Number(el.dataset.lg)]; if(x) x[el.dataset.lk] = el.value; });
 }
 const copie = o => JSON.parse(JSON.stringify(o));
 
@@ -5046,9 +5124,9 @@ function exemple(){
   lic({ logiciel:"Microsoft 365 E3", editeur:"Microsoft", fournisseur:"SoftwareOne", quantite:180, cout:61200, debut:addAns(J(48), -1), fin:J(48), alerte:90, resp:pers.karim, numContrat:"EA-7731102" });
   lic({ logiciel:"Antivirus EDR", editeur:"WithSecure", fournisseur:"Axians", quantite:220, cout:9900, debut:addAns(J(-6), -1), fin:J(-6), resp:pers.thomas });
   lic({ logiciel:"Adobe Acrobat Pro", editeur:"Adobe", quantite:15, cout:2700, debut:addAns(J(21), -1), fin:J(21), renouvAuto:true, resp:pers.sophie });
-  lic({ logiciel:"Supervision réseau", editeur:"Paessler", quantite:1, cout:3400, debut:J(-120), fin:addAns(J(-120), 1), site:"reunion", resp:pers.thomas });
+  lic({ logiciel:"Supervision réseau", editeur:"Paessler", quantite:1, prixU:3400, lignes:[{ l:"Maintenance", m:680, p:"an" }, { l:"Installation", m:900, p:"unique" }], debut:J(-120), fin:addAns(J(-120), 1), site:"reunion", resp:pers.thomas });
   lic({ logiciel:"Outil de ticketing", editeur:"GLPI Network", quantite:12, cout:95, periode:"mois", debut:J(-200), fin:addAns(J(-200), 2), renouvAuto:true, resp:pers.sophie });
-  lic({ logiciel:"Logiciel de caisse", editeur:"Cegid", fournisseur:"Cegid Antilles", quantite:6, cout:4100, debut:addAns(J(130), -1), fin:J(130), site:"guadeloupe" });
+  lic({ logiciel:"Logiciel de caisse", editeur:"Cegid", fournisseur:"Cegid Antilles", quantite:6, prixU:360, lignes:[{ l:"Maintenance", m:520, p:"an" }, { l:"Support local", m:45, p:"mois" }], debut:addAns(J(130), -1), fin:J(130), site:"guadeloupe" });
   lic({ logiciel:"Windows Server 2022", editeur:"Microsoft", quantite:4, cout:3800, periode:"unique", debut:J(-400), fin:"", site:"caledonie" });
   sauver(); render(); toast("Exemple chargé : 10 projets, 8 personnes, 6 achats, 7 licences");
 }
@@ -5109,6 +5187,14 @@ document.addEventListener("click", async ev => {
       livPrevue:addJ(todayISO(), 21), livre:false, dateLivre:"", recu:false, dateRecu:"", focus:"m-objet" });
     return ouvrirModal(m);
   }
+  if(act === "m-lig-add"){
+    capturerModal(); const m = state.modal;
+    m.lignes = (m.lignes || []).concat([{ l:id || "", m:"", p:id === "Installation" || id === "Formation" ? "unique" : m.periode || "an" }]);
+    majModal();
+    const i = document.querySelectorAll('#modal [data-lk="' + (id ? "m" : "l") + '"]'); if(i.length) i[i.length - 1].focus();
+    return;
+  }
+  if(act === "m-lig-del"){ capturerModal(); state.modal.lignes.splice(Number(id), 1); majModal(); return; }
   if(act === "a-livre") return cocherAchat(id, "livre");
   if(act === "a-recu") return cocherAchat(id, "recu");
   if(act === "lic-renouveler") return renouvelerLicence(id);
@@ -5337,6 +5423,9 @@ document.addEventListener("click", async ev => {
 document.addEventListener("input", ev => {
   const el = ev.target;
   if(state.modal && el.closest && el.closest("#modal")) state.modal.sale = true;
+  if(state.modal && state.modal.type === "licence" && el.closest && el.closest("#modal")){
+    capturerModal(); const t = document.getElementById("lic-total"); if(t) t.innerHTML = totalLicHTML(state.modal);
+  }
   if(el.id === "q"){ state.q = el.value; render(); return; }
   if(el.id === "qa"){ state.qa = el.value; render(); return; }
   if(el.id === "set-org"){ DB.settings.organisation = el.value; sauver(); return; }

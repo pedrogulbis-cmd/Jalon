@@ -762,17 +762,19 @@ input[type=range]{width:100%;accent-color:var(--acc)}
    Un seul fichier, aucune dépendance, stockage local (IndexedDB).
    Reprend l'ossature d'Ardoise : même encre, mêmes gestes.
    ============================================================ */
-const VERSION = "1.12.0";
+const VERSION = "1.12.1";
 const SCHEMA  = 1;
 const JOURNAL = [
+  { v:"1.12.1", d:"2026-11-09", t:"Prévision de l'année", l:[
+    "Onglet Achats : bloc « Prévision » de l'année choisie. Licences et contrats, achats commandés et achats budgétés, avec la répartition par territoire et par service ; un clic sur un tag filtre.",
+    "Correction : une licence du 1er janvier au 31 décembre était comptée deux fois dans l'année (au 1er janvier, puis à son renouvellement le 31 décembre). Le renouvellement repart désormais le 1er janvier."
+  ]},
   { v:"1.12.0", d:"2026-11-09", t:"Achats budgétés, tags territoire et service", l:[
     "Chaque achat et chaque licence porte deux tags de couleur : son territoire (une couleur par territoire, un clic filtre dessus) et le service qui l'utilise.",
     "Sans service, la ligne propose « + service » : un clic pour le choisir ou en saisir un nouveau. Nouveau filtre « Service » à côté du territoire.",
     "Une demande d'achat peut être « budgétée, pas encore commandée » : elle vient du budget et attend sa commande. Elle a son filtre « Budgétés » et ne compte ni dans l'engagé ni dans les achats en cours.",
     "Cocher « Livré » ou « Réceptionné » sur un achat budgété le fait passer en commande.",
     "Licences : case « Ne sera pas renouvelée ». Le budget des années suivantes ne la compte plus ; la ligne porte le badge « arrêt prévu ».",
-    "Onglet Achats : bloc « Prévision » de l'année choisie. Licences et contrats, achats commandés et achats budgétés, avec la répartition par territoire et par service ; un clic sur un tag filtre.",
-    "Correction : une licence du 1er janvier au 31 décembre était comptée deux fois dans l'année (au 1er janvier, puis à son renouvellement le 31 décembre). Le renouvellement repart désormais le 1er janvier.",
     "Correction : une licence dont la période dure un an et un jour n'est plus comptée deux fois la même année."
   ]},
   { v:"1.11.0", d:"2026-11-09", t:"Achats et licences par année", l:[

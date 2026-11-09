@@ -722,9 +722,13 @@ input[type=range]{width:100%;accent-color:var(--acc)}
    Un seul fichier, aucune dépendance, stockage local (IndexedDB).
    Reprend l'ossature d'Ardoise : même encre, mêmes gestes.
    ============================================================ */
-const VERSION = "1.10.0";
+const VERSION = "1.10.1";
 const SCHEMA  = 1;
 const JOURNAL = [
+  { v:"1.10.1", d:"2026-11-09", t:"Import de licences", l:[
+    "Onglet Achats : bouton « Importer » qui ajoute des licences depuis un fichier JSON (export ERP préparé ou autre sauvegarde Jalon), sans toucher au reste des données.",
+    "Une licence déjà présente (même logiciel et même fournisseur) est laissée telle quelle ; l'import s'annule d'un clic."
+  ]},
   { v:"1.10.0", d:"2026-11-09", t:"Réunions : rythme, recherche, 1:1", l:[
     "Rythme des points (par exemple mardi et jeudi à 9h30, N+1 une semaine sur deux) : le prochain point est annoncé sur le tableau de bord la veille et le jour même.",
     "« Préparer » ouvre le point avec les notes du précédent reprises ; l'ordre du jour part par mail d'un geste. Un fichier d'agenda (.ics) crée le rendez-vous récurrent avec un rappel dans Outlook ou Google Agenda.",
@@ -2937,7 +2941,8 @@ function vueAchats(){
     return '<section class="total"><div class="total-lbl">Achats et licences</div><span class="total-val">Rien pour l\'instant</span></section>' +
       vide("Suivez vos achats et vos licences", "Une demande d'achat : objet, fournisseur, montant, date. Vous cocherez ensuite « livré » puis « réceptionné », et ajouterez la facture. Une licence : son coût et sa date d'expiration, pour la voir venir.",
         '<button class="btn pri" data-act="nouvel-achat">' + svg("plus",16,2) + 'Demande d\'achat</button>' +
-        '<button class="btn" data-act="nouvelle-licence">' + svg("plus",16,2) + 'Licence</button>');
+        '<button class="btn" data-act="nouvelle-licence">' + svg("plus",16,2) + 'Licence</button>' +
+        '<button class="btn" data-act="importer-licences" title="Ajouter des licences depuis un fichier JSON">' + svg("telecharger",16) + 'Importer des licences</button>');
   }
   const A = achatsFiltres(), Lc = licencesFiltrees();
   const enCours = A.filter(a => !a.recu);
@@ -2963,6 +2968,7 @@ function vueAchats(){
     '<div class="sp"></div><div class="btns noprint">' +
       '<button class="btn pri" data-act="nouvel-achat">' + svg("plus",16,2) + 'Demande d\'achat</button>' +
       '<button class="btn" data-act="nouvelle-licence">' + svg("plus",16,2) + 'Licence</button>' +
+      '<button class="btn" data-act="importer-licences" title="Ajouter des licences depuis un fichier JSON (rien n\'est écrasé)">' + svg("telecharger",16) + 'Importer</button>' +
       '<button class="btn" data-act="exporter-achats" title="Exporter la liste affichée">' + svg("telecharger",16) + 'CSV</button></div></div></section>';
 
   h += '<div class="kpis">' +
@@ -3205,6 +3211,63 @@ function exporterAchatsCSV(){
   }
   telecharger(nom + tampon() + ".csv", new Blob(["﻿" + [tete.join(";")].concat(lignes).join("\r\n")], { type:"text/csv;charset=utf-8" }));
   toast(lignes.length + " ligne" + pl(lignes.length) + " exportée" + pl(lignes.length));
+}
+
+/* Import de licences par fusion : un fichier JSON avec une liste « licences »
+   (objet ou tableau), qu'il vienne d'un export ERP préparé ou d'une autre
+   sauvegarde Jalon. Rien n'est écrasé : une licence déjà présente (même
+   logiciel et même fournisseur) est laissée telle quelle. Annulable. */
+const cleLic = l => norm(l.logiciel) + "|" + norm(l.fournisseur);
+function licenceImportee(x){
+  const logiciel = String(x.logiciel || "").trim();
+  if(!logiciel) return null;
+  const txt = v => String(v == null ? "" : v).trim();
+  const date = v => /^\d{4}-\d{2}-\d{2}$/.test(txt(v)) ? txt(v) : "";
+  const per = p => PERIODES.some(([k]) => k === p) ? p : "an";
+  const now = Date.now();
+  const l = { id:uid(), cree:now, maj:now, logiciel, editeur:txt(x.editeur), fournisseur:txt(x.fournisseur),
+    quantite:num(x.quantite) || 1, prixU:x.prixU != null && x.prixU !== "" ? num(x.prixU) : num(x.cout) / (num(x.quantite) || 1),
+    lignes:(Array.isArray(x.lignes) ? x.lignes : []).filter(y => y && num(y.m)).map(y => ({ l:txt(y.l) || "Autre coût", m:num(y.m), p:per(y.p) })),
+    periode:per(x.periode), debut:date(x.debut), fin:date(x.fin), alerte:num(x.alerte) || 60, renouvAuto:!!x.renouvAuto,
+    numContrat:txt(x.numContrat), site:site(x.site) ? x.site : SITE_DEF, resp:DB.personnes[x.resp] ? x.resp : "", note:txt(x.note), histo:[] };
+  if(l.debut && l.fin && l.fin < l.debut) l.fin = "";
+  l.cout = coutsLic(l).base;
+  return l;
+}
+function importerLicences(){
+  const i = document.createElement("input");
+  i.type = "file"; i.accept = "application/json,.json";
+  i.onchange = async () => {
+    const f = i.files && i.files[0]; if(!f) return;
+    try{
+      const x = JSON.parse(await f.text());
+      const src = x && (Array.isArray(x) ? x : x.licences);
+      if(!src || typeof src !== "object") throw new Error("aucune liste de licences dans ce fichier");
+      const deja = new Set(V(DB.licences).map(cleLic)), vues = new Set();
+      const nouv = []; let doublons = 0, vides = 0;
+      V(src).forEach(y => {
+        const l = licenceImportee(y || {});
+        if(!l){ vides++; return; }
+        const k = cleLic(l);
+        if(deja.has(k) || vues.has(k)){ doublons++; return; }
+        vues.add(k); nouv.push(l);
+      });
+      if(!nouv.length){ toast("Rien à ajouter : " + (doublons ? doublons + " licence" + pl(doublons) + " déjà présente" + pl(doublons) : "fichier vide")); return; }
+      const an = nouv.reduce((s,l) => s + coutAnnuel(l), 0);
+      ouvrirModal({ type:"confirmer", titre:"Ajouter " + nouv.length + " licence" + pl(nouv.length) + " ?", bouton:"Ajouter",
+        texte:nouv.length + " licence" + pl(nouv.length) + " à ajouter, pour " + eur(an) + " par an." +
+          (doublons ? " " + doublons + " déjà présente" + pl(doublons) + " (même logiciel et même fournisseur) " + (doublons > 1 ? "seront laissées" : "sera laissée") + " telle" + pl(doublons) + " quelle" + pl(doublons) + "." : "") +
+          (vides ? " " + vides + " ligne" + pl(vides) + " sans nom de logiciel ignorée" + pl(vides) + "." : "") +
+          " Vos autres données ne changent pas.",
+        ok:() => {
+          nouv.forEach(l => { DB.licences[l.id] = l; });
+          corbeille = { _ajouts:{ licences:nouv.map(l => l.id) } };
+          state.aVue = "lic"; sauver(); render();
+          toast(nouv.length + " licence" + pl(nouv.length) + " ajoutée" + pl(nouv.length), "annuler");
+        } });
+    }catch(e){ toast("Fichier illisible : " + ((e && e.message) || e)); }
+  };
+  i.click();
 }
 
 /* ============================================================
@@ -5627,7 +5690,10 @@ let corbeille = null;
 function garder(c, k, o){ c[k] = c[k] || {}; if(!c[k][o.id]) c[k][o.id] = copie(o); }
 function restaurer(){
   if(!corbeille) return;
-  Object.keys(corbeille).forEach(k => Object.keys(corbeille[k]).forEach(id => { DB[k][id] = corbeille[k][id]; }));
+  // « _ajouts » : ce qu'un import a créé, à retirer pour revenir en arrière.
+  const aj = corbeille._ajouts || {};
+  Object.keys(aj).forEach(k => aj[k].forEach(id => { delete DB[k][id]; }));
+  Object.keys(corbeille).filter(k => k !== "_ajouts").forEach(k => Object.keys(corbeille[k]).forEach(id => { DB[k][id] = corbeille[k][id]; }));
   corbeille = null; sauver(); render(); fermerToast(); toast("Restauré");
 }
 function supprimerProjet(id){
@@ -5953,6 +6019,7 @@ document.addEventListener("click", async ev => {
   }
   if(act === "nouvel-achat") return ouvrirModal(mAchat(null, id));
   if(act === "nouvelle-licence") return ouvrirModal(mLicence());
+  if(act === "importer-licences") return importerLicences();
   if(act === "modifier-achat" && DB.achats[id]) return ouvrirModal(mAchat(DB.achats[id]));
   if(act === "modifier-licence" && DB.licences[id]) return ouvrirModal(mLicence(DB.licences[id]));
   if(act === "enregistrer-achat") return enregistrerAchat();

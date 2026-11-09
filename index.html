@@ -357,6 +357,21 @@ html[data-theme="sombre"] .ck.on i{color:#0d0d10}
 .restant i.att{background:var(--att)} .restant i.dang{background:var(--dang)}
 .da-r .c-att,.da-r .c-dang{font-size:12.5px}
 .lic-tot{font-weight:600;color:var(--texte)}
+/* Tags territoire et service sur les lignes d'achat et de licence. */
+.da-c{flex:1;min-width:0}
+.da-c .ln-mid{display:block;width:100%}
+.tgs{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tg{display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:11px;line-height:18px;padding:0 8px;border-radius:999px;cursor:pointer;white-space:nowrap;
+  border:1px solid hsl(var(--h) 45% 82%);background:hsl(var(--h) 70% 95%);color:hsl(var(--h) 55% 30%)}
+.tg i{width:6px;height:6px;border-radius:50%;background:hsl(var(--h) 60% 48%)}
+.tg.sv{border-radius:5px}
+.tg.vide{background:none;border-style:dashed;border-color:var(--trait);color:var(--gris)}
+.tg:hover{filter:brightness(.97)}
+html[data-theme="sombre"] .tg{background:hsl(var(--h) 35% 17%);border-color:hsl(var(--h) 30% 30%);color:hsl(var(--h) 65% 80%)}
+html[data-theme="sombre"] .tg.vide{background:none;border-color:var(--trait);color:var(--gris)}
+.svc-choix{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 4px}
+.svc-choix .tg{font-size:13px;line-height:26px;padding:0 12px}
+.tg.on{box-shadow:0 0 0 2px hsl(var(--h) 60% 48%)}
 
 /* ---------------- réunions ---------------- */
 .reu-h input.rt[type=text]{font-size:clamp(22px,5vw,28px);font-weight:600;letter-spacing:-.03em;border:0;background:transparent;padding:2px 0;width:100%;box-shadow:none}
@@ -727,9 +742,17 @@ input[type=range]{width:100%;accent-color:var(--acc)}
    Un seul fichier, aucune dépendance, stockage local (IndexedDB).
    Reprend l'ossature d'Ardoise : même encre, mêmes gestes.
    ============================================================ */
-const VERSION = "1.11.0";
+const VERSION = "1.12.0";
 const SCHEMA  = 1;
 const JOURNAL = [
+  { v:"1.12.0", d:"2026-11-09", t:"Achats budgétés, tags territoire et service", l:[
+    "Chaque achat et chaque licence porte deux tags de couleur : son territoire (une couleur par territoire, un clic filtre dessus) et le service qui l'utilise.",
+    "Sans service, la ligne propose « + service » : un clic pour le choisir ou en saisir un nouveau. Nouveau filtre « Service » à côté du territoire.",
+    "Une demande d'achat peut être « budgétée, pas encore commandée » : elle vient du budget et attend sa commande. Elle a son filtre « Budgétés » et ne compte ni dans l'engagé ni dans les achats en cours.",
+    "Cocher « Livré » ou « Réceptionné » sur un achat budgété le fait passer en commande.",
+    "Licences : case « Ne sera pas renouvelée ». Le budget des années suivantes ne la compte plus ; la ligne porte le badge « arrêt prévu ».",
+    "Correction : une licence dont la période dure un an et un jour n'est plus comptée deux fois la même année."
+  ]},
   { v:"1.11.0", d:"2026-11-09", t:"Achats et licences par année", l:[
     "Onglet Achats : un choix d'année (l'année en cours par défaut, ou toutes). Il règle le montant engagé, la liste des réceptionnés et l'export CSV ; les achats en cours restent toujours visibles, quelle que soit l'année.",
     "Licences : budget de l'année, payé et encore à payer. Une licence compte l'année où elle se paie (début de période, ou chaque mois pour un abonnement mensuel) ; les renouvellements à venir sont supposés au même prix.",
@@ -2662,7 +2685,7 @@ function sourceAstuce(r, rb, k){
   const itemsLic = () => V(DB.licences).map(l => ({ l, e:etatLic(l) })).filter(x => x.e.k === "expiree" || x.e.k === "bientot").sort((a,b) => cmp(a.l.fin, b.l.fin))
     .map(x => ({ c:x.e.c === "dang" ? "rouge" : "orange", t:"Licence " + x.l.logiciel, l:"Licence " + x.l.logiciel + " : " + x.e.l.toLowerCase() + " (" + frDate(x.l.fin, true) + ")" }));
   if(/commande|achat/.test(t) && k === "_"){
-    const A = V(DB.achats).filter(a => !a.recu).sort((x,y) => cmp(x.date || "", y.date || ""));
+    const A = V(DB.achats).filter(a => !a.recu && !estPrevu(a)).sort((x,y) => cmp(x.date || "", y.date || ""));
     const items = A.map(a => { const e = etatDA(a); return { c:e.c === "dang" ? "rouge" : e.c === "acc" ? "orange" : "", t:a.objet,
       l:a.objet + (a.fournisseur ? " (" + a.fournisseur + ")" : "") + " : " + e.l.toLowerCase() + (factureAttendue(a) ? ", facture attendue" : "") }; })
       .concat(/licence/.test(t) ? itemsLic() : []);
@@ -2863,13 +2886,34 @@ function exportReunion(r){
    et on la renouvelle d'un geste.
    ============================================================ */
 const PERIODES = [["an","par an"],["mois","par mois"],["unique","achat unique"]];
-const FILTRES_DA = [["encours","En cours"],["alivrer","À livrer"],["arecep","À réceptionner"],["sansfact","Facture attendue"],["recu","Réceptionnés"],["tout","Tout"]];
+const FILTRES_DA = [["encours","En cours"],["alivrer","À livrer"],["arecep","À réceptionner"],["sansfact","Facture attendue"],["prevu","Budgétés"],["recu","Réceptionnés"],["tout","Tout"]];
+const estPrevu = a => !!a.prevu && !a.livre && !a.recu;
+/* Tags de couleur : le territoire (une teinte par territoire) et le service
+   utilisateur, qu'on choisit d'un clic depuis la ligne. */
+const TEINTE_SITE = { lyon:220, paris:250, guadeloupe:22, martinique:335, stmartin:45, stbarth:290, guyane:140,
+  spm:195, reunion:175, mayotte:95, caledonie:265, wallis:0, polynesie:310 };
+const teinteTxt = s => { let h = 7; for(const ch of norm(s)) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; };
+function servicesConnus(){
+  const s = new Set(DB.settings.services || []);
+  V(DB.achats).concat(V(DB.licences)).forEach(o => o.service && s.add(o.service));
+  return [...s].sort((a,b) => cmp(norm(a), norm(b)));
+}
+function tagsLigne(o, k){
+  const s = site(o.site);
+  return '<div class="tgs">' +
+    (s ? '<button class="tg" style="--h:' + (TEINTE_SITE[s.id] != null ? TEINTE_SITE[s.id] : 210) + '" data-act="a-tsite" data-id="' + s.id + '" title="N\'afficher que ' + esc(s.n) + '"><i></i>' + esc(s.n) + '</button>' : "") +
+    (o.service ? '<button class="tg sv" style="--h:' + teinteTxt(o.service) + '" data-act="a-service" data-id="' + o.id + '" data-k="' + k + '" title="Changer le service">' + esc(o.service) + '</button>'
+               : '<button class="tg vide" data-act="a-service" data-id="' + o.id + '" data-k="' + k + '" title="Indiquer le service qui l\'utilise">+ service</button>') +
+    '</div>';
+}
+const filtreServ = o => !state.aServ || (state.aServ === "_" ? !o.service : o.service === state.aServ);
 const FILTRES_LIC = [["tout","Toutes"],["bientot","À renouveler"],["expiree","Expirées"],["active","Actives"]];
 const addAns = (iso, n) => { const d = dateDe(iso); d.setFullYear(d.getFullYear() + n); return isoDe(d); };
 const nomSite = id => (site(id) || {}).n || "";
 function etatDA(a){
   const auj = todayISO();
   if(a.recu) return { k:"recu", l:"Réceptionné", c:"ok", ic:"carton" };
+  if(a.prevu && !a.livre) return { k:"prevu", l:"Budgété, pas encore commandé", c:"", ic:"euro" };
   if(a.livre) return { k:"livre", l:"Livré, à réceptionner", c:"acc", ic:"camion" };
   if(a.livPrevue && a.livPrevue < auj) return { k:"retard", l:"Livraison en retard de " + diffJ(a.livPrevue, auj) + " j", c:"dang", ic:"alerte" };
   return { k:"commande", l:"Commandé", c:"", ic:"panier" };
@@ -2913,12 +2957,12 @@ function detailLic(c){
 const factureAttendue = a => (a.livre || a.recu) && !(a.numFacture || "").trim();
 function achatsFiltres(){
   const q = norm(state.qa), s = state.aSite || "";
-  return V(DB.achats).filter(a => (!s || a.site === s) && (!q || norm([a.objet, a.numDA, a.numCmd, a.fournisseur, a.numFacture, a.note,
+  return V(DB.achats).filter(a => (!s || a.site === s) && filtreServ(a) && (!q || norm([a.objet, a.numDA, a.numCmd, a.fournisseur, a.numFacture, a.note, a.service,
     nomSite(a.site), DB.projets[a.projet] ? DB.projets[a.projet].nom : ""].join(" ")).includes(q)));
 }
 function licencesFiltrees(){
   const q = norm(state.qa), s = state.aSite || "";
-  return V(DB.licences).filter(l => (!s || l.site === s) && (!q || norm([l.logiciel, l.editeur, l.fournisseur, l.numContrat, l.note,
+  return V(DB.licences).filter(l => (!s || l.site === s) && filtreServ(l) && (!q || norm([l.logiciel, l.editeur, l.fournisseur, l.numContrat, l.note, l.service,
     nomSite(l.site), nomP(l.resp)].join(" ")).includes(q)));
 }
 
@@ -2952,10 +2996,12 @@ function paiementsLic(l, an){
   for(let i = 0; i < 40 && deb <= y1; i++){
     lignes.forEach(x => {
       if(x.p === "unique"){ if(premiere && dans(deb)) out.push({ d:deb, m:x.m, prev:i > 0 }); return; }
-      const pas = x.p === "mois" ? d => addMois(d, 1) : d => addAns(d, 1);
-      for(let d = deb, k = 0; d < fin && d <= y1 && k < 600; d = pas(d), k++) if(dans(d)) out.push({ d, m:x.m, prev:i > 0 });
+      // Une échéance annuelle qui tombe dans la dernière semaine de la période
+      // (période d'un an et un jour) appartient à la période suivante.
+      const pas = x.p === "mois" ? d => addMois(d, 1) : d => addAns(d, 1), lim = x.p === "mois" ? fin : addJ(fin, -7);
+      for(let d = deb, k = 0; (d < lim || k === 0) && d < fin && d <= y1 && k < 600; d = pas(d), k++) if(dans(d)) out.push({ d, m:x.m, prev:i > 0 });
     });
-    if(!l.fin || exp) break;
+    if(!l.fin || exp || l.arret) break;
     deb = fin; fin = addAns(fin, 1); premiere = false;
   }
   return out;
@@ -2971,7 +3017,7 @@ function budgetLic(L, an){
 function reconduireTacites(){
   const auj = todayISO(), noms = [];
   V(DB.licences).forEach(l => {
-    if(!l.renouvAuto || !l.fin || l.fin >= auj) return;
+    if(!l.renouvAuto || l.arret || !l.fin || l.fin >= auj) return;
     for(let i = 0; i < 20 && l.fin < auj; i++){
       l.histo = (l.histo || []).concat([{ debut:l.debut || "", fin:l.fin, cout:coutPeriode(l, coutsLic(l)), le:l.fin, auto:true }]);
       l.debut = l.fin; l.fin = addAns(l.fin, 1);
@@ -3016,13 +3062,14 @@ function vueAchats(){
         '<button class="btn" data-act="importer-licences" title="Ajouter des licences depuis un fichier JSON">' + svg("telecharger",16) + 'Importer des licences</button>');
   }
   const A = achatsFiltres(), Lc = licencesFiltrees();
-  const enCours = A.filter(a => !a.recu);
-  const aLivrer = A.filter(a => !a.livre && !a.recu);
+  const enCours = A.filter(a => !a.recu && !estPrevu(a));
+  const aLivrer = A.filter(a => !a.livre && !a.recu && !estPrevu(a));
   const retardLiv = aLivrer.filter(a => etatDA(a).k === "retard");
   const aRecep = A.filter(a => a.livre && !a.recu);
   const sansFact = A.filter(factureAttendue);
   const anA = anVu(), anB = anA || an0;
-  const engage = A.filter(a => dansAn(a.date, anA)).reduce((s,a) => s + num(a.montant), 0);
+  const engage = A.filter(a => !estPrevu(a) && dansAn(a.date, anA)).reduce((s,a) => s + num(a.montant), 0);
+  const budgete = A.filter(a => estPrevu(a) && dansAn(a.date, anA)).reduce((s,a) => s + num(a.montant), 0);
   const enCoursMt = enCours.reduce((s,a) => s + num(a.montant), 0);
   const E = Lc.map(l => ({ l, e:etatLic(l) }));
   const expirees = E.filter(x => x.e.k === "expiree"), bientot = E.filter(x => x.e.k === "bientot");
@@ -3051,7 +3098,7 @@ function vueAchats(){
       s:aRecep.length ? "livrés, à contrôler" : "rien en attente", act:"a-filtre", id:"arecep" }) +
     tuile({ l:"Factures attendues", ic:"texte", v:String(sansFact.length), cls:sansFact.length ? "c-att" : "",
       s:"livrés sans n° de facture", act:"a-filtre", id:"sansfact" }) +
-    tuile({ l:anA ? "Engagé en " + anA : "Engagé, toutes années", ic:"euro", v:eurC(engage), argent:true, s:eurC(enCoursMt) + " sur les achats en cours" }) +
+    tuile({ l:anA ? "Engagé en " + anA : "Engagé, toutes années", ic:"euro", v:eurC(engage), argent:true, s:eurC(enCoursMt) + " sur les achats en cours" + (budgete ? " · " + eurC(budgete) + " budgétés à commander" : "") }) +
     tuile({ l:"Licences actives", ic:"cle", v:String(valides.length), s:postes ? postes + " postes ou utilisateurs" : "", act:"a-lfiltre", id:"tout" }) +
     tuile({ l:"À renouveler", ic:"horloge", v:String(bientot.length), cls:bientot.length ? "c-att" : "",
       s:bientot.length ? "échéance proche" : "rien d'imminent", act:"a-lfiltre", id:"bientot" }) +
@@ -3067,6 +3114,9 @@ function vueAchats(){
     '<input type="search" id="qa" placeholder="Rechercher : fournisseur, n° de facture, logiciel…" value="' + esc(state.qa || "") + '" autocomplete="off">' +
     '<select data-asite="1" aria-label="Territoire" class="' + (state.aSite ? "on" : "") + '"><option value="">Tous territoires</option>' +
       SITES.map(s => '<option value="' + s.id + '"' + (state.aSite === s.id ? " selected" : "") + '>' + esc(s.n) + '</option>').join("") + '</select>' +
+    '<select data-aserv="1" aria-label="Service" class="' + (state.aServ ? "on" : "") + '"><option value="">Tous services</option>' +
+      servicesConnus().map(s => '<option value="' + esc(s) + '"' + (state.aServ === s ? " selected" : "") + '>' + esc(s) + '</option>').join("") +
+      '<option value="_"' + (state.aServ === "_" ? " selected" : "") + '>Sans service</option></select>' +
     '<select data-aan="1" aria-label="Année" class="' + (anA !== an0 ? "on" : "") + '">' +
       anneesAchats().map(y => '<option value="' + y + '"' + (anA === y ? " selected" : "") + '>' + y + '</option>').join("") +
       '<option value="tout"' + (!anA ? " selected" : "") + '>Toutes années</option></select></div>';
@@ -3076,22 +3126,22 @@ function vueAchats(){
 
 /* Ce qui reste à traiter (en cours, à livrer, à réceptionner, facture
    attendue) se voit toujours ; l'année ne trie que ce qui est soldé ou « tout ». */
-const ANNUELS_DA = new Set(["recu", "tout"]);
+const ANNUELS_DA = new Set(["prevu", "recu", "tout"]);
 function testDA(k, an){
-  const t = { encours:a => !a.recu, alivrer:a => !a.livre && !a.recu, arecep:a => a.livre && !a.recu,
-    sansfact:factureAttendue, recu:a => a.recu, tout:() => true }[k] || (() => true);
+  const t = { encours:a => !a.recu && !estPrevu(a), alivrer:a => !a.livre && !a.recu && !estPrevu(a), arecep:a => a.livre && !a.recu,
+    sansfact:factureAttendue, prevu:estPrevu, recu:a => a.recu, tout:() => true }[k] || (() => true);
   return ANNUELS_DA.has(k) && an ? a => t(a) && dansAn(a.date, an) : t;
 }
 function blocAchats(A, an){
   const f = state.aFiltre || "encours";
-  const ordre = { retard:0, livre:1, commande:2, recu:3 };
+  const ordre = { retard:0, livre:1, commande:2, prevu:3, recu:4 };
   const l = A.filter(testDA(f, an)).sort((x,y) => ordre[etatDA(x).k] - ordre[etatDA(y).k] || cmp(y.date || "", x.date || ""));
   const tot = l.reduce((s,a) => s + num(a.montant), 0);
   return '<div class="chips" style="margin:10px 0 2px">' + FILTRES_DA.map(([k,t]) => {
       const n = A.filter(testDA(k, an)).length;
       return '<button class="chip ' + (f === k ? "on" : "") + '" data-act="a-filtre" data-id="' + k + '">' + t + (ANNUELS_DA.has(k) && an ? " " + an : "") + '<span class="n">' + n + '</span></button>';
     }).join("") + '</div>' +
-    '<div class="sect"><h2>' + esc(lib(FILTRES_DA, f)) + (ANNUELS_DA.has(f) && an ? " · commandés en " + an : "") + '</h2><span class="cnt">' + l.length + (l.length ? ' · ' + eur(tot) : "") + '</span><span class="sp"></span>' +
+    '<div class="sect"><h2>' + esc(lib(FILTRES_DA, f)) + (ANNUELS_DA.has(f) && an ? (f === "prevu" ? " · budgétés pour " : " · commandés en ") + an : "") + '</h2><span class="cnt">' + l.length + (l.length ? ' · ' + eur(tot) : "") + '</span><span class="sp"></span>' +
       '<span class="cnt leg-et" title="Commande, livraison, réception, facture">commande › livraison › réception › facture</span></div>' +
     (l.length ? l.map(ligneDA).join("") : '<div class="vide petit">Aucune demande d\'achat ici.</div>');
 }
@@ -3099,19 +3149,20 @@ function ligneDA(a){
   const e = etatDA(a), p = DB.projets[a.projet], fact = (a.numFacture || "").trim();
   const txt = e.k === "recu" ? "Réceptionné" + (a.dateRecu ? " le " + frDate(a.dateRecu) : "")
     : e.k === "livre" ? "Livré" + (a.dateLivre ? " le " + frDate(a.dateLivre) : "") + ", à réceptionner"
+    : e.k === "prevu" ? "Budgété" + (a.date ? " pour " + a.date.slice(0, 4) : "") + ", pas encore commandé"
     : e.l + (e.k === "commande" && a.livPrevue ? " · livraison prévue " + relJ(a.livPrevue) : "");
   return '<div class="da">' +
     '<span class="ln-ic ' + e.c + '">' + svg(e.ic, 15, 2) + '</span>' +
-    '<button class="ln-mid" data-act="modifier-achat" data-id="' + a.id + '">' +
+    '<div class="da-c"><button class="ln-mid" data-act="modifier-achat" data-id="' + a.id + '">' +
       '<span class="ln-t">' + esc(a.objet || "Sans objet") + (a.numDA ? '<span class="badge">' + esc(a.numDA) + '</span>' : "") + '</span>' +
-      '<span class="ln-m">' + esc([a.fournisseur, frDate(a.date), nomSite(a.site), p ? p.nom : ""].filter(Boolean).join(" · ")) + '</span>' +
-      '<span class="ln-n"><span class="' + (e.c === "dang" ? "c-dang" : "") + '">' + esc(txt) + '</span> · ' +
-        (fact ? "facture " + esc(fact) + (a.dateFacture ? " du " + esc(frDate(a.dateFacture)) : "")
-              : '<span class="' + (a.livre || a.recu ? "c-att" : "") + '">facture à saisir</span>') + '</span>' +
+      '<span class="ln-m">' + esc([a.fournisseur, frDate(a.date), p ? p.nom : ""].filter(Boolean).join(" · ")) + '</span>' +
+      '<span class="ln-n"><span class="' + (e.c === "dang" ? "c-dang" : "") + '">' + esc(txt) + '</span>' +
+        (e.k === "prevu" ? "" : fact ? " · facture " + esc(fact) + (a.dateFacture ? " du " + esc(frDate(a.dateFacture)) : "")
+              : ' · <span class="' + (a.livre || a.recu ? "c-att" : "") + '">facture à saisir</span>') + '</span>' +
       '<span class="etapes" title="Commande · livraison · réception · facture"><span class="f"></span>' +
         '<span class="' + (a.livre || a.recu ? "f" : e.k === "retard" ? "r" : "") + '"></span>' +
         '<span class="' + (a.recu ? "f" : "") + '"></span><span class="' + (fact ? "f" : "") + '"></span></span>' +
-    '</button>' +
+    '</button>' + tagsLigne(a, "achats") + '</div>' +
     '<div class="da-r"><span class="mt">' + (num(a.montant) ? eur(num(a.montant)) : "—") +
         (num(a.quantite) > 1 ? '<small>' + num(a.quantite) + ' unités</small>' : "") + '</span>' +
       '<div class="cks"><button class="ck' + (a.livre || a.recu ? " on" : "") + '" data-act="a-livre" data-id="' + a.id + '" title="' + (a.livre || a.recu ? "Annuler la livraison" : "Marquer comme livré") + '"><i>' + svg("check", 10, 3.2) + '</i>Livré</button>' +
@@ -3164,16 +3215,17 @@ function ligneLic(l, e, an, mtAn){
   const q = num(l.quantite), c = coutsLic(l), det = detailLic(c);
   return '<div class="da">' +
     '<span class="ln-ic ' + e.c + '">' + svg("cle", 15, 2) + '</span>' +
-    '<button class="ln-mid" data-act="modifier-licence" data-id="' + l.id + '">' +
+    '<div class="da-c"><button class="ln-mid" data-act="modifier-licence" data-id="' + l.id + '">' +
       '<span class="ln-t">' + esc(l.logiciel || "Licence") + (l.editeur ? ' <span style="color:var(--gris);font-size:13px">· ' + esc(l.editeur) + '</span>' : "") +
-        (l.renouvAuto ? '<span class="badge" title="Reconduction tacite">auto</span>' : "") + '</span>' +
+        (l.arret ? '<span class="badge" title="Ne sera pas renouvelée : rien n\'est compté après l\'échéance">arrêt prévu</span>'
+          : l.renouvAuto ? '<span class="badge" title="Reconduction tacite">auto</span>' : "") + '</span>' +
       '<span class="ln-m">' + esc([q ? q + " licence" + pl(q) : "",
-        l.fournisseur, nomSite(l.site), nomP(l.resp), l.numContrat ? "n° " + l.numContrat : ""].filter(Boolean).join(" · ")) + '</span>' +
+        l.fournisseur, nomP(l.resp), l.numContrat ? "n° " + l.numContrat : ""].filter(Boolean).join(" · ")) + '</span>' +
       (c.parAn || c.unique ? '<span class="ln-n"><b class="lic-tot">Total ' + esc(totalLicTexte(c)) + '</b>' +
         (c.lignes.length || (c.pu != null && c.q > 1) ? ' <span style="color:var(--gris2)">· ' + esc(det) + '</span>' : "") +
         (an ? ' <span style="color:var(--gris)">· en ' + an + ' : ' + (mtAn ? '<span class="argent">' + esc(eur(mtAn)) + '</span>' : "rien") + '</span>' : "") + '</span>' : "") +
       (reste != null ? '<div class="restant" title="Part de la période restante"><i class="' + (e.c === "ok" ? "" : e.c) + '" style="width:' + reste + '%"></i></div>' : "") +
-    '</button>' +
+    '</button>' + tagsLigne(l, "licences") + '</div>' +
     '<div class="da-r"><span class="mt ' + (e.c === "dang" ? "c-dang" : e.c === "att" ? "c-att" : "") + '">' + esc(e.l) +
         '<small>' + (l.fin ? "échéance " + esc(frDate(l.fin, true)) : "perpétuelle") + '</small></span>' +
       (l.fin && e.k !== "active" ? '<button class="btn pt" data-act="lic-renouveler" data-id="' + l.id + '">Renouveler 1 an</button>' : "") +
@@ -3232,7 +3284,7 @@ function enregistrerAchat(){
   Object.assign(a, { objet, numDA:(m.numDA || "").trim(), numCmd:(m.numCmd || "").trim(), fournisseur:(m.fournisseur || "").trim(),
     date:m.date || auj, montant:num(m.montant), quantite:num(m.quantite) || 1, site:m.site || SITE_DEF, projet:m.projet || "",
     livPrevue:m.livPrevue || "", livre, dateLivre:livre ? (m.dateLivre || auj) : "", recu, dateRecu:recu ? (m.dateRecu || auj) : "",
-    numFacture:(m.numFacture || "").trim(), dateFacture:m.dateFacture || "", note:(m.note || "").trim(), maj:Date.now() });
+    numFacture:(m.numFacture || "").trim(), dateFacture:m.dateFacture || "", note:(m.note || "").trim(), prevu:!!m.prevu && !livre, service:(m.service || "").trim(), maj:Date.now() });
   DB.achats[a.id] = a;
   if(m.suivi && DB.suivis[m.suivi]){
     DB.suivis[m.suivi].achat = a.id;
@@ -3251,12 +3303,21 @@ function enregistrerLicence(){
   const lignes = (m.lignes || []).filter(x => (x.l || "").trim() || num(x.m))
     .map(x => ({ l:(x.l || "").trim() || "Autre coût", m:num(x.m), p:x.p || "an" }));
   Object.assign(l, { logiciel, editeur:(m.editeur || "").trim(), fournisseur:(m.fournisseur || "").trim(), quantite:num(m.quantite) || 1,
-    prixU:num(m.prixU), lignes, periode:m.periode || "an", debut:m.debut || "", fin:m.fin || "", alerte:num(m.alerte) || 60, renouvAuto:!!m.renouvAuto,
-    numContrat:(m.numContrat || "").trim(), site:m.site || SITE_DEF, resp:m.resp || "", note:(m.note || "").trim(), maj:Date.now() });
+    prixU:num(m.prixU), lignes, periode:m.periode || "an", debut:m.debut || "", fin:m.fin || "", alerte:num(m.alerte) || 60, renouvAuto:!!m.renouvAuto && !m.arret, arret:!!m.arret,
+    numContrat:(m.numContrat || "").trim(), site:m.site || SITE_DEF, resp:m.resp || "", note:(m.note || "").trim(), service:(m.service || "").trim(), maj:Date.now() });
   l.cout = coutsLic(l).base;   // gardé pour les anciennes sauvegardes et l'export
   DB.licences[l.id] = l; state.modal = null; state.aVue = "lic";
   sauver(); render(); toast(neuf ? "Licence enregistrée" : "Licence mise à jour");
 }
+function poserService(v){
+  const m = state.modal, o = m && DB[m.k] && DB[m.k][m.oid]; if(!o) return fermerModal();
+  const c = {}; garder(c, m.k, o); corbeille = c;
+  o.service = v; o.maj = Date.now(); state.modal = null; sauver(); render();
+  toast(v ? "Service : " + v : "Service retiré", "annuler");
+}
+/* Champ service des fiches achat et licence : saisie libre, avec les services déjà connus en suggestion. */
+const fServ = v => '<input type="text" id="m-service" data-f="service" value="' + esc(v || "") + '" list="dl-svc" placeholder="DSI, RH, BE…" autocomplete="off">' +
+  '<datalist id="dl-svc">' + servicesConnus().map(s => '<option value="' + esc(s) + '">').join("") + '</datalist>';
 function supprimerAchatLic(k, id, msg){
   const o = DB[k][id]; if(!o) return;
   const c = {}; garder(c, k, o); delete DB[k][id];
@@ -3266,6 +3327,7 @@ function cocherAchat(id, quoi){
   const a = DB.achats[id]; if(!a) return;
   const c = {}; garder(c, "achats", a); corbeille = c;
   const auj = todayISO();
+  a.prevu = false;
   if(quoi === "livre"){
     if(a.livre || a.recu){ a.livre = false; a.recu = false; a.dateLivre = ""; a.dateRecu = ""; }
     else { a.livre = true; a.dateLivre = auj; }
@@ -3485,7 +3547,7 @@ function vueFiche(p){
    que cela pèse au regard de son budget. */
 function ficheAchats(p){
   const A = V(DB.achats).filter(x => x.projet === p.id);
-  const ordre = { retard:0, livre:1, commande:2, recu:3 };
+  const ordre = { retard:0, livre:1, commande:2, prevu:3, recu:4 };
   A.sort((x,y) => ordre[etatDA(x).k] - ordre[etatDA(y).k] || cmp(y.date || "", x.date || ""));
   const tot = A.reduce((s,x) => s + num(x.montant), 0), budget = num(p.budget);
   const aLivrer = A.filter(x => !x.livre && !x.recu), retard = aLivrer.filter(x => etatDA(x).k === "retard");
@@ -5467,7 +5529,9 @@ function vueModal(m){
         fChamp("Quantité", fTxt("quantite", m.quantite, "1", "number"), "", "m-quantite") + '</div>' +
       '<div class="duo">' + fChamp("Territoire", fSel("site", m.site || SITE_DEF, SITES.map(s => [s.id, s.n])), "", "m-site") +
         fChamp("Projet lié", fSel("projet", m.projet, optsProj(), "Aucun"), "", "m-projet") + '</div>' +
-      (!m.livre && !m.recu ? fChamp("Livraison prévue", fTxt("livPrevue", m.livPrevue, "", "date"), "Passée cette date sans livraison, la demande ressort en retard.", "m-livPrevue") : "") +
+      fChamp("Service", fServ(m.service), "Le service qui en a besoin ; il s'affiche en tag sur la ligne.", "m-service") +
+      (!m.livre && !m.recu ? fBool("prevu", m.prevu, "Budgété, pas encore commandé", "Une ligne du budget : elle ne compte pas dans l'engagé tant qu'elle n'est pas commandée") : "") +
+      (!m.livre && !m.recu && !m.prevu ? fChamp("Livraison prévue", fTxt("livPrevue", m.livPrevue, "", "date"), "Passée cette date sans livraison, la demande ressort en retard.", "m-livPrevue") : "") +
       fBool("livre", m.livre || m.recu, "Livré", "Le matériel ou la prestation est arrivé") +
       (m.livre || m.recu ? fChamp("Livré le", fTxt("dateLivre", m.dateLivre || todayISO(), "", "date"), "", "m-dateLivre") : "") +
       fBool("recu", m.recu, "Réceptionné", "Contrôlé et réceptionné : la demande est soldée") +
@@ -5494,9 +5558,11 @@ function vueModal(m){
       fChamp("Prévenir", fSeg("alerte", m.alerte || "60", [["30","30 j avant"],["60","60 j"],["90","90 j"],["120","120 j"]]),
         "La licence passe « à renouveler » à partir de ce délai, en rouge dans les 30 derniers jours.") +
       fBool("renouvAuto", m.renouvAuto, "Reconduction tacite", "Elle se renouvelle seule : l'alerte sert alors à résilier ou renégocier à temps.") +
+      fBool("arret", m.arret, "Ne sera pas renouvelée", "Arrêt prévu à l'échéance : rien n'est compté dans le budget après cette date.") +
       '<div class="duo">' + fChamp("N° de contrat / facture", fTxt("numContrat", m.numContrat, "facultatif"), "", "m-numContrat") +
         fChamp("Territoire", fSel("site", m.site || SITE_DEF, SITES.map(s => [s.id, s.n])), "", "m-site") + '</div>' +
-      fChamp("Responsable", fSel("resp", m.resp, optsPers(), "—"), "", "m-resp") +
+      '<div class="duo">' + fChamp("Responsable", fSel("resp", m.resp, optsPers(), "—"), "", "m-resp") +
+        fChamp("Service utilisateur", fServ(m.service), "", "m-service") + '</div>' +
       fChamp("Note", fArea("note", m.note, "Clés, portail d'administration, contact commercial…", 2), "", "m-note") +
       (histo.length ? '<div class="champ"><span class="lab">Renouvellements</span>' + histo.map(x =>
         '<div class="ln" style="padding:7px 2px"><span class="ln-mid"><span class="ln-m" style="margin:0">' +
@@ -5560,6 +5626,15 @@ function vueModal(m){
       '<input type="text" id="m-svcresp" placeholder="Son responsable" autocomplete="off" style="flex:1;min-width:130px">' +
       '<button class="btn pri" data-act="svc-ajout">Ajouter</button></div>' +
       '<div class="btns grow"><button class="btn" data-act="fermer-modal">Fermer</button></div>';
+  }
+  else if(m.type === "service"){
+    c = '<h3>Service</h3><div class="sous">Quel service utilise « ' + esc(m.nom) + ' » ? Il s\'affiche en tag sur la ligne et sert de filtre.</div>' +
+      '<div class="svc-choix">' + servicesConnus().map(s => '<button class="tg sv' + (m.service === s ? " on" : "") + '" style="--h:' + teinteTxt(s) +
+        '" data-act="service-choisir" data-id="' + esc(s) + '">' + esc(s) + '</button>').join("") + '</div>' +
+      '<div class="champ" style="display:flex;gap:8px;margin-top:12px"><input type="text" id="m-svcl" placeholder="Autre service : BE, QSE, Exploitation…" autocomplete="off" style="flex:1">' +
+      '<button class="btn" data-act="service-autre">Ajouter</button></div>' +
+      '<div class="btns grow">' + (m.service ? '<button class="btn" data-act="service-choisir" data-id="_">Retirer le service</button>' : "") +
+      '<button class="btn" data-act="fermer-modal">Annuler</button></div>';
   }
   else if(m.type === "confirmer"){
     c = '<h3>' + esc(m.titre) + '</h3><div class="sous">' + esc(m.texte) + '</div>' +
@@ -6261,6 +6336,17 @@ document.addEventListener("click", async ev => {
   if(act === "a-filtre"){ state.aVue = "da"; state.aFiltre = id; render(); return; }
   if(act === "a-lfiltre"){ state.aVue = "lic"; state.lFiltre = id; state.lMois = null; render(); return; }
   if(act === "a-mois"){ state.lMois = state.lMois === id ? null : id; render(); return; }
+  if(act === "a-tsite"){ state.aSite = state.aSite === id ? "" : id; render(); return; }
+  if(act === "a-service"){
+    const k = el.dataset.k, o = DB[k] && DB[k][id]; if(!o) return;
+    return ouvrirModal({ type:"service", k, oid:id, service:o.service || "", nom:o.logiciel || o.objet || "" });
+  }
+  if(act === "service-choisir") return poserService(id === "_" ? "" : id);
+  if(act === "service-autre"){
+    const v = ((document.getElementById("m-svcl") || {}).value || "").trim();
+    if(!v){ toast("Saisissez le nom du service"); return; }
+    return poserService(v);
+  }
   if(act === "exporter-achats") return exporterAchatsCSV();
   if(act === "nouveau-projet") return ouvrirModal(mProjet());
   if(act === "nouvelle-tache") return ouvrirModal(mTache(null, id));
@@ -6533,6 +6619,7 @@ document.addEventListener("change", ev => {
   if(el.id === "set-moi"){ DB.settings.moi = el.value; sauver(true); render(); return; }
   if(el.dataset && el.dataset.filtre){ DB.settings.f[el.dataset.filtre] = el.value; sauver(true); render(); return; }
   if(el.dataset && el.dataset.asite){ state.aSite = el.value; render(); return; }
+  if(el.dataset && el.dataset.aserv){ state.aServ = el.value; render(); return; }
   if(el.dataset && el.dataset.aan){ state.aAn = el.value === "tout" ? "" : el.value; render(); return; }
   // Fin de saisie d'un bloc : les lignes « → » deviennent des actions. On ne
   // rafraîchit que le panneau « À suivre », pour ne pas avaler le clic suivant.

@@ -399,6 +399,11 @@ mark{background:var(--attF);color:inherit;border-radius:3px;padding:0 1px;font-w
   display:flex;flex-direction:column;gap:3px}
 .lic-total .d{font-size:12.5px;color:var(--gris)}
 .lic-total .t{font-size:18px;font-weight:600;letter-spacing:-.02em;font-family:"IBM Plex Mono",monospace}
+.bud-an{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:6px 0 4px}
+.bud-an > div{padding:10px 12px;border-radius:10px;border:1px solid var(--ligne);background:var(--carte)}
+.bud-an .l{display:block;font-size:12px;color:var(--gris)}
+.bud-an b{font-size:17px;font-weight:600;letter-spacing:-.02em;font-family:"IBM Plex Mono",monospace}
+.bud-an .tot{background:var(--accF);border-color:var(--accB)}
 @media(max-width:560px){
   .da{flex-wrap:wrap}
   .da-r{flex-direction:row;align-items:center;justify-content:space-between;width:100%;padding-left:41px}
@@ -722,9 +727,15 @@ input[type=range]{width:100%;accent-color:var(--acc)}
    Un seul fichier, aucune dépendance, stockage local (IndexedDB).
    Reprend l'ossature d'Ardoise : même encre, mêmes gestes.
    ============================================================ */
-const VERSION = "1.10.1";
+const VERSION = "1.11.0";
 const SCHEMA  = 1;
 const JOURNAL = [
+  { v:"1.11.0", d:"2026-11-09", t:"Achats et licences par année", l:[
+    "Onglet Achats : un choix d'année (l'année en cours par défaut, ou toutes). Il règle le montant engagé, la liste des réceptionnés et l'export CSV ; les achats en cours restent toujours visibles, quelle que soit l'année.",
+    "Licences : budget de l'année, payé et encore à payer. Une licence compte l'année où elle se paie (début de période, ou chaque mois pour un abonnement mensuel) ; les renouvellements à venir sont supposés au même prix.",
+    "Chaque licence indique ce qu'elle coûte sur l'année choisie ; l'export CSV des licences gagne les colonnes payé et à payer.",
+    "Les licences en reconduction tacite repartent seules pour un an à leur échéance, au lieu de passer « expirées » ; la période écoulée rejoint leur historique."
+  ]},
   { v:"1.10.1", d:"2026-11-09", t:"Import de licences", l:[
     "Onglet Achats : bouton « Importer » qui ajoute des licences depuis un fichier JSON (export ERP préparé ou autre sauvegarde Jalon), sans toucher au reste des données.",
     "Une licence déjà présente (même logiciel et même fournisseur) est laissée telle quelle ; l'import s'annule d'un clic."
@@ -2911,6 +2922,66 @@ function licencesFiltrees(){
     nomSite(l.site), nomP(l.resp)].join(" ")).includes(q)));
 }
 
+/* Années. Un achat compte l'année de sa commande. Une licence compte l'année
+   où on la paie : au début de chaque période (chaque anniversaire pour une
+   ligne « par an », chaque mois pour une ligne « par mois », une seule fois
+   pour une ligne « unique »). Les renouvellements à venir sont supposés au
+   même prix, sauf pour une licence déjà expirée. Les achats en cours, eux,
+   restent visibles quelle que soit l'année. */
+const anCourant = () => todayISO().slice(0, 4);
+const anVu = () => state.aAn == null ? anCourant() : state.aAn;   // "" = toutes
+const dansAn = (iso, an) => !an || (iso || "").slice(0, 4) === an;
+const addMois = (iso, n) => { const d = dateDe(iso), j = d.getDate(); d.setDate(1); d.setMonth(d.getMonth() + n);
+  d.setDate(Math.min(j, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate())); return isoDe(d); };
+function anneesAchats(){
+  const s = new Set([anCourant(), String(+anCourant() + 1)]);
+  V(DB.achats).forEach(a => a.date && s.add(a.date.slice(0, 4)));
+  V(DB.licences).forEach(l => [l.debut].concat((l.histo || []).map(x => x.debut)).forEach(d => d && s.add(d.slice(0, 4))));
+  return [...s].filter(x => /^\d{4}$/.test(x)).sort().reverse();
+}
+/* Coût d'une période écoulée, gardé dans l'historique : le récurrent annualisé,
+   plus le ponctuel s'il s'agit de la toute première période. */
+const coutPeriode = (l, c) => c.parAn + ((l.histo || []).length ? 0 : c.unique);
+function paiementsLic(l, an){
+  const y0 = an + "-01-01", y1 = an + "-12-31", dans = d => d >= y0 && d <= y1, out = [], H = l.histo || [];
+  H.forEach(x => { if(x.debut && dans(x.debut) && num(x.cout)) out.push({ d:x.debut, m:num(x.cout), prev:false }); });
+  if(!l.debut) return out;
+  const c = coutsLic(l), lignes = [{ m:c.base, p:c.per }].concat(c.lignes).filter(x => x.m);
+  const exp = etatLic(l).k === "expiree";
+  let deb = l.debut, fin = l.fin || "9999-12-31", premiere = !H.length;
+  for(let i = 0; i < 40 && deb <= y1; i++){
+    lignes.forEach(x => {
+      if(x.p === "unique"){ if(premiere && dans(deb)) out.push({ d:deb, m:x.m, prev:i > 0 }); return; }
+      const pas = x.p === "mois" ? d => addMois(d, 1) : d => addAns(d, 1);
+      for(let d = deb, k = 0; d < fin && d <= y1 && k < 600; d = pas(d), k++) if(dans(d)) out.push({ d, m:x.m, prev:i > 0 });
+    });
+    if(!l.fin || exp) break;
+    deb = fin; fin = addAns(fin, 1); premiere = false;
+  }
+  return out;
+}
+function budgetLic(L, an){
+  const auj = todayISO(); let paye = 0, avenir = 0; const parL = {};
+  L.forEach(l => paiementsLic(l, an).forEach(p => { if(p.d <= auj) paye += p.m; else avenir += p.m; parL[l.id] = (parL[l.id] || 0) + p.m; }));
+  return { paye, avenir, total:paye + avenir, parL };
+}
+/* Une licence en reconduction tacite ne doit pas tomber « expirée » : passé
+   son échéance, elle repart pour un an, et la période écoulée rejoint son
+   historique. */
+function reconduireTacites(){
+  const auj = todayISO(), noms = [];
+  V(DB.licences).forEach(l => {
+    if(!l.renouvAuto || !l.fin || l.fin >= auj) return;
+    for(let i = 0; i < 20 && l.fin < auj; i++){
+      l.histo = (l.histo || []).concat([{ debut:l.debut || "", fin:l.fin, cout:coutPeriode(l, coutsLic(l)), le:l.fin, auto:true }]);
+      l.debut = l.fin; l.fin = addAns(l.fin, 1);
+    }
+    l.maj = Date.now(); noms.push(l.logiciel);
+  });
+  if(noms.length){ sauver(); render();
+    toast(noms.length === 1 ? "« " + noms[0] + " » reconduite tacitement pour un an" : noms.length + " licences reconduites tacitement pour un an"); }
+}
+
 /* Ce qui, côté achats et licences, mérite d'apparaître dans les points
    d'attention du tableau de bord. Suit le filtre de territoire. */
 function alertesAchats(){
@@ -2950,13 +3021,15 @@ function vueAchats(){
   const retardLiv = aLivrer.filter(a => etatDA(a).k === "retard");
   const aRecep = A.filter(a => a.livre && !a.recu);
   const sansFact = A.filter(factureAttendue);
-  const engage = A.filter(a => (a.date || "").slice(0, 4) === an0).reduce((s,a) => s + num(a.montant), 0);
+  const anA = anVu(), anB = anA || an0;
+  const engage = A.filter(a => dansAn(a.date, anA)).reduce((s,a) => s + num(a.montant), 0);
   const enCoursMt = enCours.reduce((s,a) => s + num(a.montant), 0);
   const E = Lc.map(l => ({ l, e:etatLic(l) }));
   const expirees = E.filter(x => x.e.k === "expiree"), bientot = E.filter(x => x.e.k === "bientot");
   const valides = E.filter(x => x.e.k !== "expiree");
   const coutAn = valides.reduce((s,x) => s + coutAnnuel(x.l), 0);
   const postes = valides.reduce((s,x) => s + num(x.l.quantite), 0);
+  const bud = budgetLic(Lc, anB);
 
   let h = '<section class="total" style="padding-bottom:14px"><div class="vh"><div>' +
     '<div class="total-lbl">Achats et licences' + (state.aSite ? " · " + esc(nomSite(state.aSite)) : "") + '</div>' +
@@ -2978,13 +3051,14 @@ function vueAchats(){
       s:aRecep.length ? "livrés, à contrôler" : "rien en attente", act:"a-filtre", id:"arecep" }) +
     tuile({ l:"Factures attendues", ic:"texte", v:String(sansFact.length), cls:sansFact.length ? "c-att" : "",
       s:"livrés sans n° de facture", act:"a-filtre", id:"sansfact" }) +
-    tuile({ l:"Engagé en " + an0, ic:"euro", v:eurC(engage), argent:true, s:eurC(enCoursMt) + " sur les achats en cours" }) +
+    tuile({ l:anA ? "Engagé en " + anA : "Engagé, toutes années", ic:"euro", v:eurC(engage), argent:true, s:eurC(enCoursMt) + " sur les achats en cours" }) +
     tuile({ l:"Licences actives", ic:"cle", v:String(valides.length), s:postes ? postes + " postes ou utilisateurs" : "", act:"a-lfiltre", id:"tout" }) +
     tuile({ l:"À renouveler", ic:"horloge", v:String(bientot.length), cls:bientot.length ? "c-att" : "",
       s:bientot.length ? "échéance proche" : "rien d'imminent", act:"a-lfiltre", id:"bientot" }) +
     tuile({ l:"Expirées", ic:"alerte", v:String(expirees.length), cls:expirees.length ? "c-dang" : "",
       s:expirees.length ? "à régulariser" : "aucune", act:"a-lfiltre", id:"expiree" }) +
-    tuile({ l:"Coût annuel licences", ic:"euro", v:eurC(coutAn), argent:true, s:"abonnements en cours" }) +
+    tuile({ l:"Licences " + anB, ic:"euro", v:eurC(bud.total), argent:true, act:"a-vue", id:"lic",
+      s:(bud.avenir ? eurC(bud.avenir) + " encore à payer · " : "") + "rythme actuel " + eurC(coutAn) + " / an" }) +
     '</div>';
 
   h += '<div class="a-outils noprint"><div class="seg">' +
@@ -2992,23 +3066,32 @@ function vueAchats(){
       '<button class="' + (vue === "lic" ? "on" : "") + '" data-act="a-vue" data-id="lic">Licences · ' + Lc.length + '</button></div>' +
     '<input type="search" id="qa" placeholder="Rechercher : fournisseur, n° de facture, logiciel…" value="' + esc(state.qa || "") + '" autocomplete="off">' +
     '<select data-asite="1" aria-label="Territoire" class="' + (state.aSite ? "on" : "") + '"><option value="">Tous territoires</option>' +
-      SITES.map(s => '<option value="' + s.id + '"' + (state.aSite === s.id ? " selected" : "") + '>' + esc(s.n) + '</option>').join("") + '</select></div>';
+      SITES.map(s => '<option value="' + s.id + '"' + (state.aSite === s.id ? " selected" : "") + '>' + esc(s.n) + '</option>').join("") + '</select>' +
+    '<select data-aan="1" aria-label="Année" class="' + (anA !== an0 ? "on" : "") + '">' +
+      anneesAchats().map(y => '<option value="' + y + '"' + (anA === y ? " selected" : "") + '>' + y + '</option>').join("") +
+      '<option value="tout"' + (!anA ? " selected" : "") + '>Toutes années</option></select></div>';
 
-  return h + (vue === "lic" ? blocLicences(E) : blocAchats(A));
+  return h + (vue === "lic" ? blocLicences(E, anB, bud) : blocAchats(A, anA));
 }
 
-function blocAchats(A){
+/* Ce qui reste à traiter (en cours, à livrer, à réceptionner, facture
+   attendue) se voit toujours ; l'année ne trie que ce qui est soldé ou « tout ». */
+const ANNUELS_DA = new Set(["recu", "tout"]);
+function testDA(k, an){
+  const t = { encours:a => !a.recu, alivrer:a => !a.livre && !a.recu, arecep:a => a.livre && !a.recu,
+    sansfact:factureAttendue, recu:a => a.recu, tout:() => true }[k] || (() => true);
+  return ANNUELS_DA.has(k) && an ? a => t(a) && dansAn(a.date, an) : t;
+}
+function blocAchats(A, an){
   const f = state.aFiltre || "encours";
-  const test = { encours:a => !a.recu, alivrer:a => !a.livre && !a.recu, arecep:a => a.livre && !a.recu,
-    sansfact:factureAttendue, recu:a => a.recu, tout:() => true }[f] || (() => true);
   const ordre = { retard:0, livre:1, commande:2, recu:3 };
-  const l = A.filter(test).sort((x,y) => ordre[etatDA(x).k] - ordre[etatDA(y).k] || cmp(y.date || "", x.date || ""));
+  const l = A.filter(testDA(f, an)).sort((x,y) => ordre[etatDA(x).k] - ordre[etatDA(y).k] || cmp(y.date || "", x.date || ""));
   const tot = l.reduce((s,a) => s + num(a.montant), 0);
   return '<div class="chips" style="margin:10px 0 2px">' + FILTRES_DA.map(([k,t]) => {
-      const n = A.filter({ encours:a => !a.recu, alivrer:a => !a.livre && !a.recu, arecep:a => a.livre && !a.recu, sansfact:factureAttendue, recu:a => a.recu, tout:() => true }[k]).length;
-      return '<button class="chip ' + (f === k ? "on" : "") + '" data-act="a-filtre" data-id="' + k + '">' + t + '<span class="n">' + n + '</span></button>';
+      const n = A.filter(testDA(k, an)).length;
+      return '<button class="chip ' + (f === k ? "on" : "") + '" data-act="a-filtre" data-id="' + k + '">' + t + (ANNUELS_DA.has(k) && an ? " " + an : "") + '<span class="n">' + n + '</span></button>';
     }).join("") + '</div>' +
-    '<div class="sect"><h2>' + esc(lib(FILTRES_DA, f)) + '</h2><span class="cnt">' + l.length + (l.length ? ' · ' + eur(tot) : "") + '</span><span class="sp"></span>' +
+    '<div class="sect"><h2>' + esc(lib(FILTRES_DA, f)) + (ANNUELS_DA.has(f) && an ? " · commandés en " + an : "") + '</h2><span class="cnt">' + l.length + (l.length ? ' · ' + eur(tot) : "") + '</span><span class="sp"></span>' +
       '<span class="cnt leg-et" title="Commande, livraison, réception, facture">commande › livraison › réception › facture</span></div>' +
     (l.length ? l.map(ligneDA).join("") : '<div class="vide petit">Aucune demande d\'achat ici.</div>');
 }
@@ -3049,22 +3132,33 @@ function bandeMois(E){
   }
   return h + '</div>';
 }
-function blocLicences(E){
+function blocBudgetLic(an, b){
+  const fut = an > anCourant(), passe = an < anCourant();
+  return '<div class="sect"><h2>Budget licences ' + an + '</h2><span class="cnt">compté à la date de paiement</span></div>' +
+    '<div class="bud-an">' +
+      '<div><span class="l">' + (fut ? "Déjà payé" : "Payé") + '</span><b>' + eur(b.paye) + '</b></div>' +
+      '<div><span class="l">' + (passe ? "Restait à payer" : "Encore à payer") + '</span><b>' + eur(b.avenir) + '</b></div>' +
+      '<div class="tot"><span class="l">Total ' + an + '</span><b>' + eur(b.total) + '</b></div></div>' +
+    '<div class="aide" style="margin:2px 0 8px">Une licence compte l\'année où elle se paie : au début de chaque période, ou chaque mois si elle se facture au mois. ' +
+      'Les renouvellements à venir sont supposés au même prix ; une licence expirée n\'est pas reconduite dans ce calcul.</div>';
+}
+function blocLicences(E, an, bud){
+  an = an || anCourant(); bud = bud || budgetLic(E.map(x => x.l), an);
   const f = state.lFiltre || "tout";
   let l = E.filter(x => f === "tout" || x.e.k === f);
   if(state.lMois) l = l.filter(x => x.l.fin && x.l.fin.slice(0, 7) === state.lMois);
   l.sort((a,b) => cmp(a.l.fin || "9999", b.l.fin || "9999") || cmp(norm(a.l.logiciel), norm(b.l.logiciel)));
   const mo = state.lMois ? dateDe(state.lMois + "-15") : null;
-  return '<div class="sect"><h2>Échéancier</h2><span class="cnt">expirations sur 12 mois</span><span class="sp"></span>' +
+  return blocBudgetLic(an, bud) + '<div class="sect"><h2>Échéancier</h2><span class="cnt">expirations sur 12 mois</span><span class="sp"></span>' +
       (state.lMois ? '<button class="lien" data-act="a-mois" data-id="' + state.lMois + '">Tous les mois</button>' : "") + '</div>' +
     bandeMois(E) +
     '<div class="chips" style="margin:10px 0 2px">' + FILTRES_LIC.map(([k,t]) =>
       '<button class="chip ' + (f === k ? "on" : "") + '" data-act="a-lfiltre" data-id="' + k + '">' + t +
       '<span class="n">' + E.filter(x => k === "tout" || x.e.k === k).length + '</span></button>').join("") + '</div>' +
     '<div class="sect"><h2>' + esc(lib(FILTRES_LIC, f)) + (mo ? " · " + MOIS_LONG[mo.getMonth()] + " " + mo.getFullYear() : "") + '</h2><span class="cnt">' + l.length + '</span></div>' +
-    (l.length ? l.map(x => ligneLic(x.l, x.e)).join("") : '<div class="vide petit">Aucune licence ici.</div>');
+    (l.length ? l.map(x => ligneLic(x.l, x.e, an, bud.parL[x.l.id] || 0)).join("") : '<div class="vide petit">Aucune licence ici.</div>');
 }
-function ligneLic(l, e){
+function ligneLic(l, e, an, mtAn){
   const dur = l.debut && l.fin ? Math.max(1, diffJ(l.debut, l.fin)) : 0;
   const reste = dur && e.j != null ? clamp(e.j / dur * 100, 0, 100) : null;
   const q = num(l.quantite), c = coutsLic(l), det = detailLic(c);
@@ -3076,7 +3170,8 @@ function ligneLic(l, e){
       '<span class="ln-m">' + esc([q ? q + " licence" + pl(q) : "",
         l.fournisseur, nomSite(l.site), nomP(l.resp), l.numContrat ? "n° " + l.numContrat : ""].filter(Boolean).join(" · ")) + '</span>' +
       (c.parAn || c.unique ? '<span class="ln-n"><b class="lic-tot">Total ' + esc(totalLicTexte(c)) + '</b>' +
-        (c.lignes.length || (c.pu != null && c.q > 1) ? ' <span style="color:var(--gris2)">· ' + esc(det) + '</span>' : "") + '</span>' : "") +
+        (c.lignes.length || (c.pu != null && c.q > 1) ? ' <span style="color:var(--gris2)">· ' + esc(det) + '</span>' : "") +
+        (an ? ' <span style="color:var(--gris)">· en ' + an + ' : ' + (mtAn ? '<span class="argent">' + esc(eur(mtAn)) + '</span>' : "rien") + '</span>' : "") + '</span>' : "") +
       (reste != null ? '<div class="restant" title="Part de la période restante"><i class="' + (e.c === "ok" ? "" : e.c) + '" style="width:' + reste + '%"></i></div>' : "") +
     '</button>' +
     '<div class="da-r"><span class="mt ' + (e.c === "dang" ? "c-dang" : e.c === "att" ? "c-att" : "") + '">' + esc(e.l) +
@@ -3186,7 +3281,7 @@ function renouvelerLicence(id){
   const l = DB.licences[id]; if(!l || !l.fin) return;
   const c = {}; garder(c, "licences", l); corbeille = c;
   const cl = coutsLic(l);
-  l.histo = (l.histo || []).concat([{ debut:l.debut || "", fin:l.fin, cout:cl.parAn || cl.unique, le:todayISO() }]);
+  l.histo = (l.histo || []).concat([{ debut:l.debut || "", fin:l.fin, cout:coutPeriode(l, cl), le:todayISO() }]);
   const base = l.fin < todayISO() ? todayISO() : l.fin;
   l.debut = base; l.fin = addAns(base, 1); l.maj = Date.now();
   sauver(); render(); toast("« " + l.logiciel + " » renouvelée jusqu'au " + frDate(l.fin, true), "annuler");
@@ -3197,17 +3292,22 @@ function exporterAchatsCSV(){
   let tete, lignes, nom;
   if(state.aVue === "lic"){
     const L = licencesFiltrees().sort((a,b) => cmp(a.fin || "9999", b.fin || "9999"));
-    tete = ["Logiciel","Éditeur","Fournisseur","Licences","Prix unitaire €","Coût des licences €","Facturation","Autres coûts","Total annuel €","Total ponctuel €","Début","Expiration","État","Reconduction tacite","N° contrat / facture","Territoire","Responsable","Note"];
-    lignes = L.map(l => { const c = coutsLic(l); return [l.logiciel, l.editeur, l.fournisseur, l.quantite || "", c.pu != null ? n(c.pu) : "", n(c.base), lib(PERIODES, c.per),
-      c.lignes.map(x => x.l + " " + n(x.m) + " " + LIB_PER[x.p]).join(" | "), n(c.parAn), n(c.unique),
+    const an = anVu() || anCourant(), auj = todayISO();
+    tete = ["Logiciel","Éditeur","Fournisseur","Licences","Prix unitaire €","Coût des licences €","Facturation","Autres coûts","Total annuel €","Total ponctuel €",
+      "Payé en " + an + " €","À payer en " + an + " €","Début","Expiration","État","Reconduction tacite","N° contrat / facture","Territoire","Responsable","Note"];
+    lignes = L.map(l => { const c = coutsLic(l), P = paiementsLic(l, an);
+      const paye = P.filter(p => p.d <= auj).reduce((s,p) => s + p.m, 0), reste = P.filter(p => p.d > auj).reduce((s,p) => s + p.m, 0);
+      return [l.logiciel, l.editeur, l.fournisseur, l.quantite || "", c.pu != null ? n(c.pu) : "", n(c.base), lib(PERIODES, c.per),
+      c.lignes.map(x => x.l + " " + n(x.m) + " " + LIB_PER[x.p]).join(" | "), n(c.parAn), n(c.unique), n(paye), n(reste),
       l.debut, l.fin, etatLic(l).l, l.renouvAuto ? "oui" : "", l.numContrat, nomSite(l.site), nomP(l.resp), l.note].map(cel).join(";"); });
-    nom = "jalon-licences-";
+    nom = "jalon-licences-" + an + "-";
   } else {
-    const L = achatsFiltres().sort((a,b) => cmp(b.date || "", a.date || ""));
+    const an = anVu();
+    const L = achatsFiltres().filter(a => dansAn(a.date, an)).sort((a,b) => cmp(b.date || "", a.date || ""));
     tete = ["Objet","N° DA","N° commande","Fournisseur","Date","Montant €","Quantité","Territoire","Projet","Livraison prévue","Livré le","Réceptionné le","État","N° facture","Date facture","Note"];
     lignes = L.map(a => [a.objet, a.numDA, a.numCmd, a.fournisseur, a.date, n(a.montant), a.quantite, nomSite(a.site), DB.projets[a.projet] ? DB.projets[a.projet].nom : "",
       a.livPrevue, a.dateLivre, a.dateRecu, etatDA(a).l, a.numFacture, a.dateFacture, a.note].map(cel).join(";"));
-    nom = "jalon-achats-";
+    nom = "jalon-achats-" + (an ? an + "-" : "");
   }
   telecharger(nom + tampon() + ".csv", new Blob(["﻿" + [tete.join(";")].concat(lignes).join("\r\n")], { type:"text/csv;charset=utf-8" }));
   toast(lignes.length + " ligne" + pl(lignes.length) + " exportée" + pl(lignes.length));
@@ -5400,7 +5500,7 @@ function vueModal(m){
       fChamp("Note", fArea("note", m.note, "Clés, portail d'administration, contact commercial…", 2), "", "m-note") +
       (histo.length ? '<div class="champ"><span class="lab">Renouvellements</span>' + histo.map(x =>
         '<div class="ln" style="padding:7px 2px"><span class="ln-mid"><span class="ln-m" style="margin:0">' +
-        esc(frDate(x.debut, true) + " → " + frDate(x.fin, true) + (x.cout ? " · " + eur(x.cout) : "") + " · renouvelée le " + frDate(x.le, true)) + '</span></span></div>').join("") + '</div>' : "") +
+        esc((x.debut ? frDate(x.debut, true) : "?") + " → " + frDate(x.fin, true) + (x.cout ? " · " + eur(x.cout) : "") + (x.auto ? " · reconduite tacitement le " : " · renouvelée le ") + frDate(x.le, true)) + '</span></span></div>').join("") + '</div>' : "") +
       piedModal(m.id ? "Enregistrer" : "Ajouter la licence", "enregistrer-licence",
         m.id ? '<button class="btn dang wide" data-act="supprimer-licence" data-id="' + m.id + '">Supprimer la licence</button>' : "");
   }
@@ -6433,6 +6533,7 @@ document.addEventListener("change", ev => {
   if(el.id === "set-moi"){ DB.settings.moi = el.value; sauver(true); render(); return; }
   if(el.dataset && el.dataset.filtre){ DB.settings.f[el.dataset.filtre] = el.value; sauver(true); render(); return; }
   if(el.dataset && el.dataset.asite){ state.aSite = el.value; render(); return; }
+  if(el.dataset && el.dataset.aan){ state.aAn = el.value === "tout" ? "" : el.value; render(); return; }
   // Fin de saisie d'un bloc : les lignes « → » deviennent des actions. On ne
   // rafraîchit que le panneau « À suivre », pour ne pas avaler le clic suivant.
   if(state.sheet && state.sheet.t === "reunion" && el.dataset && el.dataset.rn){
@@ -6597,12 +6698,13 @@ async function demarrer(){
   try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
   render();
   majIcone();
+  reconduireTacites();
 }
 let _jour = todayISO();
 document.addEventListener("visibilitychange", () => {
   if(document.visibilityState === "hidden"){ ecouler(); return; }
   if(!pret) return;
-  if(_jour !== todayISO()){ _jour = todayISO(); render(); }
+  if(_jour !== todayISO()){ _jour = todayISO(); render(); reconduireTacites(); }
 });
 window.addEventListener("pagehide", () => { ecouler(); });
 

@@ -419,6 +419,26 @@ mark{background:var(--attF);color:inherit;border-radius:3px;padding:0 1px;font-w
 .bud-an .l{display:block;font-size:12px;color:var(--gris)}
 .bud-an b{font-size:17px;font-weight:600;letter-spacing:-.02em;font-family:"IBM Plex Mono",monospace}
 .bud-an .tot{background:var(--accF);border-color:var(--accB)}
+.bud-an.q4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:640px){ .bud-an.q4{grid-template-columns:repeat(2,minmax(0,1fr))} }
+/* Prévision de l'année : total et répartition par territoire et par service. */
+.pv{margin:14px 0 4px;border:1px solid var(--ligne);border-radius:12px;background:var(--carte);padding:12px 14px}
+.pv > summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pv > summary::-webkit-details-marker{display:none}
+.pv > summary h2{margin:0;font-size:15px}
+.pv > summary .num{font-size:18px;font-weight:600}
+.pv > summary .cnt{color:var(--gris);font-size:12px}
+.pv > summary .ouv{margin-left:auto;font-size:12px;color:var(--acc)}
+.pv[open] > summary .ouv::after{content:" ▲"}
+.pv:not([open]) > summary .ouv::after{content:" ▼"}
+.pv-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:12px}
+@media (max-width:760px){ .pv-cols{grid-template-columns:1fr} }
+.pv-cols h3{font-size:12px;font-weight:600;color:var(--gris);text-transform:uppercase;letter-spacing:.04em;margin:0 0 6px}
+.pv-l{display:grid;grid-template-columns:150px minmax(0,1fr) 92px;gap:8px;align-items:center;padding:3px 0}
+.pv-l .tg{cursor:pointer;justify-self:start;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.pv-b{height:6px;border-radius:3px;background:var(--trait2);overflow:hidden}
+.pv-b i{display:block;height:100%;background:hsl(var(--h) 60% 52%)}
+.pv-l b{text-align:right;font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:500}
 @media(max-width:560px){
   .da{flex-wrap:wrap}
   .da-r{flex-direction:row;align-items:center;justify-content:space-between;width:100%;padding-left:41px}
@@ -751,6 +771,8 @@ const JOURNAL = [
     "Une demande d'achat peut être « budgétée, pas encore commandée » : elle vient du budget et attend sa commande. Elle a son filtre « Budgétés » et ne compte ni dans l'engagé ni dans les achats en cours.",
     "Cocher « Livré » ou « Réceptionné » sur un achat budgété le fait passer en commande.",
     "Licences : case « Ne sera pas renouvelée ». Le budget des années suivantes ne la compte plus ; la ligne porte le badge « arrêt prévu ».",
+    "Onglet Achats : bloc « Prévision » de l'année choisie. Licences et contrats, achats commandés et achats budgétés, avec la répartition par territoire et par service ; un clic sur un tag filtre.",
+    "Correction : une licence du 1er janvier au 31 décembre était comptée deux fois dans l'année (au 1er janvier, puis à son renouvellement le 31 décembre). Le renouvellement repart désormais le 1er janvier.",
     "Correction : une licence dont la période dure un an et un jour n'est plus comptée deux fois la même année."
   ]},
   { v:"1.11.0", d:"2026-11-09", t:"Achats et licences par année", l:[
@@ -3002,10 +3024,14 @@ function paiementsLic(l, an){
       for(let d = deb, k = 0; (d < lim || k === 0) && d < fin && d <= y1 && k < 600; d = pas(d), k++) if(dans(d)) out.push({ d, m:x.m, prev:i > 0 });
     });
     if(!l.fin || exp || l.arret) break;
-    deb = fin; fin = addAns(fin, 1); premiere = false;
+    deb = debutSuivant(deb, fin); fin = addAns(fin, 1); premiere = false;
   }
   return out;
 }
+/* Début de la période suivante. Une licence du 01/01 au 31/12 repart le 01/01
+   suivant, pas le 31/12 (sinon son renouvellement tomberait dans l'année
+   qu'elle vient de payer). Une licence du 27/01 au 27/01 repart le 27/01. */
+const debutSuivant = (debut, fin) => { const j = addJ(fin, 1); return debut && j.slice(5) === debut.slice(5) ? j : fin; };
 function budgetLic(L, an){
   const auj = todayISO(); let paye = 0, avenir = 0; const parL = {};
   L.forEach(l => paiementsLic(l, an).forEach(p => { if(p.d <= auj) paye += p.m; else avenir += p.m; parL[l.id] = (parL[l.id] || 0) + p.m; }));
@@ -3020,7 +3046,7 @@ function reconduireTacites(){
     if(!l.renouvAuto || l.arret || !l.fin || l.fin >= auj) return;
     for(let i = 0; i < 20 && l.fin < auj; i++){
       l.histo = (l.histo || []).concat([{ debut:l.debut || "", fin:l.fin, cout:coutPeriode(l, coutsLic(l)), le:l.fin, auto:true }]);
-      l.debut = l.fin; l.fin = addAns(l.fin, 1);
+      l.debut = debutSuivant(l.debut, l.fin); l.fin = addAns(l.fin, 1);
     }
     l.maj = Date.now(); noms.push(l.logiciel);
   });
@@ -3121,7 +3147,7 @@ function vueAchats(){
       anneesAchats().map(y => '<option value="' + y + '"' + (anA === y ? " selected" : "") + '>' + y + '</option>').join("") +
       '<option value="tout"' + (!anA ? " selected" : "") + '>Toutes années</option></select></div>';
 
-  return h + (vue === "lic" ? blocLicences(E, anB, bud) : blocAchats(A, anA));
+  return h + blocPrevision(anB, A, Lc, bud) + (vue === "lic" ? blocLicences(E, anB, bud) : blocAchats(A, anA));
 }
 
 /* Ce qui reste à traiter (en cours, à livrer, à réceptionner, facture
@@ -3183,6 +3209,34 @@ function bandeMois(E){
   }
   return h + '</div>';
 }
+/* Prévision d'une année : les licences et contrats (à leur date de paiement),
+   les achats commandés et les achats budgétés de l'année, avec leur
+   répartition par territoire et par service. Suit les filtres affichés. */
+function blocPrevision(an, A, L, bud){
+  const AA = A.filter(a => dansAn(a.date, an));
+  const eng = AA.filter(a => !estPrevu(a)).reduce((s,a) => s + num(a.montant), 0);
+  const prev = AA.filter(estPrevu).reduce((s,a) => s + num(a.montant), 0);
+  const tot = bud.total + eng + prev, parS = {}, parV = {};
+  const add = (o, m) => { if(!m) return; const s = o.site || "", v = o.service || ""; parS[s] = (parS[s] || 0) + m; parV[v] = (parV[v] || 0) + m; };
+  L.forEach(l => add(l, bud.parL[l.id] || 0)); AA.forEach(a => add(a, num(a.montant)));
+  const ligne = (h, tag, m) => '<div class="pv-l" style="--h:' + h + '">' + tag + '<span class="pv-b"><i style="width:' + (tot ? Math.max(1, m / tot * 100) : 0) + '%"></i></span><b>' + eur(Math.round(m)) + '</b></div>';
+  const tri = o => Object.entries(o).sort((x,y) => y[1] - x[1]);
+  const lS = tri(parS).map(([k,m]) => { const s = site(k), h = s && TEINTE_SITE[s.id] != null ? TEINTE_SITE[s.id] : 210;
+    return ligne(h, '<button class="tg" data-act="a-tsite" data-id="' + esc(k) + '" title="Filtrer"><i></i>' + esc(s ? s.n : "Sans territoire") + '</button>', m); }).join("");
+  const lV = tri(parV).map(([k,m]) => ligne(k ? teinteTxt(k) : 0, k ? '<button class="tg sv" data-act="a-tserv" data-id="' + esc(k) + '" title="Filtrer">' + esc(k) + '</button>'
+    : '<button class="tg vide" data-act="a-tserv" data-id="_" title="Voir les lignes à compléter">Sans service</button>', m)).join("");
+  return '<details class="pv"' + (state.pvOuvert ? " open" : "") + ' data-pv="1"><summary><h2>Prévision ' + an + '</h2><span class="num">' + eur(Math.round(tot)) + '</span>' +
+      '<span class="cnt">licences et contrats + achats commandés + achats budgétés' + (state.aSite || state.aServ ? " · filtres appliqués" : "") + '</span><span class="ouv">Détail</span></summary>' +
+    '<div class="bud-an q4" style="margin-top:10px">' +
+      '<div><span class="l">Licences et contrats</span><b>' + eur(Math.round(bud.total)) + '</b></div>' +
+      '<div><span class="l">Achats commandés</span><b>' + eur(Math.round(eng)) + '</b></div>' +
+      '<div><span class="l">Achats budgétés</span><b>' + eur(Math.round(prev)) + '</b></div>' +
+      '<div class="tot"><span class="l">Total ' + an + '</span><b>' + eur(Math.round(tot)) + '</b></div></div>' +
+    '<div class="pv-cols"><div><h3>Par territoire</h3>' + (lS || '<div class="aide">Rien.</div>') + '</div>' +
+      '<div><h3>Par service</h3>' + (lV || '<div class="aide">Rien.</div>') + '</div></div>' +
+    '<div class="aide" style="margin-top:8px">Changez l\'année dans le sélecteur ci-dessus pour voir une autre prévision. Les licences comptent à leur date de paiement, renouvellements à venir au même prix ; celles marquées « ne sera pas renouvelée » s\'arrêtent à leur échéance.</div></details>';
+}
+document.addEventListener("toggle", e => { if(e.target && e.target.dataset && e.target.dataset.pv) state.pvOuvert = e.target.open; }, true);
 function blocBudgetLic(an, b){
   const fut = an > anCourant(), passe = an < anCourant();
   return '<div class="sect"><h2>Budget licences ' + an + '</h2><span class="cnt">compté à la date de paiement</span></div>' +
@@ -3344,8 +3398,9 @@ function renouvelerLicence(id){
   const c = {}; garder(c, "licences", l); corbeille = c;
   const cl = coutsLic(l);
   l.histo = (l.histo || []).concat([{ debut:l.debut || "", fin:l.fin, cout:coutPeriode(l, cl), le:todayISO() }]);
-  const base = l.fin < todayISO() ? todayISO() : l.fin;
-  l.debut = base; l.fin = addAns(base, 1); l.maj = Date.now();
+  if(l.fin < todayISO()){ l.debut = todayISO(); l.fin = addAns(l.debut, 1); }
+  else { l.debut = debutSuivant(l.debut, l.fin); l.fin = addAns(l.fin, 1); }
+  l.maj = Date.now();
   sauver(); render(); toast("« " + l.logiciel + " » renouvelée jusqu'au " + frDate(l.fin, true), "annuler");
 }
 function exporterAchatsCSV(){
@@ -6337,6 +6392,7 @@ document.addEventListener("click", async ev => {
   if(act === "a-lfiltre"){ state.aVue = "lic"; state.lFiltre = id; state.lMois = null; render(); return; }
   if(act === "a-mois"){ state.lMois = state.lMois === id ? null : id; render(); return; }
   if(act === "a-tsite"){ state.aSite = state.aSite === id ? "" : id; render(); return; }
+  if(act === "a-tserv"){ state.aServ = state.aServ === id ? "" : id; render(); return; }
   if(act === "a-service"){
     const k = el.dataset.k, o = DB[k] && DB[k][id]; if(!o) return;
     return ouvrirModal({ type:"service", k, oid:id, service:o.service || "", nom:o.logiciel || o.objet || "" });

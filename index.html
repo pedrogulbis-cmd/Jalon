@@ -78,7 +78,8 @@ header.top{position:sticky;top:0;z-index:30;background:var(--voile);
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--voile);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border-top:1px solid var(--trait);padding-bottom:env(safe-area-inset-bottom)}
-.tabs-in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(8,1fr)}
+.tabs-in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(var(--nt,8),1fr)}
+.tab.drag{opacity:.4} .tab.cible{box-shadow:inset 0 2px 0 var(--acc);background:var(--accF)}
 .tab{padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:3px;
   color:var(--gris);font-size:9.5px;letter-spacing:-.01em;border-top:2px solid transparent;margin-top:-1px}
 .tab span{white-space:nowrap}
@@ -376,6 +377,15 @@ textarea.note-r{width:100%;min-height:46px;resize:vertical;font-size:14.5px;line
 .grp-a{display:flex;align-items:center;gap:8px;padding:12px 2px 2px;font-size:13.5px}
 .grp-a .cnt{font-size:12px;color:var(--gris2)} .grp-a .sp{flex:1}
 .grp-a .lien{font-size:12.5px;color:var(--acc);display:inline-flex;align-items:center;gap:4px}
+.lien-n{font-weight:600;font-size:13.5px;text-align:left}
+.lien-n:hover{color:var(--acc);text-decoration:underline}
+.grp-a.lien-r{width:100%;text-align:left;border-bottom:1px solid var(--trait2);padding:14px 2px 6px;color:var(--texte)}
+.grp-a.lien-r svg{color:var(--gris)} .grp-a.lien-r:hover .cnt{color:var(--acc)}
+mark{background:var(--attF);color:inherit;border-radius:3px;padding:0 1px;font-weight:600}
+.fil-r{font-size:11.5px;color:var(--gris2);text-transform:uppercase;letter-spacing:.04em;margin:9px 0 3px 22px}
+.fil-l{font-size:14px;line-height:1.5;margin:0 0 3px 22px;padding-left:10px;border-left:2px solid var(--trait2)}
+.fil-l.act{border-left-color:var(--att)}
+.fil-l .badge{vertical-align:1px}
 .print-only{display:none}
 @media print{ .print-only{display:block} }
 .lig-cout{display:grid;grid-template-columns:minmax(0,1fr) 110px 120px 34px;gap:6px;align-items:center;margin-bottom:6px}
@@ -581,7 +591,7 @@ html[data-theme="sombre"] .chk.on .chk-b{color:#0d0d10}
 .champ>label,.champ>.lab{display:block;font-size:12.5px;color:var(--gris);margin-bottom:5px}
 .duo{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
 .duo .champ{min-width:0}
-input[type=text],input[type=email],input[type=date],input[type=number],input[type=search],select,textarea{
+input[type=text],input[type=email],input[type=date],input[type=time],input[type=number],input[type=search],select,textarea{
   width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--trait);
   background:var(--carte);color:var(--texte);font-size:15px;-webkit-appearance:none;appearance:none;min-width:0}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.5 6 8.5l4-4' fill='none' stroke='%2371717a' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
@@ -712,9 +722,17 @@ input[type=range]{width:100%;accent-color:var(--acc)}
    Un seul fichier, aucune dépendance, stockage local (IndexedDB).
    Reprend l'ossature d'Ardoise : même encre, mêmes gestes.
    ============================================================ */
-const VERSION = "1.9.0";
+const VERSION = "1.10.0";
 const SCHEMA  = 1;
 const JOURNAL = [
+  { v:"1.10.0", d:"2026-11-09", t:"Réunions : rythme, recherche, 1:1", l:[
+    "Rythme des points (par exemple mardi et jeudi à 9h30, N+1 une semaine sur deux) : le prochain point est annoncé sur le tableau de bord la veille et le jour même.",
+    "« Préparer » ouvre le point avec les notes du précédent reprises ; l'ordre du jour part par mail d'un geste. Un fichier d'agenda (.ics) crée le rendez-vous récurrent avec un rappel dans Outlook ou Google Agenda.",
+    "Recherche dans toutes les notes et les actions, sans souci d'accents : chaque ligne trouvée dit de quel point, de quelle rubrique et de qui elle vient.",
+    "Une action devient d'un clic une tâche de projet ou une demande d'achat ; le lien reste visible et l'état suit.",
+    "Vue 1:1 par collaborateur : ses actions, ses projets et le fil de tout ce qui a été noté sur lui, point après point ; entretiens 1:1 avec leurs propres rubriques.",
+    "Les onglets se réordonnent en les glissant dans la barre, ou dans les réglages, où l'on peut aussi masquer ceux qui ne servent pas."
+  ]},
   { v:"1.9.0", d:"2026-11-09", t:"Réunions", l:[
     "Nouvel onglet Réunions : le carnet des points d'équipe et des points avec son N+1, à la place de OneNote.",
     "Point d'équipe pris par rubrique (tickets, projets, global, commandes) et par personne ; point N+1 avec un fil proposé (faits marquants, projets, budget, équipe, décisions). Rubriques modifiables et mémorisables.",
@@ -1308,6 +1326,21 @@ const TABS = [
   { id:"reunions", l:"Réunions", i:"bulle" },
   { id:"achats",   l:"Achats",   i:"panier" }
 ];
+/* Ordre et choix des onglets, propres à chacun : on glisse un onglet sur un
+   autre dans la barre, ou on règle l'ordre dans les réglages. Un onglet
+   ajouté par une nouvelle version prend sa place par défaut. */
+function ongletsOrdonnes(tous){
+  const o = (DB.settings.ordreOnglets || []).filter(id => TABS.some(t => t.id === id));
+  TABS.forEach((t, i) => { if(!o.includes(t.id)){ const av = TABS.slice(0, i).reverse().find(x => o.includes(x.id)); o.splice(av ? o.indexOf(av.id) + 1 : 0, 0, t.id); } });
+  const masques = DB.settings.ongletsMasques || [];
+  return o.map(id => TABS.find(t => t.id === id)).filter(t => tous || !masques.includes(t.id) || state.tab === t.id);
+}
+function deplacerOnglet(id, cible, apres){
+  const o = ongletsOrdonnes(true).map(t => t.id).filter(x => x !== id);
+  let i = o.indexOf(cible); if(i < 0) return;
+  o.splice(apres ? i + 1 : i, 0, id);
+  DB.settings.ordreOnglets = o; sauver(true); render();
+}
 const state = { tab:"bord", sheet:null, modal:null, q:"", journal:false, neuf:false,
                 gDecal:0, gOuverts:new Set(), rCell:null, rFermes:false, alertesTout:false, ptab:"synthese" };
 
@@ -1342,9 +1375,11 @@ function render(){
 function dessiner(){
   _an = new Map();
   suivreMeteos();
-  $("#tabs").innerHTML = TABS.map(t =>
-    '<button class="tab ' + (state.tab === t.id ? "on" : "") + '" data-act="tab" data-id="' + t.id + '">' +
+  const OT = ongletsOrdonnes();
+  $("#tabs").innerHTML = OT.map(t =>
+    '<button class="tab ' + (state.tab === t.id ? "on" : "") + '" data-act="tab" data-id="' + t.id + '" draggable="true" data-onglet="' + t.id + '" title="Glisser pour réordonner">' +
     svg(t.i, 20) + '<span>' + t.l + '</span></button>').join("");
+  $("#tabs").style.setProperty("--nt", OT.length);
 
   $("#brand").innerHTML = icoSVG(22) + '<span>Jalon</span>';
   const chip = $("#ver-chip");
@@ -1379,6 +1414,7 @@ function dessiner(){
   if(s && s.t === "projet" && !DB.projets[s.id]) state.sheet = null;
   if(s && s.t === "personne" && !DB.personnes[s.id]) state.sheet = null;
   if(s && s.t === "reunion" && !DB.reunions[s.id]) state.sheet = null;
+  if(s && s.t === "unaun" && !DB.personnes[s.id]) state.sheet = null;
   // Un panneau ou une fenêtre déjà ouverts ne rejouent pas leur animation
   // d'entrée à chaque redessin : sans quoi chaque clic ressemble à un
   // rechargement de la page.
@@ -1387,6 +1423,7 @@ function dessiner(){
     state.sheet.t === "projet" ? vueFiche(DB.projets[state.sheet.id]) :
     state.sheet.t === "personne" ? vuePersonne(DB.personnes[state.sheet.id]) :
     state.sheet.t === "reunion" ? vueReunion(DB.reunions[state.sheet.id]) :
+    state.sheet.t === "unaun" ? vueUnAUn(DB.personnes[state.sheet.id]) :
     state.sheet.t === "revue" ? vueRevue() : vueRapport();
   if(cle && cle === _cleSheet) hs = hs.replace('<div class="sheet', '<div class="sheet fixe');
   _cleSheet = cle;
@@ -1610,7 +1647,7 @@ function vueBord(){
       '<button class="btn pri" data-act="revue">' + svg("revue", 16) + 'Point hebdo</button>' +
       '<button class="btn" data-act="rapport">' + svg("imprimer", 16) + 'Rapport</button>' +
       '<button class="btn" data-act="mail-synthese">' + svg("mail", 16) + 'Mail</button></div></div>' +
-    '</section>' + rappelSauvegarde() + barreFiltres();
+    '</section>' + rappelSauvegarde() + rappelPoint() + barreFiltres();
 
   const f = DB.settings.f;
   h += carteMeteo(act) + carteMesActions();
@@ -2261,9 +2298,102 @@ function vueRisques(){
 const FORMATS_REU = {
   equipe:{ nom:"Point d'équipe", court:"Équipe", rubriques:["Tickets","Point projets","Point global","Point commandes"], parPersonne:true },
   n1:{ nom:"Point avec mon N+1", court:"N+1", rubriques:["Faits marquants","Projets : météo et arbitrages","Budget, achats et licences","Équipe : charge, absences, RH","Décisions attendues","Divers"], parPersonne:false },
+  unaun:{ nom:"Entretien 1:1", court:"1:1", rubriques:["Ses sujets","Mes sujets","Projets et charge","Objectifs, formation, ressenti","Divers"], parPersonne:false },
   autre:{ nom:"Réunion", court:"Autre", rubriques:["Points abordés","Décisions"], parPersonne:false }
 };
-const TYPES_REU = [["equipe","Point d'équipe"],["n1","Point N+1"],["autre","Autre"]];
+const TYPES_REU = [["equipe","Point d'équipe"],["n1","Point N+1"],["unaun","1:1"],["autre","Autre"]];
+/* Le point précédent du même genre (pour un 1:1 : avec la même personne). */
+function precedent(r){
+  return reunionsTriees().find(x => x.type === r.type && x.id !== r.id && (x.date || "") <= (r.date || todayISO()) &&
+    (r.type !== "unaun" || (x.participants || [])[0] === (r.participants || [])[0]));
+}
+/* Recopie les notes du point précédent, sans les actions (suivies à part). */
+function reprendrePoints(r){
+  const prec = precedent(r); if(!prec) return 0;
+  let n = 0;
+  (prec.rubriques || []).forEach(pr => {
+    let rb2 = r.rubriques.find(x => norm(x.t) === norm(pr.t));
+    if(!rb2){ rb2 = { id:uid(), t:pr.t, notes:{} }; r.rubriques.push(rb2); }
+    Object.keys(pr.notes || {}).forEach(k => {
+      const L = lignesNote(pr.notes[k]).filter(l => !RE_ACTION.test(l));
+      if(L.length && !String(rb2.notes[k] || "").trim()){ rb2.notes[k] = L.join("\n"); n += L.length; }
+    });
+  });
+  (prec.participants || []).forEach(id => { if(DB.personnes[id] && !r.participants.includes(id)) r.participants.push(id); });
+  r.maj = Date.now();
+  return n;
+}
+
+/* ---------- rythme des points : prochain rendez-vous et rappel ----------
+   On règle une fois ses jours (mardi et jeudi…) et son heure. Jalon annonce
+   le prochain point, le prépare d'un geste (notes du précédent reprises,
+   ordre du jour prêt) et fournit un fichier d'agenda récurrent avec rappel
+   pour Outlook ou Google Agenda. */
+const JOURS = [["1","Lun"],["2","Mar"],["3","Mer"],["4","Jeu"],["5","Ven"]];
+const JOURS_LONG = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+const ICS_J = ["SU","MO","TU","WE","TH","FR","SA"];
+function planDe(type){
+  const p = (DB.settings.planReu || {})[type] || {};
+  return { jours:(p.jours || []).map(String), heure:p.heure || (type === "n1" ? "14:00" : "09:30"), duree:num(p.duree) || 60, freq:num(p.freq) || 1, depuis:p.depuis || todayISO() };
+}
+const lundiDe = iso => { const d = dateDe(iso); return addJ(iso, -((d.getDay() + 6) % 7)); };
+function prochainPoint(type){
+  const p = planDe(type); if(!p.jours.length) return null;
+  const auj = todayISO();
+  for(let i = 0; i < 28; i++){
+    const d = addJ(auj, i), j = String(dateDe(d).getDay());
+    if(!p.jours.includes(j)) continue;
+    if(p.freq > 1 && Math.round(diffJ(lundiDe(p.depuis), lundiDe(d)) / 7) % p.freq) continue;
+    return { type, date:d, heure:p.heure, dans:i };
+  }
+  return null;
+}
+function libProchain(x){
+  const j = x.dans === 0 ? "aujourd'hui" : x.dans === 1 ? "demain" : JOURS_LONG[dateDe(x.date).getDay()] + " " + frDate(x.date);
+  return j + " à " + x.heure.replace(":", "h");
+}
+function preparerPoint(type, odj){
+  const x = prochainPoint(type), date = x ? x.date : todayISO();
+  let r = V(DB.reunions).find(z => z.type === type && z.date === date);
+  if(!r){ r = creerReunion(type, { date }); reprendrePoints(r); syncActions(r); }
+  state.sheet = { t:"reunion", id:r.id }; sauver(); render();
+  if(odj) ouvrirModal(mMail("reu-odj", { reu:r.id }));
+  return r;
+}
+function icsPoint(type){
+  const p = planDe(type), x = prochainPoint(type); if(!x) return;
+  const f = FORMATS_REU[type], st = x.date.replace(/-/g, "") + "T" + p.heure.replace(":", "") + "00";
+  const now = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+  const echap = s => String(s).replace(/[\\;,]/g, m => "\\" + m).replace(/\n/g, "\\n");
+  const ics = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Jalon//Points//FR","CALSCALE:GREGORIAN","BEGIN:VEVENT",
+    "UID:jalon-" + type + "-" + uid() + "@jalon", "DTSTAMP:" + now, "DTSTART:" + st, "DURATION:PT" + p.duree + "M",
+    "RRULE:FREQ=WEEKLY;INTERVAL=" + p.freq + ";BYDAY=" + p.jours.map(j => ICS_J[Number(j)]).join(","),
+    "SUMMARY:" + echap(f.nom), "DESCRIPTION:" + echap("Ordre du jour : " + rubriquesDe(type).join(", ") + ".\nPréparer le point dans Jalon, onglet Réunions."),
+    "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:" + echap(f.nom),"TRIGGER:-PT15M","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");
+  telecharger(norm(f.nom).replace(/[^a-z0-9]+/g, "-") + ".ics", new Blob([ics], { type:"text/calendar;charset=utf-8" }));
+  toast("Ouvrez le fichier : le rendez-vous récurrent s'ajoute à votre agenda, avec un rappel 15 min avant");
+}
+function panneauProchains(){
+  const L = ["equipe","n1"].map(t => ({ t, x:prochainPoint(t) }));
+  return '<div class="pan"><div class="sect"><h2>Prochains points</h2><span class="sp"></span><button class="lien" data-act="plan-reu">Régler le rythme</button></div>' +
+    L.map(({ t, x }) => '<div class="ln" style="align-items:center">' +
+      '<span class="ln-ic ' + (x && x.dans <= 1 ? "acc" : "") + '">' + svg("cal", 15, 2) + '</span>' +
+      '<span class="ln-mid"><span class="ln-t">' + esc(FORMATS_REU[t].nom) + '</span><span class="ln-m">' +
+        esc(x ? libProchain(x) + (planDe(t).freq > 1 ? " · toutes les " + planDe(t).freq + " semaines" : "") : "pas de rythme réglé") + '</span></span>' +
+      (x ? '<button class="btn pt" data-act="preparer-point" data-id="' + t + '">Préparer</button><button class="btn pt" data-act="odj-point" data-id="' + t + '" title="Préparer et envoyer l\'ordre du jour">' + svg("mail", 14) + '</button>'
+         : '<button class="btn pt" data-act="plan-reu">Régler</button>') + '</div>').join("") + '</div>';
+}
+/* Bandeau du tableau de bord, le jour même et la veille. */
+function rappelPoint(){
+  const x = ["equipe","n1"].map(prochainPoint).filter(z => z && z.dans <= 1).sort((a,b) => a.dans - b.dans)[0];
+  if(!x) return "";
+  const deja = V(DB.reunions).some(r => r.type === x.type && r.date === x.date);
+  const n = V(DB.suivis).filter(a => !a.fait).length;
+  return '<div class="rappel noprint" style="background:var(--accF);color:var(--texte)">' + svg("cal", 18) +
+    '<span style="flex:1"><b>' + esc(FORMATS_REU[x.type].nom) + ' ' + esc(libProchain(x)) + '</b>' + (n ? " · " + n + " action" + pl(n) + " à suivre" : "") + '</span>' +
+    '<button class="btn pt pri" data-act="preparer-point" data-id="' + x.type + '">' + (deja ? "Ouvrir les notes" : "Préparer") + '</button>' +
+    (deja ? "" : '<button class="btn pt" data-act="odj-point" data-id="' + x.type + '">Ordre du jour</button>') + '</div>';
+}
 const rubriquesDe = type => ((DB.settings.rubriquesReu || {})[type] || FORMATS_REU[type].rubriques).slice();
 const reunionsTriees = () => V(DB.reunions).sort((a,b) => cmp(b.date || "", a.date || "") || (b.cree || 0) - (a.cree || 0));
 const titreReu = r => (r.titre || FORMATS_REU[r.type || "autre"].nom) + " du " + frDate(r.date, true);
@@ -2330,6 +2460,7 @@ function ligneSuivi(a, o){
     '<button class="ln-mid" style="text-align:left" data-act="modifier-suivi" data-id="' + a.id + '">' +
       '<span class="ln-t">' + esc(a.texte) + '</span>' +
       '<span class="ln-m">' + esc([o.sansResp ? "" : nomP(a.resp) || "sans responsable", origineAction(a, o.ici), a.fait && a.faitLe ? "fait le " + frDate(a.faitLe) : a.echeance ? "échéance " + relJ(a.echeance) : ""].filter(Boolean).join(" · ")) + '</span>' +
+      (liensSuivi(a).length ? '<span class="ln-n" style="color:var(--acc)">→ ' + esc(liensSuivi(a).join(" · ")) + '</span>' : "") +
     '</button>' +
     (ret ? '<span class="ln-r c-dang">retard ' + diffJ(a.echeance, todayISO()) + ' j</span>' : "") + '</div>';
 }
@@ -2368,6 +2499,8 @@ function vueReunions(){
     tuile({ l:"Faites sur 7 jours", ic:"check", v:String(faites7.length), cls:faites7.length ? "c-ok" : "", s:"cochées cette semaine" }) +
     tuile({ l:"Réunions ce mois", ic:"bulle", v:String(ceMois.length), s:ceMois.filter(r => r.type === "equipe").length + " d'équipe · " + ceMois.filter(r => r.type === "n1").length + " N+1" }) +
     '</div>';
+  h += '<div class="a-outils noprint"><input type="search" id="qr" placeholder="Rechercher dans toutes les notes : Meraki, Adobe, fibre…" value="' + esc(state.qr || "") + '" autocomplete="off"></div>';
+  if(norm(state.qr).length >= 2) return h + resultatsRecherche(state.qr);
 
   // actions à suivre, par personne
   const vueA = state.rVueA || "ouvertes";
@@ -2378,7 +2511,8 @@ function vueReunions(){
     '<button class="chip ' + (vueA === "faites" ? "on" : "") + '" data-act="r-vuea" data-id="faites">Faites récemment</button></div>';
   if(!LA.length) g += '<div class="vide petit">' + (vueA === "faites" ? "Rien de coché pour l'instant." : "Aucune action ouverte. Dans vos notes, une ligne qui commence par → en crée une.") + '</div>';
   else groupesActions(LA, DB.settings.equipeReu).forEach(([id, l]) => {
-    g += '<div class="grp-a"><span class="ava" style="width:24px;height:24px;flex-basis:24px;font-size:10px">' + esc(id ? initiales(nomP(id)) : "?") + '</span><b>' + esc(id ? nomP(id) : "Sans responsable") + '</b>' +
+    g += '<div class="grp-a"><span class="ava" style="width:24px;height:24px;flex-basis:24px;font-size:10px">' + esc(id ? initiales(nomP(id)) : "?") + '</span>' +
+      (id ? '<button class="lien-n" data-act="ouvrir-unaun" data-id="' + id + '" title="Vue 1:1 : tout ce qui a été noté">' + esc(nomP(id)) + '</button>' : '<b>Sans responsable</b>') +
       '<span class="cnt">' + l.length + (l.filter(actionRetard).length ? ' · <span class="c-dang">' + l.filter(actionRetard).length + ' en retard</span>' : "") + '</span><span class="sp"></span>' +
       (id && vueA === "ouvertes" ? '<button class="lien" data-act="mail-actions-reu" data-id="' + id + '">' + svg("mail", 13) + ' Relancer</button>' : "") + '</div>' +
       l.map(a => ligneSuivi(a, { sansResp:true })).join("");
@@ -2388,7 +2522,7 @@ function vueReunions(){
   // historique
   const f = state.rType || "";
   const LR = R.filter(r => !f || r.type === f);
-  let d = '<div class="pan"><div class="sect"><h2>Historique</h2><span class="cnt">' + LR.length + '</span></div>' +
+  let d = panneauProchains() + '<div class="pan"><div class="sect"><h2>Historique</h2><span class="cnt">' + LR.length + '</span></div>' +
     '<div class="chips" style="margin:0 0 4px"><button class="chip ' + (!f ? "on" : "") + '" data-act="r-ftype" data-id="">Toutes</button>' +
     TYPES_REU.map(([k,l]) => '<button class="chip ' + (f === k ? "on" : "") + '" data-act="r-ftype" data-id="' + k + '">' + l + '<span class="n">' + R.filter(r => r.type === k).length + '</span></button>').join("") + '</div>' +
     (LR.length ? LR.slice(0, 60).map(r => {
@@ -2402,6 +2536,101 @@ function vueReunions(){
         '<span class="ln-r">' + A.length + ' action' + pl(A.length) + (ao ? '<span class="s">' + ao + ' ouverte' + pl(ao) + '</span>' : "") + '</span></button>';
     }).join("") : '<div class="vide petit">Aucune réunion de ce type.</div>') + '</div>';
   return h + '<div class="dgrid"><div>' + g + '</div><div>' + d + '</div></div>';
+}
+
+/* ---------- vue 1:1 ----------
+   Tout ce qui a été noté sur une personne, point après point : son bloc dans
+   les points d'équipe, les lignes ailleurs qui la citent (prénom ou @), ses
+   entretiens 1:1, ses actions et ses projets. De quoi préparer un entretien
+   individuel ou un bilan annuel. */
+function notesSur(pid){
+  const pe = DB.personnes[pid]; if(!pe) return [];
+  const pr = norm(prenom(pe.nom)), re = new RegExp("(^|[^a-z0-9])@?" + pr.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "([^a-z0-9]|$)");
+  const out = [];
+  reunionsTriees().forEach(r => {
+    const L = [];
+    (r.rubriques || []).forEach(rb => Object.keys(rb.notes || {}).forEach(k => {
+      const lignes = lignesNote(rb.notes[k]);
+      if(k === pid || (r.type === "unaun" && (r.participants || [])[0] === pid && k === "_")) lignes.forEach(l => L.push({ rb, l:l.trim(), m:false }));
+      else if(pr.length >= 3) lignes.forEach(l => { if(re.test(norm(l))) L.push({ rb, l:l.trim(), m:true, de:k === "_" ? "" : nomP(k) }); });
+    }));
+    if(L.length) out.push({ r, L });
+  });
+  return out;
+}
+function vueUnAUn(pe){
+  const auj = todayISO(), N = notesSur(pe.id);
+  const A = V(DB.suivis).filter(a => a.resp === pe.id);
+  const ouv = A.filter(a => !a.fait).sort(triActions), ret = ouv.filter(actionRetard), f30 = A.filter(a => a.fait && a.faitLe && diffJ(a.faitLe, auj) <= 30);
+  const P = V(DB.projets).filter(p => actif(p) && (p.chef === pe.id || (p.equipe || []).includes(pe.id)));
+  const derUn = reunionsTriees().find(r => r.type === "unaun" && (r.participants || [])[0] === pe.id);
+  let h = '<div class="sheet"><div class="sheet-top"><button class="iconbtn" data-act="fermer-sheet" aria-label="Retour">' + svg("fleche",18) + '</button>' +
+    '<span class="t">1:1 · ' + esc(pe.nom) + '</span><span class="sp"></span>' +
+    '<button class="btn pt pri" data-act="nouveau-unaun" data-id="' + pe.id + '">' + svg("plus",15,2) + 'Entretien 1:1</button>' +
+    (ouv.length ? '<button class="btn pt" data-act="mail-actions-reu" data-id="' + pe.id + '">' + svg("mail",15) + 'Relancer</button>' : "") +
+    '<button class="iconbtn" data-act="ouvrir-personne" data-id="' + pe.id + '" title="Fiche" aria-label="Fiche">' + svg("perso",17) + '</button></div><div class="sheet-in">';
+  h += '<div class="fiche-h" style="display:flex;gap:14px;align-items:center"><span class="ava" style="width:54px;height:54px;flex-basis:54px;font-size:18px">' + esc(initiales(pe.nom)) + '</span>' +
+    '<div><h1>' + esc(pe.nom) + '</h1><div class="meta">' + esc([pe.role, pe.service, derUn ? "dernier 1:1 le " + frDate(derUn.date, true) : "pas encore d'entretien 1:1"].filter(Boolean).join(" · ")) + '</div></div></div>';
+  h += '<div class="kpis">' +
+    tuile({ l:"Actions ouvertes", ic:"revue", v:String(ouv.length), s:ret.length ? ret.length + " en retard" : "aucune en retard", cls:ret.length ? "c-dang" : "" }) +
+    tuile({ l:"Faites sur 30 jours", ic:"check", v:String(f30.length), cls:f30.length ? "c-ok" : "", s:A.length + " au total" }) +
+    tuile({ l:"Points où il en est question", ic:"bulle", v:String(N.length), s:N.reduce((s,x) => s + x.L.length, 0) + " lignes de notes" }) +
+    tuile({ l:"Projets", ic:"dossier", v:String(P.length), s:P.filter(p => p.chef === pe.id).length + " en chef de projet" }) + '</div>';
+  if(ouv.length || f30.length) h += '<div class="sect"><h2>Actions</h2><span class="cnt">' + ouv.length + ' ouverte' + pl(ouv.length) + '</span></div>' +
+    ouv.concat(f30.sort((a,b) => cmp(b.faitLe, a.faitLe))).map(a => ligneSuivi(a, { sansResp:true })).join("");
+  if(P.length) h += '<div class="sect"><h2>Ses projets</h2><span class="cnt">' + P.length + '</span></div>' + trierProjets(P, "meteo").map(lignePortefeuille).join("");
+  h += '<div class="sect"><h2>Fil des notes</h2><span class="cnt">' + N.length + ' point' + pl(N.length) + '</span></div>';
+  if(!N.length) h += '<div class="vide petit">Rien de noté sur ' + esc(prenom(pe.nom)) + ' pour l\'instant. Ajoutez-le aux participants d\'un point d\'équipe, ou démarrez un entretien 1:1.</div>';
+  N.forEach(({ r, L }) => {
+    h += '<button class="grp-a lien-r" data-act="ouvrir-reunion" data-id="' + r.id + '">' + svg(r.type === "n1" ? "perso" : r.type === "equipe" ? "equipe" : "bulle", 14) +
+      '<b>' + esc(titreReu(r)) + '</b><span class="sp"></span><span class="cnt">ouvrir</span></button>';
+    let rb0 = null;
+    L.forEach(x => {
+      if(x.rb !== rb0){ rb0 = x.rb; h += '<div class="fil-r">' + esc(x.rb.t) + '</div>'; }
+      h += '<div class="fil-l' + (RE_ACTION.test(x.l) ? " act" : "") + '">' + esc(x.l) + (x.m ? '<span class="badge">' + esc(x.de ? "chez " + prenom(x.de) : "cité") + '</span>' : "") + '</div>';
+    });
+  });
+  return h + '</div></div>';
+}
+
+/* ---------- recherche dans toutes les notes ----------
+   Sans accents ni majuscules : « meraki » trouve « Méraki ». Chaque ligne
+   trouvée dit d'où elle vient (point, date, rubrique, personne). */
+function surligner(txt, q){
+  const nt = s => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const n = nt(txt), i = n.indexOf(q);
+  if(i < 0 || n.length !== txt.length) return esc(txt);
+  return esc(txt.slice(0, i)) + '<mark>' + esc(txt.slice(i, i + q.length)) + '</mark>' + esc(txt.slice(i + q.length));
+}
+function rechercheNotes(q){
+  const nq = norm(q), out = [];
+  reunionsTriees().forEach(r => (r.rubriques || []).forEach(rb => Object.keys(rb.notes || {}).forEach(k => {
+    if(k !== "_" && !DB.personnes[k]) return;
+    lignesNote(rb.notes[k]).forEach(l => { if(norm(l).includes(nq)) out.push({ r, rb, k, l:l.trim() }); });
+  })));
+  const A = V(DB.suivis).filter(a => norm(a.texte).includes(nq)).sort(triActions);
+  return { lignes:out, actions:A };
+}
+function resultatsRecherche(q){
+  const nq = norm(q), x = rechercheNotes(q);
+  const pe = V(DB.personnes).find(p => norm(prenom(p.nom)) === nq || norm(p.nom) === nq);
+  let h = (pe ? '<div class="rappel" style="background:var(--accF);color:var(--texte)">' + svg("perso", 18) + '<span style="flex:1">Tout ce qui concerne <b>' + esc(pe.nom) + '</b> est réuni dans sa vue 1:1.</span>' +
+    '<button class="btn pt pri" data-act="ouvrir-unaun" data-id="' + pe.id + '">Vue 1:1</button></div>' : "");
+  h += '<div class="pan"><div class="sect"><h2>Dans les notes</h2><span class="cnt">' + x.lignes.length + ' ligne' + pl(x.lignes.length) + '</span><span class="sp"></span>' +
+    '<button class="lien" data-act="r-effacer-q">Effacer la recherche</button></div>';
+  if(!x.lignes.length && !x.actions.length) return h + '<div class="vide petit">Rien trouvé pour « ' + esc(q) + ' ».</div></div>';
+  let der = "";
+  x.lignes.slice(0, 150).forEach(z => {
+    if(z.r.id !== der){ der = z.r.id;
+      h += '<button class="grp-a lien-r" data-act="ouvrir-reunion" data-id="' + z.r.id + '">' + svg(z.r.type === "n1" ? "perso" : z.r.type === "equipe" ? "equipe" : "bulle", 14) +
+        '<b>' + esc(titreReu(z.r)) + '</b><span class="sp"></span><span class="cnt">ouvrir</span></button>'; }
+    h += '<button class="ln" style="padding:7px 2px 7px 22px" data-act="ouvrir-reunion" data-id="' + z.r.id + '"><span class="ln-mid">' +
+      '<span class="ln-t" style="white-space:normal">' + surligner(z.l, nq) + '</span>' +
+      '<span class="ln-m">' + esc([z.rb.t, z.k === "_" ? "" : nomP(z.k)].filter(Boolean).join(" · ")) + '</span></span></button>';
+  });
+  h += '</div>';
+  if(x.actions.length) h += '<div class="pan"><div class="sect"><h2>Dans les actions</h2><span class="cnt">' + x.actions.length + '</span></div>' + x.actions.map(a => ligneSuivi(a)).join("") + '</div>';
+  return h;
 }
 
 /* Petits coups de main par rubrique : ce que Jalon sait déjà et qu'on peut
@@ -2449,7 +2678,7 @@ function astuce(r, rb, k){
 function vueReunion(r){
   const f = FORMATS_REU[r.type] || FORMATS_REU.autre, auj = todayISO();
   const P = (r.participants || []).filter(id => DB.personnes[id]);
-  const prec = reunionsTriees().find(x => x.type === r.type && x.id !== r.id && (x.date || "") <= (r.date || auj));
+  const prec = precedent(r);
   const vide0 = (r.rubriques || []).every(rb => Object.values(rb.notes || {}).every(t => !String(t || "").trim()));
   let h = '<div class="sheet"><div class="sheet-top"><button class="iconbtn" data-act="fermer-sheet" aria-label="Retour">' + svg("fleche",18) + '</button>' +
     '<span class="t">' + esc(titreReu(r)) + '</span><span class="sp"></span>' +
@@ -2493,7 +2722,8 @@ function vueReunion(r){
       '<button class="iconbtn" data-act="r-rub-del" data-id="' + rb.id + '" title="Retirer la rubrique" aria-label="Retirer la rubrique">' + svg("croix", 14) + '</button></div>' +
       bloc("_", r.parPersonne && P.length ? "Général" : "") +
       (r.parPersonne ? P.map(id => bloc(id, '<span class="ava" style="width:20px;height:20px;flex-basis:20px;font-size:9px">' + esc(initiales(nomP(id))) + '</span>' + esc(nomP(id)) +
-        (() => { const n = V(DB.suivis).filter(a => !a.fait && a.resp === id).length; return n ? '<span class="badge">' + n + ' action' + pl(n) + '</span>' : ""; })())).join("") : "") +
+        (() => { const n = V(DB.suivis).filter(a => !a.fait && a.resp === id).length; return n ? '<span class="badge">' + n + ' action' + pl(n) + '</span>' : ""; })() +
+        '<button type="button" class="lien noprint" style="font-size:11.5px;font-weight:400;color:var(--acc);margin-left:auto" data-act="ouvrir-unaun" data-id="' + id + '">vue 1:1</button>')).join("") : "") +
       '</div>';
   });
   h += '<div class="champ" style="display:flex;gap:8px;flex-wrap:wrap"><input type="text" id="r-newrub" placeholder="Nouvelle rubrique (Sécurité, Astreintes…)" autocomplete="off" style="flex:1;min-width:180px">' +
@@ -2507,8 +2737,10 @@ function vueReunion(r){
   return h + '</div></div>';
 }
 function panneauSuivi(r){
-  const L = V(DB.suivis).filter(a => a.reunion === r.id || (!a.fait && (!a.reunion || (DB.reunions[a.reunion] && DB.reunions[a.reunion].type === r.type))) ||
-    (a.fait && a.faitLe && a.faitLe >= (r.date || "") && DB.reunions[a.reunion] && DB.reunions[a.reunion].type === r.type)).sort(triActions);
+  const un = r.type === "unaun" ? (r.participants || [])[0] : null;
+  const L = V(DB.suivis).filter(a => a.reunion === r.id || (un ? a.resp === un && (!a.fait || (a.faitLe && a.faitLe >= (r.date || ""))) :
+    (!a.fait && (!a.reunion || (DB.reunions[a.reunion] && DB.reunions[a.reunion].type === r.type))) ||
+    (a.fait && a.faitLe && a.faitLe >= (r.date || "") && DB.reunions[a.reunion] && DB.reunions[a.reunion].type === r.type))).sort(triActions);
   if(!L.length) return "";
   const ouv = L.filter(a => !a.fait).length;
   return '<div class="pan" style="margin-top:12px"><div class="sect" style="margin-top:6px"><h2>À suivre</h2><span class="cnt">' + ouv + ' ouverte' + pl(ouv) +
@@ -2580,15 +2812,26 @@ function mSuivi(a, reu){
   const r = DB.reunions[reu];
   return { type:"suivi", texte:"", resp:"", echeance:addJ(todayISO(), 7), fait:false, reunion:r ? r.id : "", focus:"m-texte" };
 }
+function appliquerSuivi(m){
+  const neuf = !m.id || !DB.suivis[m.id], a = neuf ? { id:m.id || uid(), reunion:m.reunion || "", cle:"manuel|" + uid(), rub:"", cree:Date.now() } : DB.suivis[m.id];
+  const fait = !!m.fait;
+  Object.assign(a, { texte:(m.texte || "").trim(), resp:m.resp || "", echeance:m.echeance || "", fait, faitLe:fait ? (a.faitLe || todayISO()) : "", manuel:true,
+    projet:m.projet || a.projet || "" });
+  DB.suivis[a.id] = a; m.id = a.id;
+  return a;
+}
 function enregistrerSuivi(){
   capturerModal();
-  const m = state.modal, texte = (m.texte || "").trim();
-  if(!texte){ toast("Décrivez l'action"); return; }
-  const neuf = !m.id, a = neuf ? { id:uid(), reunion:m.reunion || "", cle:"manuel|" + uid(), rub:"", cree:Date.now() } : DB.suivis[m.id];
-  if(!a) return fermerModal();
-  const fait = !!m.fait;
-  Object.assign(a, { texte, resp:m.resp || "", echeance:m.echeance || "", fait, faitLe:fait ? (a.faitLe || todayISO()) : "", manuel:true });
-  DB.suivis[a.id] = a; state.modal = null; sauver(); render(); toast(neuf ? "Action ajoutée" : "Action mise à jour");
+  const m = state.modal, neuf = !m.id;
+  if(!(m.texte || "").trim()){ toast("Décrivez l'action"); return; }
+  appliquerSuivi(m); state.modal = null; sauver(); render(); toast(neuf ? "Action ajoutée" : "Action mise à jour");
+}
+/* Ce qu'une action est devenue : tâche d'un projet, demande d'achat. */
+function liensSuivi(a){
+  const t = DB.taches[a.tache], d = DB.achats[a.achat], out = [];
+  if(t) out.push("tâche « " + nomProjet(t.projet) + " » " + lib(STATUTS_T, t.statut).toLowerCase());
+  if(d) out.push("DA " + (d.numDA || d.objet) + " : " + etatDA(d).l.toLowerCase());
+  return out;
 }
 
 /* ---------- sorties : copie, fichier, impression ---------- */
@@ -2889,7 +3132,12 @@ function enregistrerAchat(){
     date:m.date || auj, montant:num(m.montant), quantite:num(m.quantite) || 1, site:m.site || SITE_DEF, projet:m.projet || "",
     livPrevue:m.livPrevue || "", livre, dateLivre:livre ? (m.dateLivre || auj) : "", recu, dateRecu:recu ? (m.dateRecu || auj) : "",
     numFacture:(m.numFacture || "").trim(), dateFacture:m.dateFacture || "", note:(m.note || "").trim(), maj:Date.now() });
-  DB.achats[a.id] = a; state.modal = null; state.aVue = "da";
+  DB.achats[a.id] = a;
+  if(m.suivi && DB.suivis[m.suivi]){
+    DB.suivis[m.suivi].achat = a.id;
+    state.modal = mSuivi(DB.suivis[m.suivi]); sauver(); render(); toast("Demande d'achat créée et liée à l'action"); return;
+  }
+  state.modal = null; state.aVue = "da";
   sauver(); render(); toast(neuf ? "Demande d'achat enregistrée" : "Demande d'achat mise à jour");
 }
 function enregistrerLicence(){
@@ -3009,6 +3257,7 @@ function vuePersonne(pe){
   const chefDe = V(DB.projets).filter(p => p.chef === pe.id);
   let h = '<div class="sheet"><div class="sheet-top"><button class="iconbtn" data-act="fermer-sheet" aria-label="Retour">' + svg("fleche",18) + '</button>' +
     '<span class="t">' + esc(pe.nom) + '</span><span class="sp"></span>' +
+    '<button class="btn pt" data-act="ouvrir-unaun" data-id="' + pe.id + '">' + svg("bulle",15) + 'Vue 1:1</button>' +
     '<button class="btn pt" data-act="mail-personne" data-id="' + pe.id + '">' + svg("mail",15) + 'Relancer</button>' +
     '<button class="iconbtn" data-act="modifier-personne" data-id="' + pe.id + '" aria-label="Modifier">' + svg("crayon",17) + '</button></div><div class="sheet-in">';
   h += '<div class="fiche-h" style="display:flex;gap:14px;align-items:center"><span class="ava" style="width:54px;height:54px;flex-basis:54px;font-size:18px">' + esc(initiales(pe.nom)) + '</span>' +
@@ -4790,6 +5039,16 @@ function vueReglages(){
     '<div class="lig"><div class="l">Relance de mise à jour<div class="d">Un projet actif sans point depuis ce délai est signalé.</div></div>' +
     '<div class="seg">' + [7,14,30].map(n => '<button class="' + (s.obsolete === n ? "on" : "") + '" data-act="obsolete" data-id="' + n + '">' + n + ' j</button>').join("") + '</div></div>' +
     '</div></div>';
+  {
+    const O = ongletsOrdonnes(true), mq = s.ongletsMasques || [];
+    h += '<div class="bloc"><div class="bloc-h">Onglets</div><div class="bloc-b">' +
+      '<div class="aide" style="margin:0 0 8px">Glissez un onglet sur un autre directement dans la barre, ou utilisez les flèches. Décochez ceux dont vous ne vous servez pas.</div>' +
+      O.map((t, i) => '<div class="lig" style="padding:6px 0">' + svg(t.i, 18) + '<div class="l">' + esc(t.l) + '</div>' +
+        '<button class="iconbtn" data-act="onglet-haut" data-id="' + t.id + '"' + (i ? "" : " disabled") + ' aria-label="Monter" title="Monter" style="transform:rotate(90deg)">' + svg("fleche", 15) + '</button>' +
+        '<button class="iconbtn" data-act="onglet-bas" data-id="' + t.id + '"' + (i < O.length - 1 ? "" : " disabled") + ' aria-label="Descendre" title="Descendre" style="transform:rotate(-90deg)">' + svg("fleche", 15) + '</button>' +
+        '<button class="ck' + (mq.includes(t.id) ? "" : " on") + '" data-act="onglet-voir" data-id="' + t.id + '"><i>' + svg("check", 10, 3.2) + '</i>Affiché</button></div>').join("") +
+      '<div class="btns" style="margin:8px 0 0"><button class="btn pt" data-act="onglets-raz">Ordre d\'origine</button></div></div></div>';
+  }
   h += '<div class="bloc"><div class="bloc-h">Vous et vos mails</div><div class="bloc-b">' +
     '<div class="aide" style="margin:0 0 10px">Jalon doit savoir laquelle des personnes de l\'équipe est vous. Cela sert à : afficher <b>« Mes actions »</b> sur le tableau de bord (vos tâches, vos jalons, votre charge), ' +
       'vous mettre <b>chef de projet par défaut</b> des nouveaux projets, vous <b>retirer des destinataires</b> de vos propres mails, et <b>signer</b> vos mails si vous n\'avez pas de signature.</div>' +
@@ -5090,6 +5349,18 @@ function vueModal(m){
       '<div id="apercu-coller">' + apercuColler(m) + '</div>' +
       piedModal("Créer la réunion", "enregistrer-coller");
   }
+  else if(m.type === "planreu"){
+    const bloc = (t, k) => '<div class="bloc-plan"><div class="sect" style="margin:10px 0 6px"><h2>' + esc(FORMATS_REU[t].nom) + '</h2></div>' +
+      fChamp("Jours", '<div class="chipsw">' + JOURS.map(([j, l]) => '<button type="button" class="chip ' + ((m[k] || []).includes(j) ? "on" : "") +
+        '" data-act="m-toggle" data-k="' + k + '" data-id="' + j + '">' + l + '</button>').join("") + '</div>') +
+      '<div class="duo">' + fChamp("Heure", fTxt("h_" + t, m["h_" + t], "09:30", "time"), "", "m-h_" + t) +
+        fChamp("Durée (min)", fTxt("d_" + t, m["d_" + t], "60", "number"), "", "m-d_" + t) + '</div>' +
+      fChamp("Fréquence", fSeg("f_" + t, m["f_" + t] || "1", [["1","Chaque semaine"],["2","Une semaine sur deux"]])) +
+      ((m[k] || []).length ? '<button type="button" class="btn pt" data-act="plan-ics" data-id="' + t + '">' + svg("cal", 14) + 'Ajouter à mon agenda (.ics)</button>' : "") + '</div>';
+    c = '<h3>Rythme des points</h3><div class="sous">Jalon annonce le prochain point sur le tableau de bord la veille et le jour même, et le prépare d\'un geste. Le fichier d\'agenda crée un rendez-vous récurrent avec un rappel 15 minutes avant, dans Outlook ou Google Agenda.</div>' +
+      bloc("equipe", "jEquipe") + bloc("n1", "jN1") +
+      piedModal("Enregistrer", "enregistrer-plan");
+  }
   else if(m.type === "suivi"){
     const r = DB.reunions[m.reunion];
     c = '<h3>' + (m.id ? "Action" : "Nouvelle action") + '</h3>' +
@@ -5099,6 +5370,15 @@ function vueModal(m){
         fChamp("Échéance", fTxt("echeance", m.echeance, "", "date"), "", "m-echeance") + '</div>' +
       fBool("fait", m.fait, "Fait", "") +
       (m.id && m.cle && !/^manuel/.test(m.cle) ? '<div class="aide">Née d\'une ligne « → » des notes. Une fois modifiée ici, elle ne suit plus cette ligne.</div>' : "") +
+      '<div class="champ"><span class="lab">Transformer en</span>' +
+        (DB.taches[m.tache] ? '<div class="ln" style="padding:6px 2px"><span class="ln-mid"><span class="ln-t">Tâche dans « ' + esc(nomProjet(DB.taches[m.tache].projet)) + ' »</span>' +
+          '<span class="ln-m">' + esc(lib(STATUTS_T, DB.taches[m.tache].statut)) + '</span></span><button class="btn pt" data-act="ouvrir-projet" data-id="' + DB.taches[m.tache].projet + '">Voir le projet</button></div>' : "") +
+        (DB.achats[m.achat] ? '<div class="ln" style="padding:6px 2px"><span class="ln-mid"><span class="ln-t">Demande d\'achat ' + esc(DB.achats[m.achat].numDA || "") + '</span>' +
+          '<span class="ln-m">' + esc(etatDA(DB.achats[m.achat]).l) + '</span></span><button class="btn pt" data-act="modifier-achat" data-id="' + m.achat + '">Voir la DA</button></div>' : "") +
+        fChamp("Projet", fSel("projet", m.projet, optsProj(), "Aucun"), "Pour la tâche (obligatoire) ou pour rattacher la demande d'achat.", "m-projet") +
+        '<div class="btns" style="margin:4px 0 0">' +
+          (DB.taches[m.tache] ? "" : '<button type="button" class="btn" data-act="suivi-tache">' + svg("check", 14, 2) + 'Tâche du projet</button>') +
+          (DB.achats[m.achat] ? "" : '<button type="button" class="btn" data-act="suivi-da">' + svg("panier", 14) + 'Demande d\'achat</button>') + '</div></div>' +
       piedModal(m.id ? "Enregistrer" : "Ajouter", "enregistrer-suivi",
         m.id ? '<button class="btn dang wide" data-act="supprimer-suivi" data-id="' + m.id + '">Supprimer l\'action</button>' : "");
   }
@@ -5601,6 +5881,8 @@ function exemple(){
   P("anne","Anne Fontaine","Direction","Directrice des opérations",0);
   DB.settings.equipeReu = [pers.karim, pers.sophie, pers.thomas];
   DB.settings.n1 = pers.anne;
+  if(!DB.settings.planReu) DB.settings.planReu = { equipe:{ jours:["2","4"], heure:"09:30", duree:60, freq:1, depuis:a },
+    n1:{ jours:["1"], heure:"14:00", duree:45, freq:2, depuis:a } };
   const reu = (type, date, rubs) => { const id = uid(), f = FORMATS_REU[type];
     DB.reunions[id] = { id, type, titre:f.nom, date, parPersonne:f.parPersonne, cree:now, maj:now,
       participants:type === "equipe" ? DB.settings.equipeReu.slice() : [pers.anne],
@@ -5692,6 +5974,22 @@ document.addEventListener("click", async ev => {
   }
   if(act === "m-lig-del"){ capturerModal(); state.modal.lignes.splice(Number(id), 1); majModal(); return; }
   /* ---- réunions ---- */
+  if(act === "plan-reu"){
+    const pe = planDe("equipe"), pn = planDe("n1");
+    return ouvrirModal({ type:"planreu", jEquipe:pe.jours, h_equipe:pe.heure, d_equipe:String(pe.duree), f_equipe:String(pe.freq),
+      jN1:pn.jours, h_n1:pn.heure, d_n1:String(pn.duree), f_n1:String(pn.freq) });
+  }
+  if(act === "enregistrer-plan" || act === "plan-ics"){
+    capturerModal(); const m = state.modal, anc = DB.settings.planReu || {};
+    const pl1 = (t, k) => ({ jours:(m[k] || []).slice().sort(), heure:m["h_" + t] || "09:30", duree:num(m["d_" + t]) || 60, freq:num(m["f_" + t]) || 1,
+      depuis:(anc[t] && anc[t].depuis && num(anc[t].freq) === (num(m["f_" + t]) || 1)) ? anc[t].depuis : todayISO() });
+    DB.settings.planReu = { equipe:pl1("equipe", "jEquipe"), n1:pl1("n1", "jN1") };
+    sauver(true);
+    if(act === "plan-ics"){ icsPoint(id); return; }
+    state.modal = null; render(); toast("Rythme enregistré"); return;
+  }
+  if(act === "preparer-point"){ preparerPoint(id); return; }
+  if(act === "odj-point"){ preparerPoint(id, true); return; }
   if(act === "nouvelle-reunion"){ creerReunion(id || "equipe"); return; }
   if(act === "ouvrir-reunion" && DB.reunions[id]){ state.sheet = { t:"reunion", id }; state.modal = null; render(); return; }
   if(act === "coller-notes") return ouvrirModal({ type:"coller", genre:"equipe", date:todayISO(), texte:"", focus:"m-texte" });
@@ -5706,6 +6004,29 @@ document.addEventListener("click", async ev => {
     sauver(); render(); toast("« " + a.texte + " » : " + (a.fait ? "fait" : "rouvert"), "annuler"); return;
   }
   if(act === "r-vuea"){ state.rVueA = id; render(); return; }
+  if(act === "r-effacer-q"){ state.qr = ""; render(); return; }
+  if(act === "ouvrir-unaun" && DB.personnes[id]){ if(state.sheet && state.sheet.t === "reunion") syncActions(DB.reunions[state.sheet.id]); state.sheet = { t:"unaun", id }; state.modal = null; render(); return; }
+  if(act === "nouveau-unaun" && DB.personnes[id]){
+    const r = creerReunion("unaun", { titre:"1:1 avec " + prenom(nomP(id)), participants:[id], parPersonne:false });
+    reprendrePoints(r); syncActions(r); render(); return;
+  }
+  if(act === "suivi-tache" || act === "suivi-da"){
+    capturerModal(); const m = state.modal;
+    if(!(m.texte || "").trim()){ toast("Décrivez d'abord l'action"); return; }
+    const a = appliquerSuivi(m);
+    if(act === "suivi-tache"){
+      const p = DB.projets[m.projet];
+      if(!p){ toast("Choisissez le projet dans lequel créer la tâche"); return; }
+      const auj = todayISO(), fin = a.echeance || addJ(auj, 14), tid = uid();
+      DB.taches[tid] = { id:tid, projet:p.id, titre:a.texte, resp:a.resp, jalon:"", debut:auj < fin ? auj : fin, fin, statut:"afaire", avance:0, charge:0, conso:0,
+        motif:"", note:"Action issue du " + origineAction(a).replace(/^point/, "point"), cree:Date.now(), faitLe:"" };
+      a.tache = tid; a.projet = p.id; touche(p.id); evenement(p.id, "Tâche ajoutée depuis une réunion : " + a.texte);
+      sauver(); state.modal = mSuivi(a); render(); toast("Tâche créée dans « " + p.nom + " »"); return;
+    }
+    sauver();
+    const md = mAchat(null, m.projet); md.objet = a.texte; md.suivi = a.id; if(a.resp) md.note = "Demandé par " + nomP(a.resp);
+    return ouvrirModal(md);
+  }
   if(act === "r-ftype"){ state.rType = id; render(); return; }
   if(act === "mail-actions-reu") return ouvrirModal(mMail("reu-actions", { personne:id }));
   if(act === "r-tousp"){ state.rTousP = true; render(); return; }
@@ -5746,18 +6067,8 @@ document.addEventListener("click", async ev => {
         return fin();
       }
       if(act === "r-reprendre"){
-        const prec = reunionsTriees().find(x => x.type === r.type && x.id !== r.id && (x.date || "") <= (r.date || todayISO()));
-        if(!prec) return;
-        let n = 0;
-        (prec.rubriques || []).forEach(pr => {
-          let rb2 = r.rubriques.find(x => norm(x.t) === norm(pr.t));
-          if(!rb2){ rb2 = { id:uid(), t:pr.t, notes:{} }; r.rubriques.push(rb2); }
-          Object.keys(pr.notes || {}).forEach(k => {
-            const L = lignesNote(pr.notes[k]).filter(l => !RE_ACTION.test(l));
-            if(L.length && !String(rb2.notes[k] || "").trim()){ rb2.notes[k] = L.join("\n"); n += L.length; }
-          });
-        });
-        (prec.participants || []).forEach(id => { if(DB.personnes[id] && !r.participants.includes(id)) r.participants.push(id); });
+        const prec = precedent(r); if(!prec) return;
+        const n = reprendrePoints(r);
         return fin(n + " ligne" + pl(n) + " reprise" + pl(n) + " du " + frDate(prec.date) + " : effacez ce qui est réglé");
       }
       if(act === "r-mail"){ syncActions(r); return ouvrirModal(mMail("reu-cr", { reu:r.id })); }
@@ -5950,6 +6261,18 @@ document.addEventListener("click", async ev => {
   if(act === "mail-copier" || act === "mail-ouvrir" || act === "mail-partager"){ capturerModal(); return envoyerMail(act); }
 
   /* ---- réglages ---- */
+  if(act === "onglet-haut" || act === "onglet-bas"){
+    const o = ongletsOrdonnes(true).map(t => t.id), i = o.indexOf(id), j = act === "onglet-haut" ? i - 1 : i + 1;
+    if(i < 0 || j < 0 || j >= o.length) return;
+    [o[i], o[j]] = [o[j], o[i]]; DB.settings.ordreOnglets = o; sauver(true); render(); return;
+  }
+  if(act === "onglet-voir"){
+    const mq = DB.settings.ongletsMasques = (DB.settings.ongletsMasques || []).slice(), i = mq.indexOf(id);
+    if(i >= 0) mq.splice(i, 1);
+    else { if(TABS.length - mq.length <= 1){ toast("Gardez au moins un onglet"); return; } mq.push(id); }
+    sauver(true); render(); return;
+  }
+  if(act === "onglets-raz"){ DB.settings.ordreOnglets = []; DB.settings.ongletsMasques = []; sauver(true); render(); toast("Onglets remis dans l'ordre d'origine"); return; }
   if(act === "theme"){ ecritLS(LSTHEME, id); DB.settings.theme = id; appliquerTheme(id); sauver(true); render(); majIcone(); return; }
   if(act === "accent"){ ecritLS(LSACC, id); DB.settings.accent = id; appliquerAccent(id); sauver(true); render(); majIcone(); return; }
   if(act === "module"){ DB.settings.modules[id] = !DB.settings.modules[id]; if(id === "budget" && !DB.settings.modules.budget) DB.settings.masque = false; sauver(true); render(); return; }
@@ -6009,6 +6332,7 @@ document.addEventListener("input", ev => {
   }
   if(el.id === "q"){ state.q = el.value; render(); return; }
   if(el.id === "qa"){ state.qa = el.value; render(); return; }
+  if(el.id === "qr"){ state.qr = el.value; render(); return; }
   /* Notes de réunion : enregistrées à la frappe, sans redessiner la page
      (le curseur ne bouge pas). */
   if(state.sheet && state.sheet.t === "reunion" && el.closest && el.closest("#sheet")){
@@ -6065,6 +6389,32 @@ document.addEventListener("change", ev => {
     if(m) majModal(); else render();
   }
 });
+/* Onglets : glisser un onglet sur un autre le place avant lui (ou après,
+   dans la seconde moitié). */
+let _ongletG = null;
+document.addEventListener("dragstart", ev => {
+  const t = ev.target.closest && ev.target.closest(".tab[data-onglet]"); if(!t) return;
+  _ongletG = t.dataset.onglet; t.classList.add("drag");
+  try{ ev.dataTransfer.setData("text/plain", _ongletG); ev.dataTransfer.effectAllowed = "move"; }catch(e){}
+});
+document.addEventListener("dragover", ev => {
+  if(!_ongletG) return;
+  const t = ev.target.closest && ev.target.closest(".tab[data-onglet]"); if(!t) return;
+  ev.preventDefault();
+  document.querySelectorAll(".tab.cible").forEach(x => { if(x !== t) x.classList.remove("cible"); });
+  if(t.dataset.onglet !== _ongletG) t.classList.add("cible");
+});
+document.addEventListener("drop", ev => {
+  if(!_ongletG) return;
+  const t = ev.target.closest && ev.target.closest(".tab[data-onglet]"), id = _ongletG; _ongletG = null;
+  if(!t || t.dataset.onglet === id){ render(); return; }
+  ev.preventDefault();
+  const b = t.getBoundingClientRect(), vertical = window.innerWidth >= 960;
+  const apres = vertical ? ev.clientY > b.top + b.height / 2 : ev.clientX > b.left + b.width / 2;
+  deplacerOnglet(id, t.dataset.onglet, apres);
+});
+document.addEventListener("dragend", () => { if(_ongletG){ _ongletG = null; document.querySelectorAll(".tab.drag,.tab.cible").forEach(x => x.classList.remove("drag", "cible")); } });
+
 /* Kanban : glisser une carte dans une autre colonne change le statut. */
 let _glisse = null;
 document.addEventListener("dragstart", ev => {

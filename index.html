@@ -78,7 +78,7 @@ header.top{position:sticky;top:0;z-index:30;background:var(--voile);
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--voile);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border-top:1px solid var(--trait);padding-bottom:env(safe-area-inset-bottom)}
-.tabs-in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(7,1fr)}
+.tabs-in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(8,1fr)}
 .tab{padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:3px;
   color:var(--gris);font-size:9.5px;letter-spacing:-.01em;border-top:2px solid transparent;margin-top:-1px}
 .tab span{white-space:nowrap}
@@ -356,8 +356,30 @@ html[data-theme="sombre"] .ck.on i{color:#0d0d10}
 .restant i.att{background:var(--att)} .restant i.dang{background:var(--dang)}
 .da-r .c-att,.da-r .c-dang{font-size:12.5px}
 .lic-tot{font-weight:600;color:var(--texte)}
+
+/* ---------------- réunions ---------------- */
+.reu-h input.rt[type=text]{font-size:clamp(22px,5vw,28px);font-weight:600;letter-spacing:-.03em;border:0;background:transparent;padding:2px 0;width:100%;box-shadow:none}
+.reu-h .meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.reu-h .meta input[type=date]{width:auto;padding:6px 9px;font-size:13.5px}
+.enreg{font-size:12px;color:var(--ok);display:inline-flex;align-items:center;gap:4px}
+.rub{border:1px solid var(--trait);border-radius:var(--r);padding:10px 14px 14px;margin:14px 0 0;background:var(--carte)}
+.rub-h{display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--trait2);padding-bottom:6px}
+.rub .rub-h input[type=text]{flex:1;border-radius:6px;font-size:16px;font-weight:600;letter-spacing:-.02em;border:0;background:transparent;padding:4px 0;box-shadow:none;min-width:0}
+.rub-h .iconbtn{width:30px;height:30px;border-color:transparent}
+.blk{margin-top:10px}
+.blk-n{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;margin-bottom:5px}
+.blk-n .badge{margin-left:0}
+textarea.note-r{width:100%;min-height:46px;resize:vertical;font-size:14.5px;line-height:1.55;padding:8px 11px;overflow:hidden}
+.astuce{font-size:12px;color:var(--gris);margin-top:6px;display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.astuce .chip{font-size:11.5px;padding:2px 8px;display:inline-flex;align-items:center}
+.astuce .lien{font-size:12px;color:var(--acc)}
+.grp-a{display:flex;align-items:center;gap:8px;padding:12px 2px 2px;font-size:13.5px}
+.grp-a .cnt{font-size:12px;color:var(--gris2)} .grp-a .sp{flex:1}
+.grp-a .lien{font-size:12.5px;color:var(--acc);display:inline-flex;align-items:center;gap:4px}
+.print-only{display:none}
+@media print{ .print-only{display:block} }
 .lig-cout{display:grid;grid-template-columns:minmax(0,1fr) 110px 120px 34px;gap:6px;align-items:center;margin-bottom:6px}
-.lig-cout input,.lig-cout select{padding:8px 9px;font-size:14px;min-width:0;width:100%}
+.lig-cout input[type],.lig-cout select[data-lk]{padding:8px 9px;font-size:14px;min-width:0;width:100%}
 .lig-cout .iconbtn{width:34px;height:34px}
 @media(max-width:480px){
   .lig-cout{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 34px}
@@ -690,9 +712,17 @@ input[type=range]{width:100%;accent-color:var(--acc)}
    Un seul fichier, aucune dépendance, stockage local (IndexedDB).
    Reprend l'ossature d'Ardoise : même encre, mêmes gestes.
    ============================================================ */
-const VERSION = "1.8.0";
+const VERSION = "1.9.0";
 const SCHEMA  = 1;
 const JOURNAL = [
+  { v:"1.9.0", d:"2026-11-09", t:"Réunions", l:[
+    "Nouvel onglet Réunions : le carnet des points d'équipe et des points avec son N+1, à la place de OneNote.",
+    "Point d'équipe pris par rubrique (tickets, projets, global, commandes) et par personne ; point N+1 avec un fil proposé (faits marquants, projets, budget, équipe, décisions). Rubriques modifiables et mémorisables.",
+    "Tout s'enregistre à la frappe. Une ligne qui commence par → devient une action pour la personne du bloc (@prénom et date reconnus), suivie d'un point à l'autre jusqu'à ce qu'on la coche.",
+    "« Reprendre les points » du précédent, et des raccourcis qui versent dans les notes les projets de chacun, les achats en cours, les licences à renouveler ou la charge de l'équipe.",
+    "Compte rendu et ordre du jour par mail, relance des actions par personne, copie mise en forme (Teams, Word), fichier texte et impression.",
+    "« Coller des notes » reprend une page existante (rubriques séparées par des tirets, prénoms repérés). Les actions en retard remontent dans les points d'attention et dans la fiche de chaque personne."
+  ]},
   { v:"1.8.0", d:"2026-11-05", t:"Achats et licences", l:[
     "Nouvel onglet Achats : les demandes d'achat (objet, n° de DA, fournisseur, montant, date, territoire, projet lié) et les licences.",
     "Une demande se coche « livré » puis « réceptionné » directement dans la liste ; le n° et la date de facture s'ajoutent quand elle arrive.",
@@ -896,6 +926,7 @@ const ICONES = {
   grille:'<rect x="3.5" y="3.5" width="7" height="8" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="5" rx="1.6"/><rect x="13.5" y="11.5" width="7" height="9" rx="1.6"/><rect x="3.5" y="14.5" width="7" height="6" rx="1.6"/>',
   globe:'<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.4 2.4 3.6 5.2 3.6 8.5s-1.2 6.1-3.6 8.5c-2.4-2.4-3.6-5.2-3.6-8.5S9.6 5.9 12 3.5z"/>',
   dossier:'<path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.2h7a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',
+  bulle:'<path d="M4.5 6.5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H11l-4.5 3.5v-3.5a2 2 0 0 1-2-2z"/><path d="M8.5 9.5h7M8.5 12.5h4.5"/>',
   panier:'<path d="M3.5 4.5h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h7.7a1.6 1.6 0 0 0 1.6-1.2l1.5-6.3H6.6"/><circle cx="9.8" cy="19.3" r="1.3"/><circle cx="17" cy="19.3" r="1.3"/>',
   cle:'<circle cx="8" cy="15.5" r="4"/><path d="m10.9 12.6 8.6-8.6M16.5 7l2.5 2.5M14 9.5l2 2"/>',
   camion:'<path d="M3.5 6.5h10v9h-10z"/><path d="M13.5 9.5h4l3 3.2v2.8h-7"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>',
@@ -951,7 +982,7 @@ function icoSVG(t){
    différé pour regrouper les rafales de modifications.
    ============================================================ */
 const DEFAULTS = {
-  version:SCHEMA, projets:{}, taches:{}, jalons:{}, risques:{}, personnes:{}, journal:{}, achats:{}, licences:{},
+  version:SCHEMA, projets:{}, taches:{}, jalons:{}, risques:{}, personnes:{}, journal:{}, achats:{}, licences:{}, reunions:{}, suivis:{},
   settings:{
     theme:"clair", accent:ACCENTS[0][0], masque:false,
     organisation:"",
@@ -1005,7 +1036,7 @@ async function ecouler(){
 function assembler(x){
   const d = JSON.parse(JSON.stringify(DEFAULTS));
   if(!x || typeof x !== "object") return d;
-  ["projets","taches","jalons","risques","personnes","journal","achats","licences"].forEach(k => { if(x[k]) d[k] = x[k]; });
+  ["projets","taches","jalons","risques","personnes","journal","achats","licences","reunions","suivis"].forEach(k => { if(x[k]) d[k] = x[k]; });
   const s = x.settings || {};
   d.settings = { ...d.settings, ...s,
     modules:{ ...d.settings.modules, ...(s.modules||{}) },
@@ -1274,6 +1305,7 @@ const TABS = [
   { id:"planning", l:"Planning", i:"gantt" },
   { id:"risques",  l:"Risques",  i:"bouclier" },
   { id:"equipe",   l:"Équipe",   i:"equipe" },
+  { id:"reunions", l:"Réunions", i:"bulle" },
   { id:"achats",   l:"Achats",   i:"panier" }
 ];
 const state = { tab:"bord", sheet:null, modal:null, q:"", journal:false, neuf:false,
@@ -1339,12 +1371,14 @@ function dessiner(){
   else if(state.tab === "risques")  v.innerHTML = vueRisques();
   else if(state.tab === "equipe")   v.innerHTML = vueEquipe();
   else if(state.tab === "achats")   v.innerHTML = vueAchats();
+  else if(state.tab === "reunions") v.innerHTML = vueReunions();
   else                              v.innerHTML = vueReglages();
   if(state.tab === "monde") carteMonde();
 
   const s = state.sheet;
   if(s && s.t === "projet" && !DB.projets[s.id]) state.sheet = null;
   if(s && s.t === "personne" && !DB.personnes[s.id]) state.sheet = null;
+  if(s && s.t === "reunion" && !DB.reunions[s.id]) state.sheet = null;
   // Un panneau ou une fenêtre déjà ouverts ne rejouent pas leur animation
   // d'entrée à chaque redessin : sans quoi chaque clic ressemble à un
   // rechargement de la page.
@@ -1352,10 +1386,12 @@ function dessiner(){
   let hs = !state.sheet ? "" :
     state.sheet.t === "projet" ? vueFiche(DB.projets[state.sheet.id]) :
     state.sheet.t === "personne" ? vuePersonne(DB.personnes[state.sheet.id]) :
+    state.sheet.t === "reunion" ? vueReunion(DB.reunions[state.sheet.id]) :
     state.sheet.t === "revue" ? vueRevue() : vueRapport();
   if(cle && cle === _cleSheet) hs = hs.replace('<div class="sheet', '<div class="sheet fixe');
   _cleSheet = cle;
   $("#sheet").innerHTML = hs;
+  document.querySelectorAll("#sheet .note-r").forEach(grandir);
   $("#modal").innerHTML = htmlModal();
 
   if(fid){
@@ -1396,6 +1432,7 @@ function majModal(){
 function libNouveau(){
   if(state.sheet && state.sheet.t === "projet") return "Nouvelle tâche";
   if(state.tab === "achats") return state.aVue === "lic" ? "Nouvelle licence" : "Nouvelle demande d'achat";
+  if(state.tab === "reunions") return "Nouveau point d'équipe";
   return state.tab === "equipe" ? "Nouvelle personne" : state.tab === "risques" ? "Nouveau risque" : "Nouveau projet";
 }
 
@@ -1599,7 +1636,10 @@ function vueBord(){
 
   // colonne gauche : points d'attention + portefeuille
   const oN = { rouge:0, orange:1, info:2 };
-  const al = alertes(L).concat(alertesAchats()).sort((x,y) => oN[x.n] - oN[y.n]);
+  const alR = V(DB.suivis).filter(actionRetard).map(a => ({ n:"orange", ic:"revue", act:DB.reunions[a.reunion] ? "ouvrir-reunion" : "modifier-suivi",
+    id:DB.reunions[a.reunion] ? a.reunion : a.id, t:"Action en retard de " + diffJ(a.echeance, todayISO()) + " j : " + a.texte,
+    m:[nomP(a.resp) || "sans responsable", origineAction(a)].join(" · ") }));
+  const al = alertes(L).concat(alertesAchats(), alR).sort((x,y) => oN[x.n] - oN[y.n]);
   const vis = state.alertesTout ? al : al.slice(0, 7);
   let g = '<div class="pan"><div class="sect"><h2>Points d\'attention</h2><span class="cnt">' + al.length + '</span><span class="sp"></span>' +
     (al.length > 7 ? '<button class="lien" data-act="alertes-tout">' + (state.alertesTout ? "Réduire" : "Tout voir") + '</button>' : "") + '</div>' +
@@ -2211,6 +2251,353 @@ function vueRisques(){
 }
 
 /* ============================================================
+   RÉUNIONS
+   Les points récurrents du manager : point d'équipe (notes par rubrique et
+   par personne), point avec son N+1. On écrit comme dans un carnet ; tout
+   s'enregistre à la frappe. Une ligne qui commence par → (ou ->) devient une
+   action, attribuée à la personne du bloc, suivie d'un point à l'autre
+   jusqu'à ce qu'on la coche.
+   ============================================================ */
+const FORMATS_REU = {
+  equipe:{ nom:"Point d'équipe", court:"Équipe", rubriques:["Tickets","Point projets","Point global","Point commandes"], parPersonne:true },
+  n1:{ nom:"Point avec mon N+1", court:"N+1", rubriques:["Faits marquants","Projets : météo et arbitrages","Budget, achats et licences","Équipe : charge, absences, RH","Décisions attendues","Divers"], parPersonne:false },
+  autre:{ nom:"Réunion", court:"Autre", rubriques:["Points abordés","Décisions"], parPersonne:false }
+};
+const TYPES_REU = [["equipe","Point d'équipe"],["n1","Point N+1"],["autre","Autre"]];
+const rubriquesDe = type => ((DB.settings.rubriquesReu || {})[type] || FORMATS_REU[type].rubriques).slice();
+const reunionsTriees = () => V(DB.reunions).sort((a,b) => cmp(b.date || "", a.date || "") || (b.cree || 0) - (a.cree || 0));
+const titreReu = r => (r.titre || FORMATS_REU[r.type || "autre"].nom) + " du " + frDate(r.date, true);
+const RE_ACTION = /^\s*(?:→|->|=>|\[\s?\]|todo\s*:?)\s*/i;
+function grandir(el){ el.style.height = "auto"; el.style.height = (el.scrollHeight + 2) + "px"; }
+function lignesNote(t){ return String(t || "").split(/\n/).map(x => x.replace(/\s+$/, "")).filter(x => x.trim()); }
+
+function creerReunion(type, o){
+  const f = FORMATS_REU[type] || FORMATS_REU.autre;
+  const part = type === "equipe" ? (DB.settings.equipeReu || []) : type === "n1" ? [DB.settings.n1] : [];
+  const r = { id:uid(), type, titre:f.nom, date:todayISO(), parPersonne:f.parPersonne,
+    participants:part.filter(id => id && DB.personnes[id]),
+    rubriques:rubriquesDe(type).map(t => ({ id:uid(), t, notes:{} })), cree:Date.now(), maj:Date.now(), ...(o || {}) };
+  DB.reunions[r.id] = r;
+  state.sheet = { t:"reunion", id:r.id }; state.modal = null;
+  sauver(); render();
+  if(!o) setTimeout(() => { const t = document.querySelector("#sheet .note-r"); if(t) t.focus(); }, 60);
+  return r;
+}
+
+/* Les actions naissent des notes. À chaque fin de saisie d'un bloc, on
+   rapproche les lignes « → » de ce qui existe : on crée les nouvelles, on
+   retire celles dont la ligne a disparu (sauf si elles sont faites ou ont
+   été retouchées à la main). */
+function actionsDeNotes(r){
+  const out = [];
+  (r.rubriques || []).forEach(rb => Object.keys(rb.notes || {}).forEach(k => {
+    if(k !== "_" && !(r.participants || []).includes(k)) return;
+    lignesNote(rb.notes[k]).forEach(l => {
+      if(!RE_ACTION.test(l)) return;
+      const x = lireLigneRapide(l.replace(RE_ACTION, ""));
+      if(!x.titre) return;
+      out.push({ cle:rb.id + "|" + k + "|" + norm(l.replace(RE_ACTION, "")), rub:rb.id, texte:x.titre, resp:x.resp || (k !== "_" ? k : ""), echeance:x.fin });
+    });
+  }));
+  return out;
+}
+function syncActions(r){
+  if(!r) return;
+  const vus = new Set(), avant = V(DB.suivis).filter(a => a.reunion === r.id);
+  actionsDeNotes(r).forEach(x => {
+    if(vus.has(x.cle)) return; vus.add(x.cle);
+    const a = avant.find(a => a.cle === x.cle);
+    if(a){ if(!a.manuel) Object.assign(a, { texte:x.texte, resp:x.resp, echeance:x.echeance || a.echeance, rub:x.rub }); return; }
+    const id = uid();
+    DB.suivis[id] = { id, reunion:r.id, cle:x.cle, rub:x.rub, texte:x.texte, resp:x.resp, echeance:x.echeance || "", fait:false, faitLe:"", cree:Date.now() };
+  });
+  avant.forEach(a => { if(!vus.has(a.cle) && !a.fait && !a.manuel) delete DB.suivis[a.id]; });
+  sauver();
+}
+const actionRetard = a => !a.fait && a.echeance && a.echeance < todayISO();
+function origineAction(a, ici){
+  const r = DB.reunions[a.reunion];
+  if(!r) return "action libre";
+  const rb = (r.rubriques || []).find(x => x.id === a.rub);
+  return (ici && r.id === ici ? "ce point" : (FORMATS_REU[r.type] || FORMATS_REU.autre).court.replace("Équipe", "point d'équipe").replace("N+1", "point N+1").replace("Autre", "réunion") + " du " + frDate(r.date)) +
+    (rb ? " · " + rb.t : "");
+}
+function ligneSuivi(a, o){
+  o = o || {};
+  const ret = actionRetard(a);
+  return '<div class="ln tk' + (a.fait ? " fait" : "") + '">' +
+    '<button class="st ' + (a.fait ? "fait" : "") + '" data-act="suivi-fait" data-id="' + a.id + '" aria-label="' + (a.fait ? "Rouvrir" : "Marquer comme fait") + '" title="' + (a.fait ? "Rouvrir" : "Fait") + '">' + (a.fait ? svg("check", 13, 3) : "") + '</button>' +
+    '<button class="ln-mid" style="text-align:left" data-act="modifier-suivi" data-id="' + a.id + '">' +
+      '<span class="ln-t">' + esc(a.texte) + '</span>' +
+      '<span class="ln-m">' + esc([o.sansResp ? "" : nomP(a.resp) || "sans responsable", origineAction(a, o.ici), a.fait && a.faitLe ? "fait le " + frDate(a.faitLe) : a.echeance ? "échéance " + relJ(a.echeance) : ""].filter(Boolean).join(" · ")) + '</span>' +
+    '</button>' +
+    (ret ? '<span class="ln-r c-dang">retard ' + diffJ(a.echeance, todayISO()) + ' j</span>' : "") + '</div>';
+}
+/* Actions regroupées par personne, l'équipe d'abord. */
+function groupesActions(L, ordre){
+  const g = new Map();
+  (ordre || []).forEach(id => g.set(id, []));
+  L.forEach(a => { const k = DB.personnes[a.resp] ? a.resp : ""; if(!g.has(k)) g.set(k, []); g.get(k).push(a); });
+  return [...g.entries()].filter(([, l]) => l.length).sort((x,y) => (x[0] === "") - (y[0] === "") || 0);
+}
+const triActions = (a,b) => (a.fait - b.fait) || (actionRetard(b) - actionRetard(a)) || cmp(a.echeance || "9999", b.echeance || "9999") || (a.cree || 0) - (b.cree || 0);
+
+function vueReunions(){
+  const R = reunionsTriees(), S = V(DB.suivis), auj = todayISO();
+  const ouv = S.filter(a => !a.fait), ret = ouv.filter(actionRetard), faites7 = S.filter(a => a.fait && a.faitLe && diffJ(a.faitLe, auj) <= 7);
+  const dern = t => R.find(r => r.type === t);
+  const de = dern("equipe"), dn = dern("n1");
+  const ilya = r => !r ? "jamais" : r.date === auj ? "aujourd'hui" : "il y a " + diffJ(r.date, auj) + " j";
+  let h = '<section class="total" style="padding-bottom:14px"><div class="vh"><div><div class="total-lbl">Réunions et suivi d\'équipe</div>' +
+    '<span class="total-val num">' + ouv.length + ' action' + pl(ouv.length) + ' à suivre</span>' +
+    '<div class="total-sub"><span>Dernier point d\'équipe <b>' + ilya(de) + '</b></span><span>Dernier point N+1 <b>' + ilya(dn) + '</b></span></div></div>' +
+    '<div class="sp"></div><div class="btns noprint">' +
+      '<button class="btn pri" data-act="nouvelle-reunion" data-id="equipe">' + svg("plus",16,2) + 'Point d\'équipe</button>' +
+      '<button class="btn" data-act="nouvelle-reunion" data-id="n1">' + svg("plus",16,2) + 'Point N+1</button>' +
+      '<button class="btn" data-act="nouvelle-reunion" data-id="autre">' + svg("plus",16,2) + 'Autre</button>' +
+      '<button class="btn" data-act="coller-notes">' + svg("copier",16) + 'Coller des notes</button></div></div></section>';
+  if(!R.length && !S.length){
+    return h + vide("Votre carnet de réunions", "Un point d'équipe se prend par rubrique (tickets, projets, global, commandes) et par personne. Écrivez « → relancer Meraki » dans le bloc de Fabrice : c'est une action pour Fabrice, suivie d'un point à l'autre jusqu'à ce que vous la cochiez.",
+      '<button class="btn pri" data-act="nouvelle-reunion" data-id="equipe">' + svg("plus",16,2) + 'Premier point d\'équipe</button>' +
+      '<button class="btn" data-act="coller-notes">Coller des notes existantes</button>');
+  }
+  const ceMois = R.filter(r => (r.date || "").slice(0, 7) === auj.slice(0, 7));
+  h += '<div class="kpis">' +
+    tuile({ l:"Actions à suivre", ic:"revue", v:String(ouv.length), s:ouv.filter(a => !a.resp).length + " sans responsable" }) +
+    tuile({ l:"En retard", ic:"horloge", v:String(ret.length), cls:ret.length ? "c-dang" : "", s:ret.length ? "échéance dépassée" : "aucune" }) +
+    tuile({ l:"Faites sur 7 jours", ic:"check", v:String(faites7.length), cls:faites7.length ? "c-ok" : "", s:"cochées cette semaine" }) +
+    tuile({ l:"Réunions ce mois", ic:"bulle", v:String(ceMois.length), s:ceMois.filter(r => r.type === "equipe").length + " d'équipe · " + ceMois.filter(r => r.type === "n1").length + " N+1" }) +
+    '</div>';
+
+  // actions à suivre, par personne
+  const vueA = state.rVueA || "ouvertes";
+  const LA = (vueA === "faites" ? S.filter(a => a.fait).sort((a,b) => cmp(b.faitLe || "", a.faitLe || "")).slice(0, 40) : ouv.slice().sort(triActions));
+  let g = '<div class="pan"><div class="sect"><h2>Actions à suivre</h2><span class="cnt">' + LA.length + '</span><span class="sp"></span>' +
+    '<button class="lien" data-act="nouveau-suivi">+ Action</button></div>' +
+    '<div class="chips" style="margin:0 0 4px"><button class="chip ' + (vueA === "ouvertes" ? "on" : "") + '" data-act="r-vuea" data-id="ouvertes">Ouvertes</button>' +
+    '<button class="chip ' + (vueA === "faites" ? "on" : "") + '" data-act="r-vuea" data-id="faites">Faites récemment</button></div>';
+  if(!LA.length) g += '<div class="vide petit">' + (vueA === "faites" ? "Rien de coché pour l'instant." : "Aucune action ouverte. Dans vos notes, une ligne qui commence par → en crée une.") + '</div>';
+  else groupesActions(LA, DB.settings.equipeReu).forEach(([id, l]) => {
+    g += '<div class="grp-a"><span class="ava" style="width:24px;height:24px;flex-basis:24px;font-size:10px">' + esc(id ? initiales(nomP(id)) : "?") + '</span><b>' + esc(id ? nomP(id) : "Sans responsable") + '</b>' +
+      '<span class="cnt">' + l.length + (l.filter(actionRetard).length ? ' · <span class="c-dang">' + l.filter(actionRetard).length + ' en retard</span>' : "") + '</span><span class="sp"></span>' +
+      (id && vueA === "ouvertes" ? '<button class="lien" data-act="mail-actions-reu" data-id="' + id + '">' + svg("mail", 13) + ' Relancer</button>' : "") + '</div>' +
+      l.map(a => ligneSuivi(a, { sansResp:true })).join("");
+  });
+  g += '</div>';
+
+  // historique
+  const f = state.rType || "";
+  const LR = R.filter(r => !f || r.type === f);
+  let d = '<div class="pan"><div class="sect"><h2>Historique</h2><span class="cnt">' + LR.length + '</span></div>' +
+    '<div class="chips" style="margin:0 0 4px"><button class="chip ' + (!f ? "on" : "") + '" data-act="r-ftype" data-id="">Toutes</button>' +
+    TYPES_REU.map(([k,l]) => '<button class="chip ' + (f === k ? "on" : "") + '" data-act="r-ftype" data-id="' + k + '">' + l + '<span class="n">' + R.filter(r => r.type === k).length + '</span></button>').join("") + '</div>' +
+    (LR.length ? LR.slice(0, 60).map(r => {
+      const nl = (r.rubriques || []).reduce((s, rb) => s + Object.keys(rb.notes || {}).reduce((t, k) => t + lignesNote(rb.notes[k]).length, 0), 0);
+      const A = S.filter(a => a.reunion === r.id), ao = A.filter(a => !a.fait).length;
+      return '<button class="ln" data-act="ouvrir-reunion" data-id="' + r.id + '">' +
+        '<span class="ln-ic ' + (r.type === "n1" ? "acc" : "") + '">' + svg(r.type === "n1" ? "perso" : r.type === "equipe" ? "equipe" : "bulle", 15, 2) + '</span>' +
+        '<span class="ln-mid"><span class="ln-t">' + esc(r.titre || FORMATS_REU[r.type].nom) + '</span>' +
+        '<span class="ln-m">' + esc([frDate(r.date, true), (r.participants || []).map(id => prenom(nomP(id))).filter(Boolean).join(", "),
+          nl + " ligne" + pl(nl) + " de notes"].filter(Boolean).join(" · ")) + '</span></span>' +
+        '<span class="ln-r">' + A.length + ' action' + pl(A.length) + (ao ? '<span class="s">' + ao + ' ouverte' + pl(ao) + '</span>' : "") + '</span></button>';
+    }).join("") : '<div class="vide petit">Aucune réunion de ce type.</div>') + '</div>';
+  return h + '<div class="dgrid"><div>' + g + '</div><div>' + d + '</div></div>';
+}
+
+/* Petits coups de main par rubrique : ce que Jalon sait déjà et qu'on peut
+   verser dans les notes d'un geste. */
+function sourceAstuce(r, rb, k){
+  const t = norm(rb.t), auj = todayISO();
+  if(/projet/.test(t)){
+    const P = k !== "_" ? V(DB.projets).filter(p => actif(p) && (p.chef === k || (p.equipe || []).includes(k)))
+                        : (r.parPersonne ? [] : V(DB.projets).filter(p => actif(p) && an(p).meteo !== "vert" && an(p).meteo !== "gris"));
+    if(!P.length) return null;
+    return { kind:"projets", items:trierProjets(P, "meteo").map(p => { const a = an(p);
+      return { c:a.meteo, t:p.nom, l:p.nom + " : " + METEOS[a.meteo].toLowerCase() + ", " + a.avance + " %, fin " + frDate(p.fin) + (a.raisons[0] ? " (" + a.raisons[0].t + ")" : "") }; }) };
+  }
+  const itemsLic = () => V(DB.licences).map(l => ({ l, e:etatLic(l) })).filter(x => x.e.k === "expiree" || x.e.k === "bientot").sort((a,b) => cmp(a.l.fin, b.l.fin))
+    .map(x => ({ c:x.e.c === "dang" ? "rouge" : "orange", t:"Licence " + x.l.logiciel, l:"Licence " + x.l.logiciel + " : " + x.e.l.toLowerCase() + " (" + frDate(x.l.fin, true) + ")" }));
+  if(/commande|achat/.test(t) && k === "_"){
+    const A = V(DB.achats).filter(a => !a.recu).sort((x,y) => cmp(x.date || "", y.date || ""));
+    const items = A.map(a => { const e = etatDA(a); return { c:e.c === "dang" ? "rouge" : e.c === "acc" ? "orange" : "", t:a.objet,
+      l:a.objet + (a.fournisseur ? " (" + a.fournisseur + ")" : "") + " : " + e.l.toLowerCase() + (factureAttendue(a) ? ", facture attendue" : "") }; })
+      .concat(/licence/.test(t) ? itemsLic() : []);
+    return items.length ? { kind:/licence/.test(t) ? "achatsLic" : "achats", items } : null;
+  }
+  if(/licence|budget/.test(t) && k === "_"){
+    const items = itemsLic();
+    return items.length ? { kind:"licences", items } : null;
+  }
+  if(/equipe|charge|rh/.test(t) && k === "_" && M().charge){
+    const L = (DB.settings.equipeReu || []).filter(id => DB.personnes[id]).map(id => ({ id, c:chargePersonne(id) })).filter(x => x.c.pct != null);
+    if(!L.length) return null;
+    return { kind:"charge", items:L.map(x => ({ c:x.c.pct > 100 ? "rouge" : x.c.pct > 80 ? "orange" : "vert", t:prenom(nomP(x.id)) + " " + x.c.pct + " %",
+      l:nomP(x.id) + " : charge projet " + x.c.pct + " % sur 4 semaines" })) };
+  }
+  return null;
+}
+function astuce(r, rb, k){
+  const s = sourceAstuce(r, rb, k);
+  if(!s) return "";
+  const lib0 = { projets:k === "_" ? "Projets à surveiller" : "Ses projets", achats:"Achats en cours", achatsLic:"Achats et licences à suivre", licences:"Licences à renouveler", charge:"Charge de l'équipe" }[s.kind];
+  return '<div class="astuce noprint"><span>' + lib0 + ' :</span>' + s.items.slice(0, 6).map(x =>
+    '<span class="chip" title="' + esc(x.l) + '">' + (x.c ? '<span class="dot ' + (x.c === "rouge" || x.c === "orange" || x.c === "vert" ? x.c : "") + '" style="width:7px;height:7px;flex-basis:7px;margin-right:4px"></span>' : "") + esc(x.t) + '</span>').join("") +
+    (s.items.length > 6 ? '<span>+' + (s.items.length - 6) + '</span>' : "") +
+    '<button class="lien" data-act="r-inserer" data-id="' + rb.id + '" data-p="' + k + '">Insérer dans les notes</button></div>';
+}
+
+function vueReunion(r){
+  const f = FORMATS_REU[r.type] || FORMATS_REU.autre, auj = todayISO();
+  const P = (r.participants || []).filter(id => DB.personnes[id]);
+  const prec = reunionsTriees().find(x => x.type === r.type && x.id !== r.id && (x.date || "") <= (r.date || auj));
+  const vide0 = (r.rubriques || []).every(rb => Object.values(rb.notes || {}).every(t => !String(t || "").trim()));
+  let h = '<div class="sheet"><div class="sheet-top"><button class="iconbtn" data-act="fermer-sheet" aria-label="Retour">' + svg("fleche",18) + '</button>' +
+    '<span class="t">' + esc(titreReu(r)) + '</span><span class="sp"></span>' +
+    '<button class="btn pt" data-act="r-mail" data-id="' + r.id + '">' + svg("mail",15) + 'Compte rendu</button>' +
+    '<button class="iconbtn" data-act="r-copier" data-id="' + r.id + '" title="Copier les notes mises en forme (Teams, mail, Word)" aria-label="Copier">' + svg("copier",17) + '</button>' +
+    '<button class="iconbtn" data-act="imprimer" title="Imprimer ou enregistrer en PDF" aria-label="Imprimer">' + svg("imprimer",17) + '</button></div><div class="sheet-in">';
+  h += '<div class="noprint">';
+  h += '<div class="fiche-h reu-h"><input type="text" class="rt" id="r-titre" value="' + esc(r.titre || "") + '" placeholder="' + esc(f.nom) + '" autocomplete="off" aria-label="Titre">' +
+    '<div class="meta"><input type="date" id="r-date" value="' + esc(r.date || "") + '" aria-label="Date">' +
+    '<div class="seg">' + TYPES_REU.map(([k,l]) => '<button class="' + (r.type === k ? "on" : "") + '" data-act="r-type" data-id="' + k + '">' + l + '</button>').join("") + '</div>' +
+    '<span class="enreg" title="Chaque frappe est enregistrée">' + svg("check", 13, 2.4) + ' enregistré automatiquement</span></div></div>';
+
+  // participants
+  const tous = V(DB.personnes).sort((a,b) => (P.includes(b.id) - P.includes(a.id)) || ((DB.settings.equipeReu || []).includes(b.id) - (DB.settings.equipeReu || []).includes(a.id)) || cmp(norm(a.nom), norm(b.nom)));
+  const memo = r.type === "equipe" ? (DB.settings.equipeReu || []).slice().sort().join() !== P.slice().sort().join() && P.length
+             : r.type === "n1" ? P.length === 1 && DB.settings.n1 !== P[0] : false;
+  h += '<div class="champ"><span class="lab">' + (r.type === "n1" ? "Avec" : "Participants") + (r.parPersonne ? " · un bloc de notes chacun" : "") + '</span>' +
+    (tous.length ? '<div class="chipsw">' + tous.slice(0, state.rTousP ? 999 : 12).map(pe => '<button type="button" class="chip ' + (P.includes(pe.id) ? "on" : "") + '" data-act="r-part" data-id="' + pe.id + '">' + esc(pe.nom) + '</button>').join("") +
+      (tous.length > 12 && !state.rTousP ? '<button type="button" class="chip" data-act="r-tousp">+ ' + (tous.length - 12) + ' autres</button>' : "") + '</div>' : "") +
+    '<div class="aide">' + (tous.length ? "" : "Ajoutez d'abord les membres de votre équipe dans l'onglet Équipe. ") +
+      (memo ? '<button class="lien" style="color:var(--acc);text-decoration:underline" data-act="r-memo-part">' + (r.type === "n1" ? "Mémoriser comme mon N+1" : "Mémoriser comme mon équipe") + '</button> : les prochains points partiront avec ' + (r.type === "n1" ? "lui ou elle" : "ces personnes") + '. ' : "") +
+      '<button class="lien" style="color:var(--acc);text-decoration:underline" data-act="r-parp">' + (r.parPersonne ? "Prendre les notes sans bloc par personne" : "Un bloc de notes par personne") + '</button></div></div>';
+
+  h += '<div class="aide" style="margin:6px 0 0">Une ligne qui commence par <b>→</b> (ou <b style="font-variant-ligatures:none;font-family:monospace">-&gt;</b> au clavier) devient une action, pour la personne du bloc (ou <b>@prénom</b>), avec une échéance si vous écrivez une date (<b>15/11</b>).' +
+    (prec && vide0 ? ' <button class="lien" style="color:var(--acc);text-decoration:underline" data-act="r-reprendre" data-id="' + r.id + '">Reprendre les points du ' + esc(frDate(prec.date)) + '</button> (sans les actions, déjà suivies ci-dessous).' : "") + '</div>';
+
+  // actions à suivre
+  h += '<div id="r-suivi">' + panneauSuivi(r) + '</div>';
+
+  // rubriques
+  (r.rubriques || []).forEach((rb, i) => {
+    const bloc = (k, lbl) => {
+      const v = (rb.notes || {})[k] || "", id = "rn-" + rb.id + "-" + k;
+      return '<div class="blk">' + (lbl ? '<label class="blk-n" for="' + id + '">' + lbl + '</label>' : "") +
+        '<textarea class="note-r" id="' + id + '" data-rn="' + rb.id + '" data-rp="' + k + '" rows="' + Math.max(2, lignesNote(v).length + 1) + '" placeholder="' +
+          esc(k === "_" ? (r.parPersonne && P.length ? "Points généraux de la rubrique…" : "Vos notes…") : "Notes pour " + prenom(nomP(k)) + "… (→ pour une action)") + '">' + esc(v) + '</textarea>' +
+        astuce(r, rb, k) + '</div>';
+    };
+    h += '<div class="rub"><div class="rub-h"><input type="text" data-rt="' + rb.id + '" value="' + esc(rb.t) + '" aria-label="Titre de la rubrique" autocomplete="off">' +
+      (i ? '<button class="iconbtn" data-act="r-rub-haut" data-id="' + rb.id + '" title="Monter" aria-label="Monter" style="transform:rotate(90deg)">' + svg("fleche", 14) + '</button>' : "") +
+      '<button class="iconbtn" data-act="r-rub-del" data-id="' + rb.id + '" title="Retirer la rubrique" aria-label="Retirer la rubrique">' + svg("croix", 14) + '</button></div>' +
+      bloc("_", r.parPersonne && P.length ? "Général" : "") +
+      (r.parPersonne ? P.map(id => bloc(id, '<span class="ava" style="width:20px;height:20px;flex-basis:20px;font-size:9px">' + esc(initiales(nomP(id))) + '</span>' + esc(nomP(id)) +
+        (() => { const n = V(DB.suivis).filter(a => !a.fait && a.resp === id).length; return n ? '<span class="badge">' + n + ' action' + pl(n) + '</span>' : ""; })())).join("") : "") +
+      '</div>';
+  });
+  h += '<div class="champ" style="display:flex;gap:8px;flex-wrap:wrap"><input type="text" id="r-newrub" placeholder="Nouvelle rubrique (Sécurité, Astreintes…)" autocomplete="off" style="flex:1;min-width:180px">' +
+    '<button class="btn" data-act="r-rub-add" data-id="' + r.id + '">Ajouter la rubrique</button></div>' +
+    '<div class="aide"><button class="lien" style="color:var(--acc);text-decoration:underline" data-act="r-rub-memo" data-id="' + r.id + '">Garder ces rubriques pour les prochains « ' + esc(f.nom) + ' »</button></div>';
+  h += '<div class="btns" style="margin:22px 0 0"><button class="btn" data-act="r-odj" data-id="' + r.id + '">' + svg("mail",15) + 'Envoyer l\'ordre du jour</button>' +
+    '<button class="btn" data-act="r-txt" data-id="' + r.id + '">' + svg("telecharger",15) + 'Télécharger (.txt)</button>' +
+    '<button class="btn dang" data-act="r-supprimer" data-id="' + r.id + '">Supprimer</button></div>';
+  h += '</div>';
+  h += '<div class="print-only">' + exportReunion(r).html + '</div>';
+  return h + '</div></div>';
+}
+function panneauSuivi(r){
+  const L = V(DB.suivis).filter(a => a.reunion === r.id || (!a.fait && (!a.reunion || (DB.reunions[a.reunion] && DB.reunions[a.reunion].type === r.type))) ||
+    (a.fait && a.faitLe && a.faitLe >= (r.date || "") && DB.reunions[a.reunion] && DB.reunions[a.reunion].type === r.type)).sort(triActions);
+  if(!L.length) return "";
+  const ouv = L.filter(a => !a.fait).length;
+  return '<div class="pan" style="margin-top:12px"><div class="sect" style="margin-top:6px"><h2>À suivre</h2><span class="cnt">' + ouv + ' ouverte' + pl(ouv) +
+    (L.length - ouv ? ' · ' + (L.length - ouv) + ' faite' + pl(L.length - ouv) : "") + '</span><span class="sp"></span>' +
+    '<button class="lien" data-act="nouveau-suivi" data-id="' + r.id + '">+ Action</button></div>' +
+    groupesActions(L, r.participants).map(([id, l]) => '<div class="grp-a"><b>' + esc(id ? nomP(id) : "Sans responsable") + '</b><span class="cnt">' + l.filter(a => !a.fait).length + '</span></div>' +
+      l.map(a => ligneSuivi(a, { sansResp:true, ici:r.id })).join("")).join("") + '</div>';
+}
+
+/* ---------- coller des notes (OneNote, Word, mail…) ----------
+   Le format de vos points : des blocs séparés par une ligne de tirets, chacun
+   ouvert par son titre de rubrique, puis le prénom de chaque personne suivi de
+   ses points. Un prénom se reconnaît s'il est déjà dans l'équipe, ou s'il
+   revient seul sur sa ligne dans plusieurs blocs. */
+function lireNotesCollees(txt){
+  const L = String(txt || "").replace(/\r/g, "").split("\n");
+  const blocs = [[]];
+  L.forEach(l => { if(/^\s*[-_=–—]{4,}\s*$/.test(l)) blocs.push([]); else blocs[blocs.length - 1].push(l.replace(/\s+$/, "")); });
+  const B = blocs.map(b => b.filter(l => l.trim())).filter(b => b.length);
+  const nomCandidat = l => { const s = l.trim(); return s.length <= 30 && /^[A-ZÀ-Ý][\p{L}'-]+(?: [A-ZÀ-Ý][\p{L}'-]+)?$/u.test(s); };
+  const connu = s => V(DB.personnes).find(pe => norm(pe.nom) === norm(s) || norm(prenom(pe.nom)) === norm(s));
+  const freq = {};
+  B.forEach(b => new Set(b.slice(1).filter(nomCandidat).map(x => x.trim())).forEach(s => { freq[s] = (freq[s] || 0) + 1; }));
+  const estNom = s => nomCandidat(s) && (connu(s.trim()) || (freq[s.trim()] || 0) >= 2);
+  const noms = [], rubs = [];
+  B.forEach(b => {
+    let titre = b[0].trim().replace(/\s*:\s*$/, ""), lignes = b.slice(1);
+    if(estNom(b[0])){ titre = "Notes"; lignes = b; }
+    const rb = { t:titre, notes:{} }; let cur = "_";
+    lignes.forEach(l => {
+      if(estNom(l)){ cur = l.trim(); if(!noms.includes(cur)) noms.push(cur); rb.notes[cur] = rb.notes[cur] || ""; return; }
+      rb.notes[cur] = (rb.notes[cur] ? rb.notes[cur] + "\n" : "") + l.trim();
+    });
+    rubs.push(rb);
+  });
+  return { rubs, noms:noms.map(n => ({ n, pe:connu(n) })) };
+}
+function apercuColler(m){
+  const x = lireNotesCollees(m.texte);
+  if(!x.rubs.length) return '<div class="aide">Collez vos notes : l\'aperçu de ce qui sera repris s\'affiche ici.</div>';
+  const nv = x.noms.filter(n => !n.pe);
+  return '<div class="lic-total" style="margin-top:0"><span class="d">' + x.rubs.length + ' rubrique' + pl(x.rubs.length) + ' : ' + esc(x.rubs.map(r => r.t).join(", ")) + '</span>' +
+    '<span class="d">' + (x.noms.length ? x.noms.length + ' personne' + pl(x.noms.length) + ' : ' + esc(x.noms.map(n => n.pe ? n.pe.nom : n.n + " (nouvelle fiche)").join(", ")) : "Aucun prénom repéré : les notes iront dans un seul bloc par rubrique.") + '</span>' +
+    (nv.length ? '<span class="d">' + nv.length + ' fiche' + pl(nv.length) + (nv.length > 1 ? " seront" : " sera") + ' créée' + pl(nv.length) + ' dans l\'onglet Équipe.</span>' : "") + '</div>';
+}
+function enregistrerColler(){
+  capturerModal();
+  const m = state.modal, x = lireNotesCollees(m.texte);
+  if(!x.rubs.length){ toast("Rien à reprendre : collez d'abord vos notes"); return; }
+  const svc = (DB.personnes[DB.settings.moi] || {}).service || "";
+  const ids = {};
+  x.noms.forEach(n => {
+    if(n.pe){ ids[n.n] = n.pe.id; return; }
+    const pe = { id:uid(), nom:n.n, service:svc, role:"Équipe", email:"", dispo:2, note:"", cree:Date.now() };
+    DB.personnes[pe.id] = pe; ids[n.n] = pe.id;
+  });
+  const type = m.genre || "equipe";
+  const rubriques = x.rubs.map(rb => { const notes = {}; Object.keys(rb.notes).forEach(k => { notes[k === "_" ? "_" : ids[k]] = rb.notes[k]; }); return { id:uid(), t:rb.t, notes }; });
+  const part = Object.values(ids);
+  if(type === "equipe" && part.length && !(DB.settings.equipeReu || []).length) DB.settings.equipeReu = part.slice();
+  const r = creerReunion(type, { date:m.date || todayISO(), participants:part, parPersonne:part.length > 0, rubriques });
+  syncActions(r); render();
+  toast("Notes reprises : " + rubriques.length + " rubrique" + pl(rubriques.length) + (part.length ? ", " + part.length + " personne" + pl(part.length) : ""));
+}
+
+/* ---------- action modifiée à la main ---------- */
+function mSuivi(a, reu){
+  if(a) return { ...copie(a), type:"suivi" };
+  const r = DB.reunions[reu];
+  return { type:"suivi", texte:"", resp:"", echeance:addJ(todayISO(), 7), fait:false, reunion:r ? r.id : "", focus:"m-texte" };
+}
+function enregistrerSuivi(){
+  capturerModal();
+  const m = state.modal, texte = (m.texte || "").trim();
+  if(!texte){ toast("Décrivez l'action"); return; }
+  const neuf = !m.id, a = neuf ? { id:uid(), reunion:m.reunion || "", cle:"manuel|" + uid(), rub:"", cree:Date.now() } : DB.suivis[m.id];
+  if(!a) return fermerModal();
+  const fait = !!m.fait;
+  Object.assign(a, { texte, resp:m.resp || "", echeance:m.echeance || "", fait, faitLe:fait ? (a.faitLe || todayISO()) : "", manuel:true });
+  DB.suivis[a.id] = a; state.modal = null; sauver(); render(); toast(neuf ? "Action ajoutée" : "Action mise à jour");
+}
+
+/* ---------- sorties : copie, fichier, impression ---------- */
+function exportReunion(r){
+  const m = mMail("reu-cr", { reu:r.id }); m.intro = "";
+  return rendreMail(m, true);
+}
+
+/* ============================================================
    ACHATS ET LICENCES
    Deux registres simples, à côté des projets. Une demande d'achat suit le
    chemin commande → livraison → réception, et réclame sa facture. Une
@@ -2636,6 +3023,9 @@ function vuePersonne(pe){
   if(pe.note) h += '<div class="desc">' + esc(pe.note) + '</div>';
   h += '<div class="sect"><h2>Tâches à faire</h2><span class="cnt">' + T.length + '</span></div>' +
     (T.length ? T.map(t => ligneTache(t, true)).join("") : '<div class="vide petit">Aucune tâche ouverte.</div>');
+  const AR = V(DB.suivis).filter(a => a.resp === pe.id && (!a.fait || (a.faitLe && diffJ(a.faitLe, todayISO()) <= 14))).sort(triActions);
+  if(AR.length) h += '<div class="sect"><h2>Actions de réunion</h2><span class="cnt">' + AR.filter(a => !a.fait).length + ' ouverte' + pl(AR.filter(a => !a.fait).length) + '</span><span class="sp"></span>' +
+    '<button class="lien" data-act="mail-actions-reu" data-id="' + pe.id + '">Relancer</button></div>' + AR.map(a => ligneSuivi(a, { sansResp:true })).join("");
   if(chefDe.length) h += '<div class="sect"><h2>Chef de projet</h2><span class="cnt">' + chefDe.length + '</span></div>' + chefDe.map(lignePortefeuille).join("");
   return h + '</div></div>';
 }
@@ -4020,7 +4410,9 @@ function ficheKanban(p, a){
 /* Dans ce qui part vers l'extérieur (mails, rapport, CSV), le tiret long
    devient un tiret simple : plus sobre, plus proche d'un mail écrit à la main. */
 const tiret = x => String(x == null ? "" : x).replace(/—/g, "-");
-const MODELES = { point:"Point d'avancement", odj:"Ordre du jour", cadrage:"Cadrage", cr:"Compte rendu", relance:"Relance", synthese:"Synthèse direction" };
+const MODELES = { point:"Point d'avancement", odj:"Ordre du jour", cadrage:"Cadrage", cr:"Compte rendu", relance:"Relance", synthese:"Synthèse direction",
+  "reu-cr":"Compte rendu", "reu-odj":"Ordre du jour", "reu-actions":"Relance des actions" };
+const estReu = m => /^reu-/.test(m.modele || "");
 const COUL = { vert:"#0B6B45", orange:"#B3701E", rouge:"#B32424", gris:"#888888", info:"#888888" };
 const EMOJI = { vert:"🟢", orange:"🟠", rouge:"🔴", gris:"⚪", info:"⚪" };
 const prenom = n => String(n || "").trim().split(/\s+/)[0] || "";
@@ -4033,12 +4425,16 @@ function gensDuProjet(p){
   return [...s].filter(id => id && DB.personnes[id]).sort((a,b) => cmp(norm(nomP(a)), norm(nomP(b))));
 }
 function candidatsMail(m){
-  if(m.modele === "relance") return m.personne && DB.personnes[m.personne] ? [m.personne] : [];
+  if(m.modele === "relance" || m.modele === "reu-actions") return m.personne && DB.personnes[m.personne] ? [m.personne] : [];
+  if(m.reu && DB.reunions[m.reu]){
+    const r = DB.reunions[m.reu], s = new Set((r.participants || []).concat(r.type === "n1" && DB.settings.n1 ? [DB.settings.n1] : [], r.type === "equipe" ? DB.settings.equipeReu || [] : []));
+    return [...s].filter(id => DB.personnes[id] && id !== DB.settings.moi);
+  }
   if(m.projet && DB.projets[m.projet]) return gensDuProjet(DB.projets[m.projet]);
   return V(DB.personnes).filter(pe => pe.email).sort((a,b) => cmp(norm(a.nom), norm(b.nom))).map(pe => pe.id);
 }
 function mMail(modele, ctx){
-  const m = { type:"mail", projet:ctx.projet || "", personne:ctx.personne || "", reunion:ctx.reunion || "", periode:"14", risques:M().risques };
+  const m = { type:"mail", projet:ctx.projet || "", personne:ctx.personne || "", reunion:ctx.reunion || "", reu:ctx.reu || "", periode:"14", risques:M().risques };
   changerModele(m, modele);
   return m;
 }
@@ -4046,6 +4442,18 @@ function changerModele(m, modele){
   m.modele = modele;
   const moi = DB.settings.moi;
   m.dest = {};
+  if(estReu(m)){
+    const r = DB.reunions[m.reu];
+    if(modele === "reu-actions"){ if(m.personne && emailDe(m.personne)) m.dest[m.personne] = "to"; }
+    else candidatsMail(m).forEach(id => { if(emailDe(id)) m.dest[id] = r && (r.participants || []).includes(id) ? "to" : "cc"; });
+    const quoi = r ? titreReu(r) : "";
+    m.autres = ""; m.budget = false; m.risques = false;
+    m.objet = tiret(modele === "reu-cr" ? "Compte rendu — " + quoi : modele === "reu-odj" ? "Ordre du jour — " + quoi : "Actions en cours — point du " + frDate(todayISO(), true));
+    m.intro = modele === "reu-cr" ? "Bonjour à tous,\n\nVoici le compte rendu de notre " + (r ? (r.titre || FORMATS_REU[r.type].nom).toLowerCase() : "réunion") + " du " + (r ? frDate(r.date, true) : "") + ". Les actions de chacun sont rappelées à la fin." :
+      modele === "reu-odj" ? "Bonjour à tous,\n\nVoici l'ordre du jour de notre " + (r ? (r.titre || FORMATS_REU[r.type].nom).toLowerCase() : "réunion") + " du " + (r ? frDate(r.date, true) : "") + ". Préparez vos points, et faites-moi signe s'il manque un sujet." :
+      "Bonjour " + prenom(nomP(m.personne)) + ",\n\nVoici les actions qui te sont confiées suite à nos derniers points. Peux-tu me faire un retour sur leur avancement ?";
+    return;
+  }
   if(modele === "relance"){ if(m.personne) m.dest[m.personne] = "to"; }
   else if(m.projet && DB.projets[m.projet]){
     const pp = DB.projets[m.projet], raci = M().raci ? (pp.raci || {}) : {}, e = DB.journal[m.reunion];
@@ -4103,6 +4511,42 @@ function blocSynthese(p, a, m){
 function contenuMail(m){
   const n = [], auj = todayISO(), p = DB.projets[m.projet];
   const H = t => n.push({ k:"h", t }), LI = (t, c, sub) => n.push({ k:"li", t, c, sub });
+  if(estReu(m)){
+    const r = DB.reunions[m.reu], ST = t => n.push({ k:"st", t });
+    const lignesLI = txt => lignesNote(txt).forEach(l => LI(l.trim().replace(RE_ACTION, "→ "), RE_ACTION.test(l) ? "orange" : ""));
+    const actLI = a => LI(a.texte + (a.resp ? " — " + nomP(a.resp) : "") + (a.echeance ? ", pour le " + frDate(a.echeance, true) : "") +
+      (actionRetard(a) ? " (en retard de " + diffJ(a.echeance, auj) + " j)" : "") + (a.fait ? " (fait)" : ""), a.fait ? "vert" : actionRetard(a) ? "rouge" : "");
+    if(m.modele === "reu-actions"){
+      const L = V(DB.suivis).filter(a => !a.fait && a.resp === m.personne).sort(triActions);
+      if(L.length){ H("Actions ouvertes"); L.forEach(a => LI(a.texte + " — " + origineAction(a) + (a.echeance ? ", pour le " + frDate(a.echeance, true) : "") +
+        (actionRetard(a) ? " (en retard de " + diffJ(a.echeance, auj) + " j)" : ""), actionRetard(a) ? "rouge" : "")); }
+      else n.push({ k:"p", t:"Aucune action ouverte de ton côté : merci !" });
+      return n;
+    }
+    if(!r) return n;
+    const P = (r.participants || []).filter(id => DB.personnes[id]);
+    n.push({ k:"kv", l:"Date", v:frDate(r.date, true) });
+    if(P.length) n.push({ k:"kv", l:r.type === "n1" ? "Avec" : "Participants", v:P.map(nomP).join(", ") });
+    const ouvertes = V(DB.suivis).filter(a => !a.fait && a.reunion !== r.id && (!a.reunion || (DB.reunions[a.reunion] && DB.reunions[a.reunion].type === r.type))).sort(triActions);
+    if(m.modele === "reu-odj"){
+      H("Ordre du jour");
+      (r.rubriques || []).forEach((rb, i) => LI((i + 1) + ". " + rb.t + (rb.notes && rb.notes._ ? " — " + lignesNote(rb.notes._).map(l => l.trim()).join(" ; ") : "")));
+      if(ouvertes.length){ H("Actions en cours à faire le point"); groupesActions(ouvertes, P).forEach(([id, l]) => { ST(id ? nomP(id) : "Sans responsable"); l.forEach(actLI); }); }
+      return n;
+    }
+    (r.rubriques || []).forEach(rb => {
+      const N = rb.notes || {};
+      const qui = (r.parPersonne ? P : []).filter(id => lignesNote(N[id]).length);
+      if(!lignesNote(N._).length && !qui.length) return;
+      H(rb.t);
+      lignesLI(N._);
+      qui.forEach(id => { ST(nomP(id)); lignesLI(N[id]); });
+    });
+    const ici = V(DB.suivis).filter(a => a.reunion === r.id).sort(triActions);
+    if(ici.length){ H("Actions décidées"); groupesActions(ici, P).forEach(([id, l]) => { ST(id ? nomP(id) : "Sans responsable"); l.forEach(actLI); }); }
+    if(ouvertes.length){ H("Toujours en cours depuis les points précédents"); ouvertes.forEach(actLI); }
+    return n;
+  }
   if(m.modele === "cadrage" && p){
     const c = cadrageDe(p);
     RUBRIQUES.forEach(([k, l]) => {
@@ -4226,21 +4670,24 @@ function contenuMail(m){
   }
   return n;
 }
-function rendreMail(m){
-  const n = contenuMail(m), intro = (m.intro || "").trim(), sig = signature();
+function rendreMail(m, brut){
+  const n = contenuMail(m), intro = (m.intro || "").trim(), sig = brut ? "" : signature();
   const tx = [];
+  if(brut && m.reu && DB.reunions[m.reu]) tx.push(titreReu(DB.reunions[m.reu]).toUpperCase(), "");
   if(intro) tx.push(intro, "");
   n.forEach((x, i) => {
     if(x.k === "h"){ if(i && tx[tx.length - 1] !== "") tx.push(""); tx.push(x.t.toUpperCase()); }
+    else if(x.k === "st") tx.push("", "— " + x.t);
     else if(x.k === "p") tx.push(x.t, "");
     else if(x.k === "kv") tx.push((x.c && EMOJI[x.c] ? EMOJI[x.c] + " " : "") + x.l + " : " + x.v);
     else tx.push((x.c && EMOJI[x.c] ? EMOJI[x.c] + " " : "• ") + x.t + (x.sub ? "\n   " + x.sub : ""));
   });
-  tx.push("", sig);
+  if(sig) tx.push("", sig);
   const e = s => esc(s).replace(/\n/g, "<br>");
   const dot = c => c && COUL[c] ? '<span style="color:' + COUL[c] + '">●</span> ' : "";
   let h = "", ouvert = "";
   const fermer = () => { if(ouvert === "ul") h += "</ul>"; if(ouvert === "kv") h += "</table>"; ouvert = ""; };
+  if(brut && m.reu && DB.reunions[m.reu]) h += '<p style="margin:0 0 10px;font-size:18px;font-weight:bold">' + e(titreReu(DB.reunions[m.reu])) + '</p>';
   if(intro) h += '<p style="margin:0 0 12px">' + e(intro) + '</p>';
   n.forEach(x => {
     if(x.k === "li"){ if(ouvert !== "ul"){ fermer(); h += '<ul style="margin:0 0 10px;padding-left:22px">'; ouvert = "ul"; }
@@ -4250,10 +4697,11 @@ function rendreMail(m){
         (x.c && COUL[x.c] ? ';color:' + COUL[x.c] : "") + '">' + dot(x.c) + e(x.v) + '</td></tr>'; return; }
     fermer();
     if(x.k === "h") h += '<p style="margin:18px 0 6px;font-size:15px;font-weight:bold;color:#111;border-bottom:1px solid #e3e3e3;padding-bottom:3px">' + e(x.t) + '</p>';
+    else if(x.k === "st") h += '<p style="margin:8px 0 3px;font-weight:bold;color:#333">' + e(x.t) + '</p>';
     else h += '<p style="margin:0 0 10px">' + e(x.t) + '</p>';
   });
   fermer();
-  h += '<p style="margin:16px 0 0">' + e(sig) + '</p>';
+  if(sig) h += '<p style="margin:16px 0 0">' + e(sig) + '</p>';
   return { text:tiret(tx.join("\n")), html:tiret('<div style="font-family:Segoe UI,Calibri,Arial,sans-serif;font-size:14px;line-height:1.5;color:#1a1a1a">' + h + '</div>') };
 }
 async function copierRiche(html, text){
@@ -4290,10 +4738,11 @@ async function envoyerMail(act){
 function vueMail(m){
   const r = rendreMail(m), cands = candidatsMail(m), mo = M();
   const p = DB.projets[m.projet], pe = DB.personnes[m.personne];
-  const modeles = p ? ["point", "odj"].concat(mo.cadrage ? ["cadrage"] : [], m.reunion ? ["cr"] : []) : [m.modele];
+  const rM = DB.reunions[m.reu];
+  const modeles = rM ? ["reu-odj", "reu-cr"] : p ? ["point", "odj"].concat(mo.cadrage ? ["cadrage"] : [], m.reunion ? ["cr"] : []) : [m.modele];
   const sansMail = cands.filter(id => !emailDe(id));
   const { to, cc } = adressesMail(m);
-  return '<h3>Préparer un mail</h3><div class="sous">' + esc(p ? p.nom : pe ? pe.nom : "Portefeuille · " + resumeFiltres()) + '</div>' +
+  return '<h3>Préparer un mail</h3><div class="sous">' + esc(rM ? titreReu(rM) : p ? p.nom : pe ? pe.nom : "Portefeuille · " + resumeFiltres()) + '</div>' +
     (modeles.length > 1 ? '<div class="champ"><div class="seg plein">' + modeles.map(k =>
       '<button class="' + (m.modele === k ? "on" : "") + '" data-act="mail-modele" data-id="' + k + '">' + MODELES[k] + '</button>').join("") + '</div></div>' : "") +
     (cands.length ? fChamp("Destinataires", '<div class="dest">' + cands.map(id => {
@@ -4308,8 +4757,8 @@ function vueMail(m){
     fChamp("Objet", fTxt("objet", m.objet), "", "m-objet") +
     fChamp("Message", fArea("intro", m.intro, "", 4), "Placé en tête ; le détail et votre signature suivent.", "m-intro") +
     (m.modele === "point" ? fChamp("Faits marquants sur", fSeg("periode", m.periode, [["7","7 jours"],["14","14 jours"],["30","30 jours"]])) : "") +
-    (mo.budget && m.modele !== "relance" ? fBool("budget", m.budget, "Inclure le budget", m.modele === "synthese" ? "" : "Désactivé par défaut pour les mails d'équipe.") : "") +
-    (mo.risques && m.modele !== "relance" ? fBool("risques", m.risques, "Inclure les risques", "") : "") +
+    (mo.budget && m.modele !== "relance" && !estReu(m) ? fBool("budget", m.budget, "Inclure le budget", m.modele === "synthese" ? "" : "Désactivé par défaut pour les mails d'équipe.") : "") +
+    (mo.risques && m.modele !== "relance" && !estReu(m) ? fBool("risques", m.risques, "Inclure les risques", "") : "") +
     '<div class="champ"><span class="lab">Aperçu</span><div class="apercu-mail" id="apercu-mail"><div class="obj">' + esc(m.objet) + '</div>' + r.html + '</div></div>' +
     '<div class="btns grow" style="margin:16px 0 0">' +
       '<button class="btn" data-act="mail-copier">' + svg("copier", 15) + 'Copier</button>' +
@@ -4632,6 +5081,26 @@ function vueModal(m){
         esc(frDate(x.debut, true) + " → " + frDate(x.fin, true) + (x.cout ? " · " + eur(x.cout) : "") + " · renouvelée le " + frDate(x.le, true)) + '</span></span></div>').join("") + '</div>' : "") +
       piedModal(m.id ? "Enregistrer" : "Ajouter la licence", "enregistrer-licence",
         m.id ? '<button class="btn dang wide" data-act="supprimer-licence" data-id="' + m.id + '">Supprimer la licence</button>' : "");
+  }
+  else if(m.type === "coller"){
+    c = '<h3>Coller des notes</h3>' +
+      '<div class="sous">Copiez une page de OneNote, de Word ou d\'un mail et collez-la ici. Jalon repère les rubriques (séparées par une ligne de tirets) et les prénoms de l\'équipe, et crée la réunion correspondante.</div>' +
+      '<div class="duo">' + fChamp("Type", fSeg("genre", m.genre || "equipe", TYPES_REU)) + fChamp("Date", fTxt("date", m.date, "", "date"), "", "m-date") + '</div>' +
+      fChamp("Notes", fArea("texte", m.texte, "Ticket\nFabrice\nMeraki : où en est-on ?\nYannick\nSite web campus\n----------\nPoint projet\nFabrice\n…", 10), "", "m-texte") +
+      '<div id="apercu-coller">' + apercuColler(m) + '</div>' +
+      piedModal("Créer la réunion", "enregistrer-coller");
+  }
+  else if(m.type === "suivi"){
+    const r = DB.reunions[m.reunion];
+    c = '<h3>' + (m.id ? "Action" : "Nouvelle action") + '</h3>' +
+      '<div class="sous">' + esc(r ? "Issue du " + titreReu(r).replace(/^Point/, "point") : "Action de suivi d'équipe") + '</div>' +
+      fChamp("Action", fTxt("texte", m.texte, "Relancer le fournisseur Meraki"), "", "m-texte") +
+      '<div class="duo">' + fChamp("Responsable", fSel("resp", m.resp, optsPers(), "—"), aidePers(), "m-resp") +
+        fChamp("Échéance", fTxt("echeance", m.echeance, "", "date"), "", "m-echeance") + '</div>' +
+      fBool("fait", m.fait, "Fait", "") +
+      (m.id && m.cle && !/^manuel/.test(m.cle) ? '<div class="aide">Née d\'une ligne « → » des notes. Une fois modifiée ici, elle ne suit plus cette ligne.</div>' : "") +
+      piedModal(m.id ? "Enregistrer" : "Ajouter", "enregistrer-suivi",
+        m.id ? '<button class="btn dang wide" data-act="supprimer-suivi" data-id="' + m.id + '">Supprimer l\'action</button>' : "");
   }
   else if(m.type === "mail") c = vueMail(m);
   else if(m.type === "cloture") c = vueCloture(m);
@@ -5128,7 +5597,33 @@ function exemple(){
   lic({ logiciel:"Outil de ticketing", editeur:"GLPI Network", quantite:12, cout:95, periode:"mois", debut:J(-200), fin:addAns(J(-200), 2), renouvAuto:true, resp:pers.sophie });
   lic({ logiciel:"Logiciel de caisse", editeur:"Cegid", fournisseur:"Cegid Antilles", quantite:6, prixU:360, lignes:[{ l:"Maintenance", m:520, p:"an" }, { l:"Support local", m:45, p:"mois" }], debut:addAns(J(130), -1), fin:J(130), site:"guadeloupe" });
   lic({ logiciel:"Windows Server 2022", editeur:"Microsoft", quantite:4, cout:3800, periode:"unique", debut:J(-400), fin:"", site:"caledonie" });
-  sauver(); render(); toast("Exemple chargé : 10 projets, 8 personnes, 6 achats, 7 licences");
+  // réunions : deux points d'équipe et un point N+1
+  P("anne","Anne Fontaine","Direction","Directrice des opérations",0);
+  DB.settings.equipeReu = [pers.karim, pers.sophie, pers.thomas];
+  DB.settings.n1 = pers.anne;
+  const reu = (type, date, rubs) => { const id = uid(), f = FORMATS_REU[type];
+    DB.reunions[id] = { id, type, titre:f.nom, date, parPersonne:f.parPersonne, cree:now, maj:now,
+      participants:type === "equipe" ? DB.settings.equipeReu.slice() : [pers.anne],
+      rubriques:rubs.map(([t, notes]) => ({ id:uid(), t, notes })) };
+    syncActions(DB.reunions[id]); return DB.reunions[id]; };
+  const dd = n => { const d = dateDe(J(n)); return d.getDate() + "/" + (d.getMonth() + 1) + "/" + d.getFullYear(); };
+  const r1 = reu("equipe", J(-10), [
+    ["Tickets", { [pers.karim]:"Meraki : où en est-on ?\n→ Relancer le support Meraki pour le site de Fort-de-France " + dd(-2),
+      [pers.sophie]:"Ticket #10002 : installation de logiciel, en attente de validation\n→ Faire valider la demande par le manager", [pers.thomas]:"RAS" }],
+    ["Point projets", { [pers.thomas]:"Liaison fibre : opérateur toujours en retard", [pers.karim]:"Migration M365 : vague 2 calée" }],
+    ["Point global", { _:"Licence IA en cours de traitement" }],
+    ["Point commandes", { _:"PC portables Martinique : livraison en retard" }]]);
+  const r2 = reu("equipe", J(-3), [
+    ["Tickets", { [pers.karim]:"Meraki : support relancé, réponse attendue", [pers.sophie]:"Licence Adobe : point avec Sabrina, licence partagée ?\n→ Ouvrir un ticket pour la licence Adobe partagée @sophie " + dd(4) }],
+    ["Point projets", { [pers.thomas]:"Fibre Guyane : nouvelle date annoncée par l'opérateur\n→ Envoyer le planning révisé au sponsor" }],
+    ["Point global", { _:"Licence IA : devis reçu" }],
+    ["Point commandes", { _:"Écrans livrés, à réceptionner" }]]);
+  V(DB.suivis).filter(a => a.reunion === r1.id && /valider/i.test(a.texte)).forEach(a => { a.fait = true; a.faitLe = J(-4); });
+  reu("n1", J(-6), [["Faits marquants", { _:"Migration M365 dans les temps\nFibre Guyane : retard opérateur" }],
+    ["Projets : météo et arbitrages", { _:"Parc PC Martinique en rouge : fournisseur relancé\n→ Arbitrer un fournisseur de secours @anne" }],
+    ["Budget, achats et licences", { _:"Renouvellement Microsoft 365 à prévoir en décembre" }],
+    ["Équipe : charge, absences, RH", { _:"Julie très chargée jusqu'à fin novembre" }], ["Décisions attendues", {}], ["Divers", {}]]);
+  sauver(); render(); toast("Exemple chargé : 10 projets, 9 personnes, 6 achats, 7 licences, 3 réunions");
 }
 
 /* ============================================================
@@ -5153,7 +5648,7 @@ document.addEventListener("click", async ev => {
   if(act === "monde-projets"){ DB.settings.f.site = id; state.tab = "projets"; state.sheet = null; sauver(true); render(); window.scrollTo(0,0); return; }
   if(act === "nouveau-projet-site"){ state.siteNouveau = id; ouvrirModal(mProjet()); state.siteNouveau = null; return; }
   if(act === "ouvrir-personne"){ state.sheet = { t:"personne", id }; state.modal = null; render(); return; }
-  if(act === "fermer-sheet"){ state.sheet = null; render(); return; }
+  if(act === "fermer-sheet"){ if(state.sheet && state.sheet.t === "reunion") syncActions(DB.reunions[state.sheet.id]); state.sheet = null; render(); return; }
   if(act === "fond-modal"){ if(ev.target === el) secouerModal(); return; }
   if(act === "fermer-modal"){ if(el.tagName === "BUTTON") fermerModal(); return; }
   if(act === "ptab"){ state.ptab = id; render(); return; }
@@ -5171,6 +5666,7 @@ document.addEventListener("click", async ev => {
     if(state.tab === "equipe") return ouvrirModal(mPersonne());
     if(state.tab === "risques" && M().risques) return ouvrirModal(mRisque(null, ""));
     if(state.tab === "achats") return ouvrirModal(state.aVue === "lic" ? mLicence() : mAchat());
+    if(state.tab === "reunions") return creerReunion("equipe");
     return ouvrirModal(mProjet());
   }
   if(act === "nouvel-achat") return ouvrirModal(mAchat(null, id));
@@ -5195,6 +5691,91 @@ document.addEventListener("click", async ev => {
     return;
   }
   if(act === "m-lig-del"){ capturerModal(); state.modal.lignes.splice(Number(id), 1); majModal(); return; }
+  /* ---- réunions ---- */
+  if(act === "nouvelle-reunion"){ creerReunion(id || "equipe"); return; }
+  if(act === "ouvrir-reunion" && DB.reunions[id]){ state.sheet = { t:"reunion", id }; state.modal = null; render(); return; }
+  if(act === "coller-notes") return ouvrirModal({ type:"coller", genre:"equipe", date:todayISO(), texte:"", focus:"m-texte" });
+  if(act === "enregistrer-coller") return enregistrerColler();
+  if(act === "nouveau-suivi") return ouvrirModal(mSuivi(null, id));
+  if(act === "modifier-suivi" && DB.suivis[id]) return ouvrirModal(mSuivi(DB.suivis[id]));
+  if(act === "enregistrer-suivi") return enregistrerSuivi();
+  if(act === "supprimer-suivi") return supprimerAchatLic("suivis", id, "Action supprimée");
+  if(act === "suivi-fait" && DB.suivis[id]){
+    const a = DB.suivis[id], c = {}; garder(c, "suivis", a); corbeille = c;
+    a.fait = !a.fait; a.faitLe = a.fait ? todayISO() : "";
+    sauver(); render(); toast("« " + a.texte + " » : " + (a.fait ? "fait" : "rouvert"), "annuler"); return;
+  }
+  if(act === "r-vuea"){ state.rVueA = id; render(); return; }
+  if(act === "r-ftype"){ state.rType = id; render(); return; }
+  if(act === "mail-actions-reu") return ouvrirModal(mMail("reu-actions", { personne:id }));
+  if(act === "r-tousp"){ state.rTousP = true; render(); return; }
+  {
+    const r = state.sheet && state.sheet.t === "reunion" ? DB.reunions[state.sheet.id] : null;
+    if(r && /^r-/.test(act)){
+      const rb = id && (r.rubriques || []).find(x => x.id === id);
+      const fin = msg => { r.maj = Date.now(); sauver(); render(); if(msg) toast(msg); };
+      if(act === "r-type"){ r.type = id; if(!r.titre || TYPES_REU.some(([k]) => FORMATS_REU[k].nom === r.titre)) r.titre = FORMATS_REU[id].nom; return fin(); }
+      if(act === "r-part"){ const P = r.participants = r.participants || []; const i = P.indexOf(id); if(i < 0) P.push(id); else P.splice(i, 1); syncActions(r); return fin(); }
+      if(act === "r-parp"){ r.parPersonne = !r.parPersonne; syncActions(r); return fin(); }
+      if(act === "r-memo-part"){
+        if(r.type === "n1") DB.settings.n1 = r.participants[0]; else DB.settings.equipeReu = r.participants.slice();
+        return fin(r.type === "n1" ? "N+1 mémorisé" : "Équipe mémorisée pour les prochains points");
+      }
+      if(act === "r-rub-add"){
+        const i = $("#r-newrub"), t = (i && i.value || "").trim(); if(!t) return;
+        r.rubriques.push({ id:uid(), t, notes:{} }); fin();
+        const n = document.querySelectorAll("#sheet .rub"); if(n.length){ const ta = n[n.length - 1].querySelector(".note-r"); if(ta) ta.focus(); }
+        return;
+      }
+      if(act === "r-rub-haut" && rb){ const i = r.rubriques.indexOf(rb); if(i > 0){ r.rubriques.splice(i, 1); r.rubriques.splice(i - 1, 0, rb); } return fin(); }
+      if(act === "r-rub-del" && rb){
+        const ok = () => { r.rubriques = r.rubriques.filter(x => x !== rb); syncActions(r); fin("Rubrique retirée"); };
+        if(Object.values(rb.notes || {}).some(t => String(t || "").trim()))
+          return ouvrirModal({ type:"confirmer", titre:"Retirer « " + rb.t + " » ?", texte:"Les notes de cette rubrique seront perdues.", danger:true, bouton:"Retirer", ok });
+        return ok();
+      }
+      if(act === "r-rub-memo"){
+        DB.settings.rubriquesReu = { ...(DB.settings.rubriquesReu || {}), [r.type]:r.rubriques.map(x => x.t) };
+        return fin("Rubriques gardées pour les prochains « " + FORMATS_REU[r.type].nom + " »");
+      }
+      if(act === "r-inserer" && rb){
+        const k = el.dataset.p, s = sourceAstuce(r, rb, k); if(!s) return;
+        rb.notes = rb.notes || {};
+        const deja = String(rb.notes[k] || "").replace(/\s+$/, "");
+        rb.notes[k] = (deja ? deja + "\n" : "") + s.items.map(x => x.l).join("\n");
+        return fin();
+      }
+      if(act === "r-reprendre"){
+        const prec = reunionsTriees().find(x => x.type === r.type && x.id !== r.id && (x.date || "") <= (r.date || todayISO()));
+        if(!prec) return;
+        let n = 0;
+        (prec.rubriques || []).forEach(pr => {
+          let rb2 = r.rubriques.find(x => norm(x.t) === norm(pr.t));
+          if(!rb2){ rb2 = { id:uid(), t:pr.t, notes:{} }; r.rubriques.push(rb2); }
+          Object.keys(pr.notes || {}).forEach(k => {
+            const L = lignesNote(pr.notes[k]).filter(l => !RE_ACTION.test(l));
+            if(L.length && !String(rb2.notes[k] || "").trim()){ rb2.notes[k] = L.join("\n"); n += L.length; }
+          });
+        });
+        (prec.participants || []).forEach(id => { if(DB.personnes[id] && !r.participants.includes(id)) r.participants.push(id); });
+        return fin(n + " ligne" + pl(n) + " reprise" + pl(n) + " du " + frDate(prec.date) + " : effacez ce qui est réglé");
+      }
+      if(act === "r-mail"){ syncActions(r); return ouvrirModal(mMail("reu-cr", { reu:r.id })); }
+      if(act === "r-odj"){ syncActions(r); return ouvrirModal(mMail("reu-odj", { reu:r.id })); }
+      if(act === "r-copier"){ syncActions(r); const x = exportReunion(r); copierRiche(x.html, x.text).then(ok => toast(ok ? "Notes copiées avec la mise en forme : collez-les dans Teams, un mail ou Word" : "Copie refusée par le navigateur")); return; }
+      if(act === "r-txt"){ syncActions(r); telecharger("reunion-" + r.date + "-" + norm(r.titre || r.type).replace(/[^a-z0-9]+/g, "-") + ".txt",
+        new Blob([exportReunion(r).text], { type:"text/plain;charset=utf-8" })); return; }
+      if(act === "r-supprimer"){
+        return ouvrirModal({ type:"confirmer", titre:"Supprimer cette réunion ?", danger:true, bouton:"Supprimer",
+          texte:"Les notes et les actions encore ouvertes qui en sont issues seront supprimées. Les actions déjà faites restent dans l'historique. Vous pourrez annuler juste après.",
+          ok:() => {
+            const c = {}; garder(c, "reunions", r);
+            V(DB.suivis).forEach(a => { if(a.reunion === r.id && !a.fait){ garder(c, "suivis", a); delete DB.suivis[a.id]; } });
+            delete DB.reunions[r.id]; corbeille = c; state.sheet = null; sauver(); render(); toast("Réunion supprimée", "annuler");
+          } });
+      }
+    }
+  }
   if(act === "a-livre") return cocherAchat(id, "livre");
   if(act === "a-recu") return cocherAchat(id, "recu");
   if(act === "lic-renouveler") return renouvelerLicence(id);
@@ -5428,6 +6009,23 @@ document.addEventListener("input", ev => {
   }
   if(el.id === "q"){ state.q = el.value; render(); return; }
   if(el.id === "qa"){ state.qa = el.value; render(); return; }
+  /* Notes de réunion : enregistrées à la frappe, sans redessiner la page
+     (le curseur ne bouge pas). */
+  if(state.sheet && state.sheet.t === "reunion" && el.closest && el.closest("#sheet")){
+    const r = DB.reunions[state.sheet.id]; if(!r) return;
+    if(el.dataset.rn){
+      const rb = r.rubriques.find(x => x.id === el.dataset.rn); if(!rb) return;
+      rb.notes = rb.notes || {}; rb.notes[el.dataset.rp] = el.value; grandir(el);
+      clearTimeout(vueReunion._t);
+      vueReunion._t = setTimeout(() => { syncActions(r); const p = document.getElementById("r-suivi"); if(p && DB.reunions[r.id]) p.innerHTML = panneauSuivi(r); }, 900);
+    }
+    else if(el.dataset.rt){ const rb = r.rubriques.find(x => x.id === el.dataset.rt); if(rb) rb.t = el.value; }
+    else if(el.id === "r-titre") r.titre = el.value;
+    else if(el.id === "r-date" && el.value) r.date = el.value;
+    else return;
+    r.maj = Date.now(); sauver(); return;
+  }
+  if(state.modal && state.modal.type === "coller" && el.id === "m-texte"){ capturerModal(); const a = document.getElementById("apercu-coller"); if(a) a.innerHTML = apercuColler(state.modal); return; }
   if(el.id === "set-org"){ DB.settings.organisation = el.value; sauver(); return; }
   if(state.modal && state.modal.type === "projet" && el.id === "m-code") state.modal.codeAuto = false;
   if(state.modal && state.modal.type === "projet" && el.id === "m-sponsor") state.modal.sponsorAuto = !el.value.trim();
@@ -5444,6 +6042,15 @@ document.addEventListener("change", ev => {
   if(el.id === "set-moi"){ DB.settings.moi = el.value; sauver(true); render(); return; }
   if(el.dataset && el.dataset.filtre){ DB.settings.f[el.dataset.filtre] = el.value; sauver(true); render(); return; }
   if(el.dataset && el.dataset.asite){ state.aSite = el.value; render(); return; }
+  // Fin de saisie d'un bloc : les lignes « → » deviennent des actions. On ne
+  // rafraîchit que le panneau « À suivre », pour ne pas avaler le clic suivant.
+  if(state.sheet && state.sheet.t === "reunion" && el.dataset && el.dataset.rn){
+    const r = DB.reunions[state.sheet.id]; if(!r) return;
+    syncActions(r);
+    const p = document.getElementById("r-suivi"); if(p) p.innerHTML = panneauSuivi(r);
+    return;
+  }
+  if(state.sheet && state.sheet.t === "reunion" && el.id === "r-date"){ render(); return; }
   if(el.dataset && el.dataset.rerender){
     capturerModal();
     const m = state.modal;
@@ -5485,6 +6092,8 @@ document.addEventListener("drop", ev => {
   toast(["« " + t.titre + " » : " + lib(STATUTS_T, st).toLowerCase()].concat(msgs).join(" · "));
 });
 document.addEventListener("keydown", ev => {
+  if(ev.key === "Enter" && ev.target.id === "r-newrub"){ ev.preventDefault(); const b = document.querySelector('[data-act="r-rub-add"]'); if(b) b.click(); return; }
+  if(ev.key === "Enter" && ev.target.dataset && ev.target.dataset.rt){ ev.preventDefault(); ev.target.blur(); return; }
   if(ev.key === "Enter" && /^moi-(nom|role|mail)$/.test(ev.target.id || "")){ ev.preventDefault(); const b = document.querySelector('[data-act="moi-creer"]'); if(b) b.click(); return; }
   if(ev.key === "Escape"){
     if(state.modal){
@@ -5493,7 +6102,7 @@ document.addEventListener("keydown", ev => {
       else fermerModal();
     }
     else if(state.sheet && state.sheet.t === "revue") secouerModal();
-    else if(state.sheet){ state.sheet = null; render(); ev.preventDefault(); }
+    else if(state.sheet){ if(state.sheet.t === "reunion") syncActions(DB.reunions[state.sheet.id]); state.sheet = null; render(); ev.preventDefault(); }
     return;
   }
   if(ev.key === "Enter" && state.modal && ev.target.tagName === "INPUT"){
